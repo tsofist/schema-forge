@@ -1,0 +1,13 @@
+{
+  "extends": "@tsofist/web-buddy/tsconfig/base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "outDir": "lib",
+    "target": "ES6",
+    "allowSyntheticDefaultImports": true,
+    "noUnusedLocals": false,
+    "resolveJsonModule": true,
+  },
+  "include": ["src", "test-sources"],
+  "exclude": ["node_modules", "scr/tmp"],
+}

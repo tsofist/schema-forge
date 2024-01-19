@@ -1,0 +1,15 @@
+/lib/
+/.lint-cache/
+/.jest-cache/
+/.npm/
+/.coverage/
+/node_modules/
+
+.editorconfig
+.DS_Store/
+/.idea/
+*.iml
+.vscode/
+.history/
+
+*.tmp.json
