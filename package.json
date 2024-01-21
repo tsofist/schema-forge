@@ -18,14 +18,14 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@tsofist/stem": "^1.5.1",
+    "@tsofist/stem": "^1.6.0",
     "ajv": "^8.12.0",
     "ajv-formats": "^3.0.0-rc.0",
     "ts-json-schema-generator": "^1.5.0",
     "tslib": "^2.6.2"
   },
   "devDependencies": {
-    "@tsofist/web-buddy": "^1.5.0",
+    "@tsofist/web-buddy": "^1.5.1",
     "@types/jest": "^29.5.11",
     "@types/node": "^18.19.8",
     "@types/supertest": "^6.0.2",
