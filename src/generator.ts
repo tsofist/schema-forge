@@ -56,6 +56,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                     sourcesDirectoryPattern,
                     outputSchemaFile,
                     sourcesTypesGeneratorConfig,
+                    expose: options.expose,
                 });
                 const content = JSON.stringify(schema, null, 2);
                 await writeFile(options.outputSchemaFile, content, { encoding: 'utf8' });

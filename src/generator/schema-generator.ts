@@ -8,7 +8,7 @@ import {
     SchemaGenerator,
 } from 'ts-json-schema-generator';
 import { Program } from 'typescript';
-import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX } from './types';
+import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX, TypeExposeKind } from './types';
 
 interface Options {
     tsconfig: string;
@@ -17,6 +17,7 @@ interface Options {
     outputSchemaFile: string;
     definitions: string[];
     schemaId?: string;
+    expose?: TypeExposeKind;
 }
 
 export async function generateSchemaByDraftTypes(options: Options): Promise<SchemaObject> {
@@ -30,6 +31,7 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
 
     const generatorConfig: Config = {
         ...SG_CONFIG_DEFAULTS,
+        expose: options.expose,
         path: `${options.sourcesDirectoryPattern}/*${TMP_FILES_SUFFIX}.ts`,
         tsconfig: options.tsconfig,
         ...SG_CONFIG_MANDATORY,

@@ -26,7 +26,15 @@ export interface API {
     methodF(): Promise<null | number>;
 }
 
-export interface IndoorInterface {
+/**
+ * @public
+ * @description BAPI descriptions
+ */
+export interface BAPI extends API {
+    methodY(arg1: string): Promise<void>;
+}
+
+interface IndoorInterface {
     a1: AdditionalType;
     a2: AdditionalType2;
 }

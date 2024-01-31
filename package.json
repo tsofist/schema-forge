@@ -11,7 +11,7 @@
     "pkg:publish": "semantic-release --no-ci",
     "pkg:publish-test": "semantic-release --dry-run",
     "pkg:purge": "rimraf lib .coverage .lint-cache .jest-cache node_modules",
-    "prepare": "husky",
+    "prepare": "husky && (cp node_modules/@tsofist/web-buddy/.editorconfig \"$INIT_CWD\" || true)",
     "prepublishOnly": "npm run lint && npm run test && npm run build",
     "test": "jest",
     "test:cov": "jest --coverage",

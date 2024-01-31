@@ -26,6 +26,7 @@ describe('generator for a3', () => {
             sourcesFilesPattern: 'service-api.ts',
             outputSchemaFile,
             outputDefinitionsFile,
+            expose: 'all',
         });
     });
     afterAll(async () => {
@@ -35,6 +36,24 @@ describe('generator for a3', () => {
 
     it('generated schema should be valid', async () => {
         expect(forgeSchemaResult).toBeTruthy();
+    });
+
+    it('extends should works', () => {
+        const props = forgeSchemaResult!.schema.definitions?.BAPI_InterfaceDeclaration.properties;
+        expect(props).toBeTruthy();
+        expect(Object.keys(props)).toStrictEqual([
+            'propertyA',
+            'propertyB',
+            'propertyC',
+            'propertyD',
+            'methodA',
+            'methodB',
+            'methodC',
+            'methodE1',
+            'methodE2',
+            'methodF',
+            'methodY',
+        ]);
     });
 });
 describe('generator for a2', () => {

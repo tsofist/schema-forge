@@ -13,12 +13,14 @@ import {
     getTextOfJSDocComment,
     Identifier,
     InterfaceDeclaration,
+    isInterfaceDeclaration,
     JSDocTag,
     MethodSignature,
     Program,
     SignatureDeclaration,
     SyntaxKind,
     TypeAliasDeclaration,
+    TypeChecker,
     TypeElement,
     TypeReferenceNode,
 } from 'typescript';
@@ -46,6 +48,7 @@ export async function generateDraftTypeFiles(options: Options) {
     const explicitPublic = asBool(options.explicitPublic, true);
     const sourcesTypesGeneratorConfig: Config = {
         ...SG_CONFIG_DEFAULTS,
+        expose: options.expose,
         path: `${options.sourcesPattern}`,
         tsconfig: options.tsconfig,
         ...SG_CONFIG_MANDATORY,
@@ -55,6 +58,7 @@ export async function generateDraftTypeFiles(options: Options) {
     let definitions: string[] = [];
 
     const program: Program = createProgram(sourcesTypesGeneratorConfig);
+    const checker = program.getTypeChecker();
     const fileNames = program.getRootFileNames();
 
     for (const sourceFileName of fileNames) {
@@ -83,7 +87,11 @@ export async function generateDraftTypeFiles(options: Options) {
                     processTypeAliasDeclaration(statement as TypeAliasDeclaration, context);
                     break;
                 case SyntaxKind.InterfaceDeclaration:
-                    processInterfaceDeclaration(statement as InterfaceDeclaration, context);
+                    processInterfaceDeclaration(
+                        statement as InterfaceDeclaration,
+                        context,
+                        checker,
+                    );
                     break;
                 default:
                     console.error('[current statement]\n\t', statement.getText(), '\n');
@@ -130,7 +138,11 @@ interface DefinitionMetadata {
     desc: [argsText: string, resultTypeName: string] | string;
 }
 
-function processInterfaceDeclaration(statement: InterfaceDeclaration, context: GeneratorContext) {
+function processInterfaceDeclaration(
+    statement: InterfaceDeclaration,
+    context: GeneratorContext,
+    checker: TypeChecker,
+) {
     const definitionsMetaList: DefinitionMetadata[] = [];
 
     const interfaceName = readNodeName(statement);
@@ -140,9 +152,9 @@ function processInterfaceDeclaration(statement: InterfaceDeclaration, context: G
     );
     const interfaceDeprecated = getTextOfJSDocComment(getJSDocDeprecatedTag(statement)?.comment);
 
-    for (const member of statement.members) {
+    function onMember(member: TypeElement) {
         const isPrivate = getJSDocPrivateTag(member) != null;
-        if (isPrivate) continue;
+        if (isPrivate) return;
 
         const memberName = readNodeName(member);
         const memberDescription = readJSDocDescription(
@@ -193,6 +205,8 @@ function processInterfaceDeclaration(statement: InterfaceDeclaration, context: G
                 ...[
                     // ARGUMENTS
                     `/**`,
+                    ` * @interface ${interfaceName}`,
+                    ` * @member ${interfaceName}#${memberName}`,
                     ` * @description Arguments for ${comment}`,
                     ` * @comment ${comment}`,
                     ` *`,
@@ -203,6 +217,8 @@ function processInterfaceDeclaration(statement: InterfaceDeclaration, context: G
                     ` `,
                     // RESULT
                     `/**`,
+                    ` * @interface ${interfaceName}`,
+                    ` * @member ${interfaceName}#${memberName}`,
                     ` * @description Result type for ${comment}`,
                     ` * @comment ${comment}`,
                     `*/`,
@@ -220,6 +236,28 @@ function processInterfaceDeclaration(statement: InterfaceDeclaration, context: G
         }
     }
 
+    // inheritance first
+    if (statement.heritageClauses) {
+        for (const clause of statement.heritageClauses) {
+            for (const type of clause.types) {
+                const declaration = checker.getTypeAtLocation(type).symbol?.declarations?.[0];
+                if (
+                    declaration &&
+                    isInterfaceDeclaration(declaration) &&
+                    declaration.members?.length
+                ) {
+                    for (const member of declaration.members) {
+                        onMember(member);
+                    }
+                }
+            }
+        }
+    }
+
+    for (const member of statement.members) {
+        onMember(member);
+    }
+
     if (definitionsMetaList.length) {
         const membersText = new TextBuilder();
         for (const member of definitionsMetaList) {
@@ -227,6 +265,8 @@ function processInterfaceDeclaration(statement: InterfaceDeclaration, context: G
             membersText.push(
                 [
                     `/**`,
+                    ` * @interface ${interfaceName}`,
+                    ` * @${isMethod ? 'method' : 'property'} ${member.name}`,
                     member.description && ` * @description ${member.description}`,
                     member.deprecated && ` * @deprecated ${member.deprecated}`,
                     ` * @comment ${isMethod ? 'Method' : 'Property'}:${interfaceName}#${
@@ -243,6 +283,7 @@ function processInterfaceDeclaration(statement: InterfaceDeclaration, context: G
 
         const interfaceText = new TextBuilder([
             `/**`,
+            ` * @interface ${interfaceName}`,
             interfaceDesc && ` * @description ${interfaceDesc}`,
             interfaceDeprecated && ` * @deprecated ${interfaceDeprecated}`,
             ` * @comment Interface:${interfaceName}`,
