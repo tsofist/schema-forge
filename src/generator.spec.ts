@@ -15,7 +15,7 @@ import { createSchemaForgeValidator } from './validator';
 
 describe('generator for a3', () => {
     const outputSchemaFile = './a3.generated.schema.tmp.json';
-    const outputDefinitionsFile = './a3.generated.definitions.tmp.json';
+    const outputSchemaMetadataFile = './a3.generated.definitions.tmp.json';
 
     let forgeSchemaResult: SchemaForgeResult | undefined;
 
@@ -25,13 +25,13 @@ describe('generator for a3', () => {
             sourcesDirectoryPattern: 'test-sources/a3',
             sourcesFilesPattern: 'service-api.ts',
             outputSchemaFile,
-            outputDefinitionsFile,
+            outputSchemaMetadataFile,
             expose: 'all',
         });
     });
     afterAll(async () => {
         await unlink(outputSchemaFile).catch(noop);
-        await unlink(outputDefinitionsFile).catch(noop);
+        await unlink(outputSchemaMetadataFile).catch(noop);
     });
 
     it('generated schema should be valid', async () => {
@@ -58,7 +58,7 @@ describe('generator for a3', () => {
 });
 describe('generator for a2', () => {
     const outputSchemaFile = './a2.generated.schema.tmp.json';
-    const outputDefinitionsFile = './a2.generated.definitions.tmp.json';
+    const outputSchemaMetadataFile = './a2.generated.definitions.tmp.json';
 
     let forgeSchemaResult: SchemaForgeResult | undefined;
 
@@ -68,12 +68,12 @@ describe('generator for a2', () => {
             sourcesDirectoryPattern: 'test-sources/a2',
             sourcesFilesPattern: 'service-api.ts',
             outputSchemaFile,
-            outputDefinitionsFile,
+            outputSchemaMetadataFile,
         });
     });
     afterAll(async () => {
         await unlink(outputSchemaFile).catch(noop);
-        await unlink(outputDefinitionsFile).catch(noop);
+        await unlink(outputSchemaMetadataFile).catch(noop);
     });
 
     it('generated schema should be valid', async () => {
@@ -83,7 +83,7 @@ describe('generator for a2', () => {
 
 describe('generator for a1', () => {
     const outputSchemaFile = './a1.generated.schema.tmp.json';
-    const outputDefinitionsFile = './a1.generated.definitions.tmp.json';
+    const outputSchemaMetadataFile = './a1.generated.definitions.tmp.json';
     const schemaId = 'test';
 
     let forgeSchemaResult: SchemaForgeResult | undefined;
@@ -99,7 +99,7 @@ describe('generator for a1', () => {
             sourcesDirectoryPattern: 'test-sources/a1',
             sourcesFilesPattern: 'service.api.ts',
             outputSchemaFile,
-            outputDefinitionsFile,
+            outputSchemaMetadataFile,
         });
         validator = createSchemaForgeValidator({}, true);
         const schema = await loadJSONSchema([outputSchemaFile]);
@@ -108,7 +108,7 @@ describe('generator for a1', () => {
 
     afterAll(async () => {
         await unlink(outputSchemaFile).catch(noop);
-        await unlink(outputDefinitionsFile).catch(noop);
+        await unlink(outputSchemaMetadataFile).catch(noop);
     });
 
     it('generated schema should be valid', async () => {

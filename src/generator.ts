@@ -61,7 +61,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                 const content = JSON.stringify(schema, null, 2);
                 await writeFile(options.outputSchemaFile, content, { encoding: 'utf8' });
             }
-            if (options.outputDefinitionsFile) {
+            if (options.outputSchemaMetadataFile) {
                 const defs = new Set(Object.keys(schema.definitions));
                 const map: {
                     refs: Rec<string, SchemaForgeDefinitionRef>;
@@ -79,7 +79,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                 }
 
                 const content = JSON.stringify(map, null, 2);
-                await writeFile(options.outputDefinitionsFile, content, {
+                await writeFile(options.outputSchemaMetadataFile, content, {
                     encoding: 'utf8',
                 });
             }

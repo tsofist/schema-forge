@@ -45,10 +45,10 @@ export interface SchemaForgeOptions extends SchemaForgeBaseOptions {
     /**
      * Definitions file location
      * @example
-     *      result.schema-definitions.json
-     *      /absolute/path/to/result.schema-definitions.json
+     *      result.schema-metadata.json
+     *      /absolute/path/to/result.schema-metadata.json
      */
-    readonly outputDefinitionsFile?: string;
+    readonly outputSchemaMetadataFile?: string;
 }
 
 export interface SchemaForgeResult {
