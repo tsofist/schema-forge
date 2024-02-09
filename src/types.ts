@@ -1,6 +1,6 @@
 import { Nullable } from '@tsofist/stem';
 import { ErrorCode } from '@tsofist/stem/lib/error';
-import { ErrorObject, SchemaObject, ErrorsTextOptions } from 'ajv';
+import { ErrorObject, SchemaObject, ErrorsTextOptions, ValidateFunction } from 'ajv';
 import { SchemaForgeBaseOptions } from './generator/types';
 
 export enum SchemaForgeSignatureSuffix {
@@ -116,3 +116,5 @@ export interface SchemaForgeValidationResult {
     errors: Nullable<ErrorObject[]>;
     errorsText(options?: ErrorsTextOptions): string;
 }
+
+export type SchemaForgeValidationFunction<T = unknown> = ValidateFunction<T>;

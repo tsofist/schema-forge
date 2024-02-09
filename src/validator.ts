@@ -15,6 +15,8 @@ import {
 } from './types';
 import { parseSchemaDefinitionInfo } from './index';
 
+export type SchemaForgeValidator = ReturnType<typeof createSchemaForgeValidator>;
+
 export function createSchemaForgeValidator(engineOptions?: Options, useAdditionalFormats = false) {
     let engine = new Ajv({
         allErrors: true,
