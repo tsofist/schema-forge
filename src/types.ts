@@ -118,3 +118,4 @@ export interface SchemaForgeValidationResult {
 }
 
 export type SchemaForgeValidationFunction<T = unknown> = ValidateFunction<T>;
+export type SchemaForgeValidationReport = ErrorObject[];
