@@ -146,6 +146,7 @@ function processInterfaceDeclaration(
     const definitionsMetaList: DefinitionMetadata[] = [];
 
     const interfaceName = readNodeName(statement);
+    const interfaceGenericText = readInterfaceGenericText(statement);
     const interfaceDesc = readJSDocDescription(
         statement,
         context.options.allowUseFallbackDescription,
@@ -212,19 +213,19 @@ function processInterfaceDeclaration(
                     ` *`,
                     minArgsNum > 0 ? ` * @minItems ${minArgsNum}` : ``,
                     ` * @maxItems ${maxArgsNum}`,
-                    `*/`,
+                    ` */`,
                     `export type ${definitionNameArgs} = [${argsTypesText}];`,
-                    ` `,
+                    ``,
                     // RESULT
                     `/**`,
                     ` * @interface ${interfaceName}`,
                     ` * @member ${interfaceName}#${memberName}`,
                     ` * @description Result type for ${comment}`,
                     ` * @comment ${comment}`,
-                    `*/`,
+                    ` */`,
                     `export type ${definitionNameResult} = ${resultTypeName};`,
-                    ` `,
-                ].filter((line) => line.length),
+                    ``,
+                ],
             );
         } else {
             definitionsMetaList.push({
@@ -274,8 +275,8 @@ function processInterfaceDeclaration(
                     }`,
                     ` */`,
                     isMethod
-                        ? `${member.name}: [${member.desc[0]}, ${member.desc[1]}]`
-                        : `${member.name}: ${member.desc}`,
+                        ? `${member.name}: [${member.desc[0]}, ${member.desc[1]}];`
+                        : `${member.name}: ${member.desc};`,
                 ],
                 2,
             );
@@ -288,9 +289,10 @@ function processInterfaceDeclaration(
             interfaceDeprecated && ` * @deprecated ${interfaceDeprecated}`,
             ` * @comment Interface:${interfaceName}`,
             ` */`,
-            `export interface ${buildInterfaceSchemaSignature(interfaceName)} {`,
+            `export interface ${buildInterfaceSchemaSignature(interfaceName)}${interfaceGenericText} {`,
             membersText.stringify('\n'),
             `}`,
+            ``,
         ]);
 
         context.definitions.push(buildInterfaceSchemaSignature(interfaceName));
@@ -342,4 +344,11 @@ function readJSDocDescription(
 
 function readNodeName(node: TypeElement | DeclarationStatement): string {
     return (node.name as Identifier).escapedText + '';
+}
+
+function readInterfaceGenericText(node: TypeElement | DeclarationStatement): string {
+    if (isInterfaceDeclaration(node) && node.typeParameters?.length) {
+        return `<${node.typeParameters[0].getText()}>`;
+    }
+    return '';
 }

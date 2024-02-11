@@ -38,6 +38,15 @@ describe('generator for a3', () => {
         expect(forgeSchemaResult).toBeTruthy();
     });
 
+    it('interface generics should works', () => {
+        const props =
+            forgeSchemaResult!.schema.definitions?.InterfaceWithGeneric_InterfaceDeclaration
+                .properties;
+        expect(props).toBeTruthy();
+        expect(props.propWithGeneric).toBeTruthy();
+        expect(props.propWithGeneric.$ref).toStrictEqual('#/definitions/NonEmptyString');
+    });
+
     it('extends should works', () => {
         const props = forgeSchemaResult!.schema.definitions?.BAPI_InterfaceDeclaration.properties;
         expect(props).toBeTruthy();

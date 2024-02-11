@@ -52,3 +52,11 @@ type AdditionalType = PositiveInt | NonEmptyString;
  * @private
  */
 type AdditionalType2 = AdditionalType;
+
+/**
+ * @public
+ */
+export interface InterfaceWithGeneric<T extends NonEmptyString = NonEmptyString> {
+    propWithGeneric: T;
+    // fn<X>(): X; todo supports for member generics
+}
