@@ -6,8 +6,8 @@
     "target": "ES6",
     "allowSyntheticDefaultImports": true,
     "noUnusedLocals": false,
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
   },
   "include": ["src", "test-sources"],
-  "exclude": ["node_modules", "scr/tmp"],
+  "exclude": ["node_modules"]
 }

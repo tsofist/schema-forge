@@ -1,5 +1,5 @@
 import { NonEmptyString } from '@tsofist/stem';
-import { UUID } from '@tsofist/stem/lib/crypto/uuid';
+import { UUID } from '@tsofist/stem/lib/crypto/uuid/types';
 import { User, UserID } from './types';
 
 /**
