@@ -4,6 +4,9 @@
   "description": "Generate JSON schema from TypeScript types",
   "author": "Andrew Berdnikov <tsofistgudmen@gmail.com>",
   "license": "MIT",
+  "main": "lib/types",
+  "types": "lib/types",
+  "type": "commonjs",
   "scripts": {
     "build": "rimraf lib/** && tsc -p tsconfig.build.json",
     "format": "npm run lint -- --fix",
