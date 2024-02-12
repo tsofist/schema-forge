@@ -137,6 +137,12 @@ describe('generator for a1', () => {
         expect(validator.hasValidator('test#/definitions/!Int')).toStrictEqual(false);
     });
     it('checkBySchema', async () => {
+        expect(() =>
+            validator.checkBySchema(
+                'test#/definitions/ExportedInterfaceB_InterfaceDeclaration',
+                {},
+            ),
+        ).toThrow(SchemaForgeValidationErrorCode);
         expect(validator.checkBySchema('test#/definitions/Int', 1)).toStrictEqual(true);
         expect(() => validator.checkBySchema('test#/definitions/Int', 1.1)).toThrow(
             SchemaForgeValidationErrorCode,

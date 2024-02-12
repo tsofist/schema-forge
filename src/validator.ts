@@ -1,7 +1,7 @@
 import { Nullable } from '@tsofist/stem';
 import { raiseEx } from '@tsofist/stem/lib/error';
 import { entries } from '@tsofist/stem/lib/object/entries';
-import Ajv, { Options, ValidateFunction, ErrorsTextOptions, ErrorObject, Schema } from 'ajv';
+import Ajv, { ErrorObject, ErrorsTextOptions, Options, Schema, ValidateFunction } from 'ajv';
 import addFormats from 'ajv-formats';
 import {
     SchemaDefinitionInfo,
@@ -21,12 +21,14 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
     let engine = new Ajv({
         allErrors: true,
         strict: true,
+        strictSchema: true,
         strictTypes: 'log',
         strictTuples: false,
         coerceTypes: false,
-        removeAdditional: true,
+        removeAdditional: false,
         ...engineOptions,
     });
+    addJSDocKeywords(engine);
     if (useAdditionalFormats) engine = addFormats(engine);
 
     function getValidator<T = unknown>(
@@ -124,4 +126,43 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         validationErrorsText,
         listDefinitions,
     };
+}
+
+function addJSDocKeywords(engine: Ajv) {
+    const InterfaceNamePattern = '^[A-Z][a-zA-Z0-9]+$';
+    const PropertyNamePattern = '^[a-z][a-zA-Z0-9]+$';
+    const MethodNamePattern = PropertyNamePattern;
+    const MemberNamePattern = `${InterfaceNamePattern.substring(0, InterfaceNamePattern.length - 1)}#${PropertyNamePattern.substring(1)}`;
+
+    engine.addKeyword({
+        keyword: 'interface',
+        metaSchema: {
+            type: 'string',
+            pattern: InterfaceNamePattern,
+        },
+    });
+
+    engine.addKeyword({
+        keyword: 'property',
+        metaSchema: {
+            type: 'string',
+            pattern: PropertyNamePattern,
+        },
+    });
+
+    engine.addKeyword({
+        keyword: 'method',
+        metaSchema: {
+            type: 'string',
+            pattern: MethodNamePattern,
+        },
+    });
+
+    engine.addKeyword({
+        keyword: 'member',
+        metaSchema: {
+            type: 'string',
+            pattern: MemberNamePattern,
+        },
+    });
 }
