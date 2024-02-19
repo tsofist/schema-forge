@@ -1,14 +1,20 @@
 import { readFileSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
+import { createHash } from 'node:crypto';
 import { unlink } from 'node:fs/promises';
-import { Rec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
+import { keysOf } from '@tsofist/stem/lib/object/keys';
 import { randomString } from '@tsofist/stem/lib/string/random';
 import { SchemaObject } from 'ajv';
 import { generateSchemaByDraftTypes } from './generator/schema-generator';
 import { generateDraftTypeFiles } from './generator/types-generator';
-import { SchemaForgeDefinitionRef, SchemaForgeOptions, SchemaForgeResult } from './types';
+import {
+    SchemaForgeDefinitionRef,
+    SchemaForgeMetadata,
+    SchemaForgeOptions,
+    SchemaForgeResult,
+} from './types';
 
 export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaForgeResult> {
     const { schemaId, sourcesDirectoryPattern, outputSchemaFile } = options;
@@ -58,16 +64,43 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                     sourcesTypesGeneratorConfig,
                     expose: options.expose,
                 });
+                if (options.schemaMetadata) {
+                    for (const key of keysOf(options.schemaMetadata)) {
+                        schema[key] = options.schemaMetadata[key];
+                    }
+                }
+                {
+                    delete schema.hash;
+                    const algorithm =
+                        options.schemaMetadata?.hash == null
+                            ? 'md5'
+                            : options.schemaMetadata?.hash === true
+                              ? 'md5'
+                              : options.schemaMetadata.hash;
+                    if (algorithm) {
+                        schema.hash = createHash(algorithm, {})
+                            .update(JSON.stringify(schema))
+                            .digest('hex');
+                    }
+                }
                 const content = JSON.stringify(schema, null, 2);
                 await writeFile(options.outputSchemaFile, content, { encoding: 'utf8' });
             }
+
             if (options.outputSchemaMetadataFile) {
+                const map: SchemaForgeMetadata = {
+                    $id: options.schemaId || '',
+                    version: options.schemaMetadata?.version,
+                    title: options.schemaMetadata?.title,
+                    description: options.schemaMetadata?.description,
+                    $comment: options.schemaMetadata?.$comment,
+                    schemaHash: schema.hash,
+                    refs: {},
+                    names: {},
+                    serviceRefs: {},
+                };
+
                 const defs = new Set(Object.keys(schema.definitions));
-                const map: {
-                    refs: Rec<string, SchemaForgeDefinitionRef>;
-                    names: Rec<SchemaForgeDefinitionRef>;
-                    serviceRefs: Rec<string, SchemaForgeDefinitionRef>;
-                } = { refs: {}, names: {}, serviceRefs: {} };
                 for (const name of definitions) {
                     const ref: SchemaForgeDefinitionRef = `${options.schemaId || ''}#/definitions/${name}`;
                     map.names[name] = ref;

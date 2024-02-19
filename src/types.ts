@@ -1,4 +1,4 @@
-import { Nullable } from '@tsofist/stem';
+import { Nullable, Rec } from '@tsofist/stem';
 import { ErrorCode } from '@tsofist/stem/lib/error';
 import { ErrorObject, SchemaObject, ErrorsTextOptions, ValidateFunction } from 'ajv';
 import { SchemaForgeBaseOptions } from './generator/types';
@@ -13,6 +13,17 @@ export interface SchemaForgeOptions extends SchemaForgeBaseOptions {
      * $id for generated schema
      */
     readonly schemaId?: string;
+    /**
+     * Metadata keywords for schema
+     * @see https://ajv.js.org/json-schema.html#metadata-keywords ajv
+     */
+    readonly schemaMetadata?: {
+        title?: string;
+        description?: string;
+        $comment?: string;
+        version?: string;
+        hash?: boolean | 'md5' | 'sha1' | 'sha256' | 'sha512';
+    };
     /**
      * Directories pattern for searching source files
      * @example
@@ -49,6 +60,18 @@ export interface SchemaForgeOptions extends SchemaForgeBaseOptions {
      *      /absolute/path/to/result.schema-metadata.json
      */
     readonly outputSchemaMetadataFile?: string;
+}
+
+export interface SchemaForgeMetadata {
+    $id: string;
+    title?: string;
+    description?: string;
+    $comment?: string;
+    version?: string;
+    schemaHash?: string;
+    refs: Rec<string, SchemaForgeDefinitionRef>;
+    names: Rec<SchemaForgeDefinitionRef>;
+    serviceRefs: Rec<string, SchemaForgeDefinitionRef>;
 }
 
 export interface SchemaForgeResult {

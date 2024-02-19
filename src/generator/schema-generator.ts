@@ -52,7 +52,9 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
     }
     result.definitions = Object.fromEntries(Object.entries(result.definitions || {}).sort());
 
-    void new Ajv().validateSchema(result, true);
+    void new Ajv({
+        strict: true,
+    }).validateSchema(result, true);
 
     return result;
 }

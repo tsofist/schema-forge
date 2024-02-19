@@ -135,6 +135,14 @@ function addJSDocKeywords(engine: Ajv) {
     const MemberNamePattern = `${InterfaceNamePattern.substring(0, InterfaceNamePattern.length - 1)}#${PropertyNamePattern.substring(1)}`;
 
     engine.addKeyword({
+        keyword: 'hash',
+        metaSchema: {
+            type: 'string',
+        },
+        dependencies: ['$id', '$schema'],
+    });
+
+    engine.addKeyword({
         keyword: 'interface',
         metaSchema: {
             type: 'string',

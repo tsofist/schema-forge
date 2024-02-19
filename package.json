@@ -79,7 +79,11 @@
     "extends": "./node_modules/@tsofist/web-buddy/.eslintrc.yaml"
   },
   "eslintIgnore": [
-    "lib"
+    "lib",
+    ".coverage",
+    ".*-cache",
+    ".idea",
+    "node_modules"
   ],
   "keywords": []
 }
