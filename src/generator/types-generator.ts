@@ -6,7 +6,9 @@ import { TextBuilder } from '@tsofist/stem/lib/string/text-builder';
 import { Config, createProgram } from 'ts-json-schema-generator';
 import {
     DeclarationStatement,
+    EnumDeclaration,
     getAllJSDocTags,
+    getAllJSDocTagsOfKind,
     getJSDocDeprecatedTag,
     getJSDocPrivateTag,
     getJSDocPublicTag,
@@ -18,6 +20,7 @@ import {
     MethodSignature,
     Program,
     SignatureDeclaration,
+    Statement,
     SyntaxKind,
     TypeAliasDeclaration,
     TypeChecker,
@@ -81,20 +84,27 @@ export async function generateDraftTypeFiles(options: Options) {
             }
 
             switch (statement.kind) {
+                case SyntaxKind.EnumDeclaration:
+                    passDeclaration(statement as EnumDeclaration, context);
+                    break;
                 case SyntaxKind.ImportDeclaration:
                     continue;
                 case SyntaxKind.TypeAliasDeclaration:
-                    processTypeAliasDeclaration(statement as TypeAliasDeclaration, context);
+                    passDeclaration(statement as TypeAliasDeclaration, context);
                     break;
                 case SyntaxKind.InterfaceDeclaration:
-                    processInterfaceDeclaration(
-                        statement as InterfaceDeclaration,
-                        context,
-                        checker,
-                    );
+                    if (hasJSDocTag(statement, 'api')) {
+                        processAPIInterfaceDeclaration(
+                            statement as InterfaceDeclaration,
+                            context,
+                            checker,
+                        );
+                    } else {
+                        passDeclaration(statement as InterfaceDeclaration, context);
+                    }
                     break;
                 default:
-                    console.error('[current statement]\n\t', statement.getText(), '\n');
+                    console.error(`[current statement]`, statement.getText(), '\n');
                     raise(
                         `Unsupported statement kind: ${statement.kind} (${
                             SyntaxKind[statement.kind]
@@ -102,6 +112,7 @@ export async function generateDraftTypeFiles(options: Options) {
                     );
             }
         }
+
         const outputFileName = `${dirname(sourceFileName)}/${basename(
             sourceFileName,
             extname(sourceFileName),
@@ -127,7 +138,10 @@ export async function generateDraftTypeFiles(options: Options) {
     };
 }
 
-function processTypeAliasDeclaration(statement: TypeAliasDeclaration, context: GeneratorContext) {
+function passDeclaration(
+    statement: TypeAliasDeclaration | EnumDeclaration | InterfaceDeclaration,
+    context: GeneratorContext,
+) {
     context.definitions.push(statement.name.getText());
 }
 
@@ -138,7 +152,7 @@ interface DefinitionMetadata {
     desc: [argsText: string, resultTypeName: string] | string;
 }
 
-function processInterfaceDeclaration(
+function processAPIInterfaceDeclaration(
     statement: InterfaceDeclaration,
     context: GeneratorContext,
     checker: TypeChecker,
@@ -351,4 +365,12 @@ function readInterfaceGenericText(node: TypeElement | DeclarationStatement): str
         return `<${node.typeParameters[0].getText()}>`;
     }
     return '';
+}
+
+function hasJSDocTag(statement: Statement, tagName: string) {
+    return (
+        getAllJSDocTagsOfKind(statement, SyntaxKind.JSDocTag).find((tag) => {
+            return tag.tagName.escapedText === tagName;
+        }) != null
+    );
 }

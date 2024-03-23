@@ -13,6 +13,35 @@ import {
 } from './types';
 import { createSchemaForgeValidator } from './validator';
 
+describe('generator for a4', () => {
+    const outputSchemaFile = './a4.generated.schema.tmp.json';
+    const outputSchemaMetadataFile = './a4.generated.definitions.tmp.json';
+
+    let forgeSchemaResult: SchemaForgeResult | undefined;
+
+    beforeAll(async () => {
+        forgeSchemaResult = await forgeSchema({
+            tsconfigFrom: './tsconfig.build.json',
+            sourcesDirectoryPattern: 'test-sources/a4',
+            sourcesFilesPattern: 'service-api.ts',
+            outputSchemaFile,
+            outputSchemaMetadataFile,
+            expose: 'all',
+        });
+    });
+    afterAll(async () => {
+        await unlink(outputSchemaFile).catch(noop);
+        await unlink(outputSchemaMetadataFile).catch(noop);
+    });
+
+    it('generated schema should be valid', async () => {
+        expect(forgeSchemaResult).toBeTruthy();
+        const defs = forgeSchemaResult?.schema?.definitions;
+        expect(defs).toBeTruthy();
+        expect(Object.keys(defs)).toStrictEqual(['API', 'Enum', 'Some']);
+    });
+});
+
 describe('generator for a3', () => {
     const outputSchemaFile = './a3.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a3.generated.definitions.tmp.json';

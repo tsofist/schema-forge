@@ -13,6 +13,7 @@ interface NonExportedInterfaceA {
 
 /**
  * @public
+ * @api
  */
 interface NonExportedInterfaceB {}
 
@@ -24,6 +25,7 @@ interface NonExportedInterfaceC {}
 /**
  * D-interface
  * @public
+ * @api
  */
 interface NonExportedInterfaceD {
     methodA(argA: PositiveInt): Promise<PositiveInt>;
@@ -40,6 +42,7 @@ export interface ExportedInterfaceA {
 /**
  * COMMENT: Description for ExportedInterfaceB
  * @public
+ * @api
  * @deprecated OK-I
  * @description TAG: Description for ExportedInterfaceB
  */

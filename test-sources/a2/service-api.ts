@@ -32,6 +32,7 @@ interface UserAccess {
 /**
  * This description is hidden for schema
  * @public
+ * @api
  *
  * @description User Main API
  */

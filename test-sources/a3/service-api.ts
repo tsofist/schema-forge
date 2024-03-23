@@ -6,6 +6,7 @@ type List = readonly StringPhoneNumber[];
 
 /**
  * @public
+ * @api
  * @description API description
  */
 export interface API {
@@ -28,6 +29,7 @@ export interface API {
 
 /**
  * @public
+ * @api
  * @description BAPI descriptions
  */
 export interface BAPI extends API {
@@ -44,6 +46,7 @@ interface IndoorInterface {
  * And non-exported type
  *
  * @public
+ * @api
  * @description Additional type
  */
 type AdditionalType = PositiveInt | NonEmptyString;
@@ -55,8 +58,25 @@ type AdditionalType2 = AdditionalType;
 
 /**
  * @public
+ * @api
  */
 export interface InterfaceWithGeneric<T extends NonEmptyString = NonEmptyString> {
     propWithGeneric: T;
     // fn<X>(): X; todo supports for member generics
+}
+
+/**
+ * @public
+ * @api
+ */
+export interface Some {
+    prop1: string;
+    prop2: string;
+    prop3?: string;
+    prop4?: Some2;
+}
+
+interface Some2 {
+    a: number;
+    b?: number;
 }
