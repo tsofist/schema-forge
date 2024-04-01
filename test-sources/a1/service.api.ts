@@ -1,7 +1,5 @@
 import { PositiveInt } from '@tsofist/stem/lib/number/types';
 
-export { SomeType1, SomeType2 } from './types';
-
 /**
  * Description for Service
  */

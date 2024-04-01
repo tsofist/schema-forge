@@ -27,6 +27,7 @@ describe('generator for a4', () => {
             outputSchemaFile,
             outputSchemaMetadataFile,
             expose: 'all',
+            explicitPublic: false,
         });
     });
     afterAll(async () => {
@@ -38,7 +39,7 @@ describe('generator for a4', () => {
         expect(forgeSchemaResult).toBeTruthy();
         const defs = forgeSchemaResult?.schema?.definitions;
         expect(defs).toBeTruthy();
-        expect(Object.keys(defs)).toStrictEqual(['API', 'Enum', 'Some']);
+        expect(Object.keys(defs)).toStrictEqual(['API', 'Enum', 'Some', 'Some2']);
     });
 });
 

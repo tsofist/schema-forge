@@ -1,5 +1,7 @@
 import { NonEmptyString } from '@tsofist/stem';
 
+export { Some2 } from '../a3/service-api';
+
 /**
  * @public
  */

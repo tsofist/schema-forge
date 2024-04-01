@@ -18,6 +18,7 @@ interface Options {
     definitions: string[];
     schemaId?: string;
     expose?: TypeExposeKind;
+    openAPI?: boolean;
 }
 
 export async function generateSchemaByDraftTypes(options: Options): Promise<SchemaObject> {
@@ -34,6 +35,7 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         expose: options.expose,
         path: `${options.sourcesDirectoryPattern}/*${TMP_FILES_SUFFIX}.ts`,
         tsconfig: options.tsconfig,
+        discriminatorType: options.openAPI ? 'open-api' : undefined,
         ...SG_CONFIG_MANDATORY,
     };
     const generatorProgram: Program = createProgram(generatorConfig);

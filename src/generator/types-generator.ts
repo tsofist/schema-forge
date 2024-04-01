@@ -1,5 +1,5 @@
 import { writeFile } from 'fs/promises';
-import { basename, dirname, extname } from 'path';
+import { basename, dirname, extname, isAbsolute, resolve } from 'path';
 import { asBool } from '@tsofist/stem/lib/as-bool';
 import { raise } from '@tsofist/stem/lib/error';
 import { TextBuilder } from '@tsofist/stem/lib/string/text-builder';
@@ -7,6 +7,7 @@ import { Config, createProgram } from 'ts-json-schema-generator';
 import {
     DeclarationStatement,
     EnumDeclaration,
+    ExportDeclaration,
     getAllJSDocTags,
     getAllJSDocTagsOfKind,
     getJSDocDeprecatedTag,
@@ -15,7 +16,12 @@ import {
     getTextOfJSDocComment,
     Identifier,
     InterfaceDeclaration,
+    isEnumDeclaration,
+    isExportDeclaration,
     isInterfaceDeclaration,
+    isNamedExports,
+    isStringLiteral,
+    isTypeAliasDeclaration,
     JSDocTag,
     MethodSignature,
     Program,
@@ -42,6 +48,7 @@ interface Options extends SchemaForgeBaseOptions {
 }
 
 interface GeneratorContext {
+    readonly program: Program;
     readonly options: Options;
     readonly definitions: string[];
     readonly fileContent: string[];
@@ -66,6 +73,7 @@ export async function generateDraftTypeFiles(options: Options) {
 
     for (const sourceFileName of fileNames) {
         const context: GeneratorContext = {
+            program,
             options,
             definitions,
             fileContent: [],
@@ -74,7 +82,16 @@ export async function generateDraftTypeFiles(options: Options) {
         const source = program.getSourceFile(sourceFileName);
         if (!source) continue;
 
-        for (const statement of source.statements) {
+        const statements = [...source.statements];
+        while (statements.length) {
+            const statement = statements.pop();
+            if (!statement) break;
+
+            if (isExportDeclaration(statement)) {
+                processExportDeclaration(statement, sourceFileName, statements, context);
+                continue;
+            }
+
             if (explicitPublic) {
                 const isPublic = getJSDocPublicTag(statement) != null;
                 if (!isPublic) continue;
@@ -143,6 +160,48 @@ function passDeclaration(
     context: GeneratorContext,
 ) {
     context.definitions.push(statement.name.getText());
+}
+
+function processExportDeclaration(
+    statement: ExportDeclaration,
+    sourceFileName: string,
+    list: Statement[],
+    context: GeneratorContext,
+) {
+    if (
+        !statement.exportClause ||
+        !isNamedExports(statement.exportClause) ||
+        !statement.moduleSpecifier ||
+        !isStringLiteral(statement.moduleSpecifier)
+    ) {
+        raise(`Only inline types reexport supported. Use: export { Type } from './some-module';`);
+    }
+
+    let modulePath = statement.moduleSpecifier.text;
+    if (!isAbsolute(modulePath)) {
+        modulePath = resolve(dirname(sourceFileName), modulePath);
+    }
+
+    const module = context.program.getSourceFile(modulePath + '.ts');
+    if (!module) return;
+
+    for (const element of statement.exportClause.elements) {
+        const typeName = element.name.escapedText;
+        const statement = module.statements.find((value) => {
+            if (
+                isTypeAliasDeclaration(value) ||
+                isInterfaceDeclaration(value) ||
+                isEnumDeclaration(value)
+            ) {
+                return value.name.escapedText === typeName;
+            }
+            return false;
+        });
+
+        if (statement) {
+            list.push(statement);
+        }
+    }
 }
 
 interface DefinitionMetadata {

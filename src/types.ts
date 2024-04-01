@@ -60,6 +60,11 @@ export interface SchemaForgeOptions extends SchemaForgeBaseOptions {
      *      /absolute/path/to/result.schema-metadata.json
      */
     readonly outputSchemaMetadataFile?: string;
+    /**
+     * Enable OpenAPI supports features
+     * @default false
+     */
+    readonly openAPISupports?: boolean;
 }
 
 export interface SchemaForgeMetadata {

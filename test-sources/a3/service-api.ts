@@ -76,7 +76,7 @@ export interface Some {
     prop4?: Some2;
 }
 
-interface Some2 {
+export interface Some2 {
     a: number;
     b?: number;
 }

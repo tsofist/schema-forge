@@ -26,6 +26,7 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         strictTuples: false,
         coerceTypes: false,
         removeAdditional: false,
+        unicodeRegExp: true,
         ...engineOptions,
     });
     addJSDocKeywords(engine);

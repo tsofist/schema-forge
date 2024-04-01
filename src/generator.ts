@@ -63,6 +63,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                     outputSchemaFile,
                     sourcesTypesGeneratorConfig,
                     expose: options.expose,
+                    openAPI: options.openAPISupports,
                 });
                 if (options.schemaMetadata) {
                     for (const key of keysOf(options.schemaMetadata)) {

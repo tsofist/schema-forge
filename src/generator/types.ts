@@ -18,6 +18,7 @@ export const SG_CONFIG_DEFAULTS: Config = {
     extraTags: ['member', 'method', 'interface', 'property'],
     encodeRefs: false,
     markdownDescription: false,
+    discriminatorType: undefined,
 };
 
 export interface SchemaForgeBaseOptions {
