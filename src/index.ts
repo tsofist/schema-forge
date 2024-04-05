@@ -36,15 +36,15 @@ export function buildInterfaceSchemaSignature(
 
 export function parseSchemaDefinitionInfo(name: string, schemaId: string): SchemaDefinitionInfo {
     const kind: SchemaDefinitionKind = name.endsWith(N_I)
-        ? SchemaDefinitionKind.Interface
+        ? SchemaDefinitionKind.APIInterface
         : name.endsWith(N_A)
-          ? SchemaDefinitionKind.InterfaceMethodArguments
+          ? SchemaDefinitionKind.APIInterfaceMethodArguments
           : name.endsWith(N_R)
-            ? SchemaDefinitionKind.InterfaceMethodResult
+            ? SchemaDefinitionKind.APIInterfaceMethodResult
             : SchemaDefinitionKind.Type;
     const ref: SchemaForgeDefinitionRef = `${schemaId}#/definitions/${name}`;
     switch (kind) {
-        case SchemaDefinitionKind.Interface:
+        case SchemaDefinitionKind.APIInterface:
             return {
                 ref,
                 kind,
@@ -52,8 +52,8 @@ export function parseSchemaDefinitionInfo(name: string, schemaId: string): Schem
                 schemaId,
                 interface: substr(name, 0, N_I)!,
             };
-        case SchemaDefinitionKind.InterfaceMethodArguments:
-        case SchemaDefinitionKind.InterfaceMethodResult:
+        case SchemaDefinitionKind.APIInterfaceMethodArguments:
+        case SchemaDefinitionKind.APIInterfaceMethodResult:
             return {
                 ref,
                 kind,

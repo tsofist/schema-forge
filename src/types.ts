@@ -1,6 +1,6 @@
 import { Nullable, Rec } from '@tsofist/stem';
 import { ErrorCode } from '@tsofist/stem/lib/error';
-import { ErrorObject, SchemaObject, ErrorsTextOptions, ValidateFunction } from 'ajv';
+import { ErrorObject, ErrorsTextOptions, SchemaObject, ValidateFunction } from 'ajv';
 import { SchemaForgeBaseOptions } from './generator/types';
 
 export enum SchemaForgeSignatureSuffix {
@@ -61,10 +61,10 @@ export interface SchemaForgeOptions extends SchemaForgeBaseOptions {
      */
     readonly outputSchemaMetadataFile?: string;
     /**
-     * Enable OpenAPI supports features
+     * Generate openapi compatible schema
      * @default false
      */
-    readonly openAPISupports?: boolean;
+    readonly openapiCompatible?: boolean;
 }
 
 export interface SchemaForgeMetadata {
@@ -110,9 +110,9 @@ export type SchemaForgeDefinitionRef = `${string}#/definitions/${string}`;
 
 export enum SchemaDefinitionKind {
     Type,
-    Interface,
-    InterfaceMethodResult,
-    InterfaceMethodArguments,
+    APIInterface,
+    APIInterfaceMethodResult,
+    APIInterfaceMethodArguments,
 }
 
 export type SchemaDefinitionInfo = {
@@ -121,16 +121,16 @@ export type SchemaDefinitionInfo = {
     ref: SchemaForgeDefinitionRef;
 } & (
     | {
-          kind: SchemaDefinitionKind.Interface;
+          kind: SchemaDefinitionKind.APIInterface;
           interface: string;
       }
     | {
-          kind: SchemaDefinitionKind.InterfaceMethodArguments;
+          kind: SchemaDefinitionKind.APIInterfaceMethodArguments;
           interface: string;
           method: string;
       }
     | {
-          kind: SchemaDefinitionKind.InterfaceMethodResult;
+          kind: SchemaDefinitionKind.APIInterfaceMethodResult;
           interface: string;
           method: string;
       }

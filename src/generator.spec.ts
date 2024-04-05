@@ -13,6 +13,8 @@ import {
 } from './types';
 import { createSchemaForgeValidator } from './validator';
 
+const KEEP_ARTEFACTS = false;
+
 describe('generator for a4', () => {
     const outputSchemaFile = './a4.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a4.generated.definitions.tmp.json';
@@ -31,8 +33,10 @@ describe('generator for a4', () => {
         });
     });
     afterAll(async () => {
-        await unlink(outputSchemaFile).catch(noop);
-        await unlink(outputSchemaMetadataFile).catch(noop);
+        if (!KEEP_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
     });
 
     it('generated schema should be valid', async () => {
@@ -60,8 +64,10 @@ describe('generator for a3', () => {
         });
     });
     afterAll(async () => {
-        await unlink(outputSchemaFile).catch(noop);
-        await unlink(outputSchemaMetadataFile).catch(noop);
+        if (!KEEP_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
     });
 
     it('generated schema should be valid', async () => {
@@ -111,8 +117,10 @@ describe('generator for a2', () => {
         });
     });
     afterAll(async () => {
-        await unlink(outputSchemaFile).catch(noop);
-        await unlink(outputSchemaMetadataFile).catch(noop);
+        if (!KEEP_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
     });
 
     it('generated schema should be valid', async () => {
@@ -146,8 +154,10 @@ describe('generator for a1', () => {
     }, 10_000);
 
     afterAll(async () => {
-        await unlink(outputSchemaFile).catch(noop);
-        await unlink(outputSchemaMetadataFile).catch(noop);
+        if (!KEEP_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
     });
 
     it('generated schema should be valid', async () => {
@@ -305,7 +315,7 @@ describe('generator for a1', () => {
         ).toStrictEqual([defsByName['Int'], defsByName['PositiveInt']]);
 
         expect(
-            validator.listDefinitions((info) => info.kind === SchemaDefinitionKind.Interface),
+            validator.listDefinitions((info) => info.kind === SchemaDefinitionKind.APIInterface),
         ).toStrictEqual([
             defsByName['ExportedInterfaceB_InterfaceDeclaration'],
             defsByName['NonExportedInterfaceD_InterfaceDeclaration'],
@@ -313,7 +323,7 @@ describe('generator for a1', () => {
 
         expect(
             validator.listDefinitions(
-                (info) => info.kind === SchemaDefinitionKind.InterfaceMethodResult,
+                (info) => info.kind === SchemaDefinitionKind.APIInterfaceMethodResult,
             ),
         ).toStrictEqual([
             defsByName['ExportedInterfaceB_methodA_Result'],
@@ -323,7 +333,7 @@ describe('generator for a1', () => {
 
         expect(
             validator.listDefinitions(
-                (info) => info.kind === SchemaDefinitionKind.InterfaceMethodArguments,
+                (info) => info.kind === SchemaDefinitionKind.APIInterfaceMethodArguments,
             ),
         ).toStrictEqual([
             defsByName['ExportedInterfaceB_methodA_Args'],
