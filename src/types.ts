@@ -117,7 +117,8 @@ export enum SchemaDefinitionKind {
 
 export type SchemaDefinitionInfo = {
     name: string;
-    schema: string;
+    schemaId: string;
+    ref: SchemaForgeDefinitionRef;
 } & (
     | {
           kind: SchemaDefinitionKind.Interface;
