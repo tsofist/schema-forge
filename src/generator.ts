@@ -41,11 +41,12 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
 
         if (!tsconfig) raise('tsconfig is not specified');
 
-        const { sourcesTypesGeneratorConfig, files, definitions } = await generateDraftTypeFiles({
-            ...options,
-            tsconfig,
-            sourcesPattern,
-        });
+        const { sourcesTypesGeneratorConfig, files, definitions, namesBySourceFile } =
+            await generateDraftTypeFiles({
+                ...options,
+                tsconfig,
+                sourcesPattern,
+            });
 
         const refs = definitions.map(
             (item) => `${options.schemaId || ''}#/definitions/${item}`,
@@ -124,7 +125,8 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
         return {
             schema,
             refs,
-            generatedFiles: files,
+            generatedTemporaryFiles: files,
+            generatedNamesBySourceFile: namesBySourceFile,
         };
     } finally {
         if (tsconfig && tsconfigGenerated) {

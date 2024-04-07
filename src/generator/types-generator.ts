@@ -50,8 +50,8 @@ interface Options extends SchemaForgeBaseOptions {
 interface GeneratorContext {
     readonly program: Program;
     readonly options: Options;
-    readonly definitions: string[];
     readonly fileContent: string[];
+    registerDefinition(...name: string[]): void;
 }
 
 export async function generateDraftTypeFiles(options: Options) {
@@ -70,13 +70,21 @@ export async function generateDraftTypeFiles(options: Options) {
     const program: Program = createProgram(sourcesTypesGeneratorConfig);
     const checker = program.getTypeChecker();
     const fileNames = program.getRootFileNames();
+    const namesBySourceFile = new Map<string, Set<string>>();
 
     for (const sourceFileName of fileNames) {
         const context: GeneratorContext = {
             program,
             options,
-            definitions,
             fileContent: [],
+            registerDefinition(...names: string[]) {
+                let set = namesBySourceFile.get(sourceFileName);
+                if (!set) namesBySourceFile.set(sourceFileName, (set = new Set()));
+                for (const name of names) {
+                    definitions.push(name);
+                    set.add(name);
+                }
+            },
         };
 
         const source = program.getSourceFile(sourceFileName);
@@ -152,6 +160,7 @@ export async function generateDraftTypeFiles(options: Options) {
         sourcesTypesGeneratorConfig,
         files,
         definitions,
+        namesBySourceFile,
     };
 }
 
@@ -159,7 +168,7 @@ function passDeclaration(
     statement: TypeAliasDeclaration | EnumDeclaration | InterfaceDeclaration,
     context: GeneratorContext,
 ) {
-    context.definitions.push(statement.name.getText());
+    context.registerDefinition(statement.name.getText());
 }
 
 function processExportDeclaration(
@@ -274,7 +283,7 @@ function processAPIInterfaceDeclaration(
                 desc: [definitionNameArgs, definitionNameResult],
             });
 
-            context.definitions.push(definitionNameArgs, definitionNameResult);
+            context.registerDefinition(definitionNameArgs, definitionNameResult);
             context.fileContent.push(
                 ...[
                     // ARGUMENTS
@@ -368,7 +377,7 @@ function processAPIInterfaceDeclaration(
             ``,
         ]);
 
-        context.definitions.push(buildInterfaceSchemaSignature(interfaceName));
+        context.registerDefinition(buildInterfaceSchemaSignature(interfaceName));
         context.fileContent.push(interfaceText.stringify('\n'));
     }
 }

@@ -81,8 +81,9 @@ export interface SchemaForgeMetadata {
 
 export interface SchemaForgeResult {
     schema: SchemaObject;
-    generatedFiles: readonly string[];
     refs: readonly SchemaForgeDefinitionRef[];
+    generatedTemporaryFiles: readonly string[];
+    generatedNamesBySourceFile: ReadonlyMap<string, ReadonlySet<string>>;
 }
 
 export const SchemaNotFoundErrorCode: ErrorCode = 'EC_SCHEMA_NOT_FOUND';

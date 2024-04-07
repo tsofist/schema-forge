@@ -163,7 +163,7 @@ describe('generator for a1', () => {
     it('generated schema should be valid', async () => {
         expect(forgeSchemaResult).toBeTruthy();
         expect(forgeSchemaResult!.schema.$id).toStrictEqual(schemaId);
-        expect(forgeSchemaResult!.generatedFiles.length).toStrictEqual(1);
+        expect(forgeSchemaResult!.generatedTemporaryFiles.length).toStrictEqual(1);
         expect(forgeSchemaResult!.refs.length).toStrictEqual(8);
     });
     it('getSchema', async () => {
