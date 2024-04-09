@@ -33,7 +33,7 @@ import {
     TypeElement,
     TypeReferenceNode,
 } from 'typescript';
-import { buildInterfaceSchemaSignature } from '../index';
+import { buildAPIInterfaceSchemaSignature } from '../index';
 import { SchemaForgeSignatureSuffix } from '../types';
 import {
     SchemaForgeBaseOptions,
@@ -263,12 +263,12 @@ function processAPIInterfaceDeclaration(
 
             const resultTypeName = readMemberType(method);
 
-            const definitionNameArgs = buildInterfaceSchemaSignature(
+            const definitionNameArgs = buildAPIInterfaceSchemaSignature(
                 interfaceName,
                 memberName,
                 SchemaForgeSignatureSuffix.MethodArguments,
             );
-            const definitionNameResult = buildInterfaceSchemaSignature(
+            const definitionNameResult = buildAPIInterfaceSchemaSignature(
                 interfaceName,
                 memberName,
                 SchemaForgeSignatureSuffix.MethodResult,
@@ -371,13 +371,13 @@ function processAPIInterfaceDeclaration(
             interfaceDeprecated && ` * @deprecated ${interfaceDeprecated}`,
             ` * @comment Interface:${interfaceName}`,
             ` */`,
-            `export interface ${buildInterfaceSchemaSignature(interfaceName)}${interfaceGenericText} {`,
+            `export interface ${buildAPIInterfaceSchemaSignature(interfaceName)}${interfaceGenericText} {`,
             membersText.stringify('\n'),
             `}`,
             ``,
         ]);
 
-        context.registerDefinition(buildInterfaceSchemaSignature(interfaceName));
+        context.registerDefinition(buildAPIInterfaceSchemaSignature(interfaceName));
         context.fileContent.push(interfaceText.stringify('\n'));
     }
 }

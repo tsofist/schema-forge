@@ -111,35 +111,41 @@ export type SchemaForgeDefinitionRef = `${string}#/definitions/${string}`;
 
 export enum SchemaDefinitionKind {
     Type,
-    APIInterface,
-    APIInterfaceMethodResult,
-    APIInterfaceMethodArguments,
+    API,
+    APIMethodResult,
+    APIMethodArguments,
 }
 
-export type SchemaDefinitionInfo = {
+interface SDIBase {
     name: string;
     schemaId: string;
     ref: SchemaForgeDefinitionRef;
-} & (
-    | {
-          kind: SchemaDefinitionKind.APIInterface;
-          interface: string;
-      }
-    | {
-          kind: SchemaDefinitionKind.APIInterfaceMethodArguments;
-          interface: string;
-          method: string;
-      }
-    | {
-          kind: SchemaDefinitionKind.APIInterfaceMethodResult;
-          interface: string;
-          method: string;
-      }
-    | {
-          kind: SchemaDefinitionKind.Type;
-          type: string;
-      }
-);
+    kind: SchemaDefinitionKind;
+}
+
+export interface SDIType extends SDIBase {
+    kind: SchemaDefinitionKind.Type;
+    type: string;
+}
+
+export interface SDIAPIInterface extends SDIBase {
+    kind: SchemaDefinitionKind.API;
+    interface: string;
+}
+
+export interface SDIMethodArguments extends SDIBase {
+    kind: SchemaDefinitionKind.APIMethodArguments;
+    interface: string;
+    method: string;
+}
+
+export interface SDIMethodResult extends SDIBase {
+    kind: SchemaDefinitionKind.APIMethodResult;
+    interface: string;
+    method: string;
+}
+
+export type SchemaDefinitionInfo = SDIType | SDIAPIInterface | SDIMethodArguments | SDIMethodResult;
 
 export interface SchemaForgeValidationResult {
     valid: boolean;

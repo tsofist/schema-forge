@@ -315,16 +315,14 @@ describe('generator for a1', () => {
         ).toStrictEqual([defsByName['Int'], defsByName['PositiveInt']]);
 
         expect(
-            validator.listDefinitions((info) => info.kind === SchemaDefinitionKind.APIInterface),
+            validator.listDefinitions((info) => info.kind === SchemaDefinitionKind.API),
         ).toStrictEqual([
             defsByName['ExportedInterfaceB_InterfaceDeclaration'],
             defsByName['NonExportedInterfaceD_InterfaceDeclaration'],
         ]);
 
         expect(
-            validator.listDefinitions(
-                (info) => info.kind === SchemaDefinitionKind.APIInterfaceMethodResult,
-            ),
+            validator.listDefinitions((info) => info.kind === SchemaDefinitionKind.APIMethodResult),
         ).toStrictEqual([
             defsByName['ExportedInterfaceB_methodA_Result'],
             defsByName['ExportedInterfaceB_methodB_Result'],
@@ -333,7 +331,7 @@ describe('generator for a1', () => {
 
         expect(
             validator.listDefinitions(
-                (info) => info.kind === SchemaDefinitionKind.APIInterfaceMethodArguments,
+                (info) => info.kind === SchemaDefinitionKind.APIMethodArguments,
             ),
         ).toStrictEqual([
             defsByName['ExportedInterfaceB_methodA_Args'],

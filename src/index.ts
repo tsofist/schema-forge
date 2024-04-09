@@ -10,14 +10,14 @@ const N_I = '_InterfaceDeclaration';
 const N_A = '_Args';
 const N_R = '_Result';
 
-export function buildInterfaceSchemaSignature(interfaceName: string): string;
-export function buildInterfaceSchemaSignature(interfaceName: string, memberName: string): string;
-export function buildInterfaceSchemaSignature(
+export function buildAPIInterfaceSchemaSignature(interfaceName: string): string;
+export function buildAPIInterfaceSchemaSignature(interfaceName: string, memberName: string): string;
+export function buildAPIInterfaceSchemaSignature(
     interfaceName: string,
     methodName: string,
     suffix: SchemaForgeSignatureSuffix,
 ): string;
-export function buildInterfaceSchemaSignature(
+export function buildAPIInterfaceSchemaSignature(
     interfaceName: string,
     memberName?: string,
     suffix?: SchemaForgeSignatureSuffix,
@@ -36,15 +36,15 @@ export function buildInterfaceSchemaSignature(
 
 export function parseSchemaDefinitionInfo(name: string, schemaId: string): SchemaDefinitionInfo {
     const kind: SchemaDefinitionKind = name.endsWith(N_I)
-        ? SchemaDefinitionKind.APIInterface
+        ? SchemaDefinitionKind.API
         : name.endsWith(N_A)
-          ? SchemaDefinitionKind.APIInterfaceMethodArguments
+          ? SchemaDefinitionKind.APIMethodArguments
           : name.endsWith(N_R)
-            ? SchemaDefinitionKind.APIInterfaceMethodResult
+            ? SchemaDefinitionKind.APIMethodResult
             : SchemaDefinitionKind.Type;
     const ref: SchemaForgeDefinitionRef = `${schemaId}#/definitions/${name}`;
     switch (kind) {
-        case SchemaDefinitionKind.APIInterface:
+        case SchemaDefinitionKind.API:
             return {
                 ref,
                 kind,
@@ -52,8 +52,8 @@ export function parseSchemaDefinitionInfo(name: string, schemaId: string): Schem
                 schemaId,
                 interface: substr(name, 0, N_I)!,
             };
-        case SchemaDefinitionKind.APIInterfaceMethodArguments:
-        case SchemaDefinitionKind.APIInterfaceMethodResult:
+        case SchemaDefinitionKind.APIMethodArguments:
+        case SchemaDefinitionKind.APIMethodResult:
             return {
                 ref,
                 kind,
