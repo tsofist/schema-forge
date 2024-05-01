@@ -1,4 +1,4 @@
-import { Nullable, Rec } from '@tsofist/stem';
+import { Nullable, PRec } from '@tsofist/stem';
 import { ErrorCode } from '@tsofist/stem/lib/error';
 import { ErrorObject, ErrorsTextOptions, SchemaObject, ValidateFunction } from 'ajv';
 import { SchemaForgeBaseOptions } from './generator/types';
@@ -74,9 +74,9 @@ export interface SchemaForgeMetadata {
     $comment?: string;
     version?: string;
     schemaHash?: string;
-    refs: Rec<string, SchemaForgeDefinitionRef>;
-    names: Rec<SchemaForgeDefinitionRef>;
-    serviceRefs: Rec<string, SchemaForgeDefinitionRef>;
+    refs: PRec<string, SchemaForgeDefinitionRef>;
+    names: PRec<SchemaForgeDefinitionRef>;
+    serviceRefs: PRec<string, SchemaForgeDefinitionRef>;
 }
 
 export interface SchemaForgeResult {
@@ -107,7 +107,7 @@ export interface SchemaForgeValidationErrorContextBase extends SchemaForgeValida
     errors: ErrorObject[];
 }
 
-export type SchemaForgeDefinitionRef = `${string}#/definitions/${string}`;
+export type SchemaForgeDefinitionRef = '' | `${string}#/definitions/${string}`;
 
 export enum SchemaDefinitionKind {
     Type,
@@ -150,6 +150,7 @@ export type SchemaDefinitionInfo = SDIType | SDIAPIInterface | SDIMethodArgument
 export interface SchemaForgeValidationResult {
     valid: boolean;
     errors: Nullable<ErrorObject[]>;
+
     errorsText(options?: ErrorsTextOptions): string;
 }
 
