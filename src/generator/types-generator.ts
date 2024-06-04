@@ -104,7 +104,8 @@ export async function generateDraftTypeFiles(options: Options) {
                 const isPublic = getJSDocPublicTag(statement) != null;
                 if (!isPublic) continue;
             } else {
-                const isPrivate = getJSDocPrivateTag(statement) != null;
+                const isPrivate =
+                    getJSDocPrivateTag(statement) != null || hasJSDocTag(statement, 'internal');
                 if (isPrivate) continue;
             }
 
@@ -236,7 +237,7 @@ function processAPIInterfaceDeclaration(
     const interfaceDeprecated = getTextOfJSDocComment(getJSDocDeprecatedTag(statement)?.comment);
 
     function onMember(member: TypeElement) {
-        const isPrivate = getJSDocPrivateTag(member) != null;
+        const isPrivate = getJSDocPrivateTag(member) != null || hasJSDocTag(member, 'internal');
         if (isPrivate) return;
 
         const memberName = readNodeName(member);
@@ -435,7 +436,7 @@ function readInterfaceGenericText(node: TypeElement | DeclarationStatement): str
     return '';
 }
 
-function hasJSDocTag(statement: Statement, tagName: string) {
+function hasJSDocTag(statement: Statement | TypeElement, tagName: string) {
     return (
         getAllJSDocTagsOfKind(statement, SyntaxKind.JSDocTag).find((tag) => {
             return tag.tagName.escapedText === tagName;
