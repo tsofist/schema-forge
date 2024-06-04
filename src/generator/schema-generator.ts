@@ -5,9 +5,27 @@ import {
     createFormatter,
     createParser,
     createProgram,
+    LiteralType,
+    NumberType,
     SchemaGenerator,
+    StringType,
+    SubNodeParser,
 } from 'ts-json-schema-generator';
-import { Program } from 'typescript';
+import { LiteralValue } from 'ts-json-schema-generator/src/Type/LiteralType';
+import {
+    Identifier,
+    isAsExpression,
+    isNumericLiteral,
+    isSatisfiesExpression,
+    isStringLiteral,
+    isStringLiteralLike,
+    isVariableDeclaration,
+    Node,
+    Program,
+    SyntaxKind,
+    TypeChecker,
+    TypeFlags,
+} from 'typescript';
 import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX, TypeExposeKind } from './types';
 
 interface Options {
@@ -39,7 +57,10 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         ...SG_CONFIG_MANDATORY,
     };
     const generatorProgram: Program = createProgram(generatorConfig);
-    const parser = createParser(generatorProgram, options.sourcesTypesGeneratorConfig);
+    const typeChecker = generatorProgram.getTypeChecker();
+    const parser = createParser(generatorProgram, options.sourcesTypesGeneratorConfig, (parser) => {
+        parser.addNodeParser(new ArrayLiteralExpressionIdentifierParser(typeChecker));
+    });
     const formatter = createFormatter(options.sourcesTypesGeneratorConfig);
     const generator = new SchemaGenerator(generatorProgram, parser, formatter, generatorConfig);
 
@@ -60,4 +81,62 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
     }).validateSchema(result, true);
 
     return result;
+}
+
+class ArrayLiteralExpressionIdentifierParser implements SubNodeParser {
+    constructor(private readonly checker: TypeChecker) {}
+
+    supportsNode(node: Node): boolean {
+        return (
+            node.kind === SyntaxKind.Identifier &&
+            node.parent.kind === SyntaxKind.ArrayLiteralExpression
+        );
+    }
+
+    createType(node: Identifier) {
+        const type = this.checker.getTypeAtLocation(node);
+
+        if (
+            type.flags & TypeFlags.StringOrNumberLiteral ||
+            type.flags & TypeFlags.UnionOrIntersection
+        ) {
+            const val = getIdentifierLiteralValue(node, this.checker);
+            if (val == null) raise(`Literal value for ${node.getText()} can't be inferred`);
+            return new LiteralType(val);
+        } else if (type.flags & TypeFlags.StringLike) {
+            return new StringType();
+        } else if (type.flags & TypeFlags.NumberLike) {
+            return new NumberType();
+        } else {
+            raise(`Identifier ${node.getText()} is of unsupported type`);
+        }
+    }
+}
+
+function getIdentifierLiteralValue(
+    node: Identifier,
+    checker: TypeChecker,
+): LiteralValue | undefined {
+    const symbol = checker.getSymbolAtLocation(node);
+    if (symbol?.valueDeclaration && isVariableDeclaration(symbol.valueDeclaration)) {
+        const declaration = symbol.valueDeclaration;
+
+        if (declaration.initializer) {
+            if (
+                isSatisfiesExpression(declaration.initializer) ||
+                isAsExpression(declaration.initializer)
+            ) {
+                return isStringLiteral(declaration.initializer.expression)
+                    ? declaration.initializer.expression.text
+                    : isNumericLiteral(declaration.initializer.expression)
+                      ? parseFloat(declaration.initializer.expression.text)
+                      : undefined;
+            } else if (isStringLiteralLike(declaration.initializer)) {
+                return declaration.initializer.text;
+            } else if (isNumericLiteral(declaration.initializer)) {
+                return parseFloat(declaration.initializer.text);
+            }
+        }
+    }
+    return undefined;
 }

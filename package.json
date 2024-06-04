@@ -80,6 +80,7 @@
   },
   "eslintIgnore": [
     "lib",
+    "*.tmp.json",
     ".coverage",
     ".*-cache",
     ".idea",

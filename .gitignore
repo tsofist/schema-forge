@@ -13,4 +13,5 @@
 .history/
 
 *.tmp.json
+*.tmp.ts
 *generated.tmp.ts

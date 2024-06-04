@@ -11,9 +11,103 @@ import {
     SchemaNotFoundErrorCode,
     SchemaNotFoundErrorContext,
 } from './types';
-import { createSchemaForgeValidator } from './validator';
+import { createSchemaForgeValidator, SchemaForgeValidator } from './validator';
 
 const KEEP_ARTEFACTS = false;
+
+describe('generator for a5', () => {
+    const outputSchemaFile = './a5.generated.schema.tmp.json';
+    const outputSchemaMetadataFile = './a5.generated.definitions.tmp.json';
+
+    let forgeSchemaResult: SchemaForgeResult | undefined;
+    let validator: SchemaForgeValidator;
+
+    beforeAll(async () => {
+        forgeSchemaResult = await forgeSchema({
+            schemaId: 'test',
+            tsconfigFrom: './tsconfig.build.json',
+            sourcesDirectoryPattern: 'test-sources/a5',
+            sourcesFilesPattern: 'service-api.ts',
+            outputSchemaFile,
+            outputSchemaMetadataFile,
+            expose: 'all',
+            explicitPublic: true,
+        });
+        validator = createSchemaForgeValidator({}, true);
+        const schema = await loadJSONSchema([outputSchemaFile]);
+        validator.addSchema(schema);
+    });
+    afterAll(async () => {
+        if (!KEEP_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
+    });
+
+    it('generated schema should be valid', async () => {
+        expect(forgeSchemaResult).toBeTruthy();
+        const defs = forgeSchemaResult?.schema?.definitions;
+        expect(defs).toBeTruthy();
+        expect(Object.keys(defs)).toStrictEqual([
+            'DomainNum',
+            'DomainValue',
+            'DomainValuesType',
+            'NamesType',
+            'Nums',
+            'Some',
+            'Variadic',
+            'Variadic1',
+            'VariadicList',
+            'VariadicList1',
+        ]);
+        expect(validator.getValidator('test#/definitions/Some')!.schema).toMatchObject({
+            type: 'object',
+            properties: {
+                vals: {
+                    $ref: '#/definitions/DomainValuesType',
+                },
+                name0: {
+                    $ref: '#/definitions/NamesType',
+                },
+                name1: {
+                    type: 'string',
+                    const: 'v:name1',
+                },
+                num0: {
+                    $ref: '#/definitions/Nums',
+                },
+                num1: {
+                    type: 'number',
+                    const: 1,
+                },
+                variadic: {
+                    $ref: '#/definitions/Variadic',
+                },
+                variadic1: {
+                    $ref: '#/definitions/Variadic1',
+                },
+                variadicList: {
+                    $ref: '#/definitions/VariadicList',
+                },
+                variadicList1: {
+                    $ref: '#/definitions/VariadicList1',
+                },
+            },
+            required: [
+                'vals',
+                'name0',
+                'name1',
+                'num0',
+                'num1',
+                'variadic',
+                'variadic1',
+                'variadicList',
+                'variadicList1',
+            ],
+            additionalProperties: false,
+        });
+    });
+});
 
 describe('generator for a4', () => {
     const outputSchemaFile = './a4.generated.schema.tmp.json';
