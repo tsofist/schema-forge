@@ -1,6 +1,6 @@
 {
   "name": "@tsofist/schema-forge",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Generate JSON schema from TypeScript types",
   "author": "Andrew Berdnikov <tsofistgudmen@gmail.com>",
   "license": "MIT",
