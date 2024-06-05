@@ -53,6 +53,7 @@ describe('generator for a5', () => {
             'DomainValue',
             'DomainValuesType',
             'NamesType',
+            'NamesTypeAbnormal',
             'Nums',
             'Some',
             'Variadic',
@@ -60,7 +61,14 @@ describe('generator for a5', () => {
             'VariadicList',
             'VariadicList1',
         ]);
-        expect(validator.getValidator('test#/definitions/Some')!.schema).toMatchObject({
+        expect(validator.getValidator('test#/definitions/NamesType')!.schema).toStrictEqual({
+            type: 'string',
+            enum: ['v:name1', 'v:name2'],
+        });
+        expect(validator.getValidator('test#/definitions/NamesTypeAbnormal')!.schema).toStrictEqual(
+            { type: 'string' },
+        );
+        expect(validator.getValidator('test#/definitions/Some')!.schema).toStrictEqual({
             type: 'object',
             properties: {
                 vals: {
@@ -72,6 +80,9 @@ describe('generator for a5', () => {
                 name1: {
                     type: 'string',
                     const: 'v:name1',
+                },
+                abnormalNames: {
+                    $ref: '#/definitions/NamesTypeAbnormal',
                 },
                 num0: {
                     $ref: '#/definitions/Nums',
@@ -103,6 +114,7 @@ describe('generator for a5', () => {
                 'variadic1',
                 'variadicList',
                 'variadicList1',
+                'abnormalNames',
             ],
             additionalProperties: false,
         });
@@ -261,7 +273,7 @@ describe('generator for a1', () => {
         expect(forgeSchemaResult!.refs.length).toStrictEqual(8);
     });
     it('getSchema', async () => {
-        expect(validator.getValidator('test#/definitions/Int')!.schema).toMatchObject({
+        expect(validator.getValidator('test#/definitions/Int')!.schema).toStrictEqual({
             type: 'integer',
         });
         expect(validator.getValidator('#/definitions/NotExists')).toStrictEqual(undefined);

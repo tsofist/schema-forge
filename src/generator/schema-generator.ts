@@ -12,20 +12,7 @@ import {
     SubNodeParser,
 } from 'ts-json-schema-generator';
 import { LiteralValue } from 'ts-json-schema-generator/src/Type/LiteralType';
-import {
-    Identifier,
-    isAsExpression,
-    isNumericLiteral,
-    isSatisfiesExpression,
-    isStringLiteral,
-    isStringLiteralLike,
-    isVariableDeclaration,
-    Node,
-    Program,
-    SyntaxKind,
-    TypeChecker,
-    TypeFlags,
-} from 'typescript';
+import { Identifier, Node, Program, SyntaxKind, TypeChecker, TypeFlags } from 'typescript';
 import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX, TypeExposeKind } from './types';
 
 interface Options {
@@ -117,26 +104,9 @@ function getIdentifierLiteralValue(
     node: Identifier,
     checker: TypeChecker,
 ): LiteralValue | undefined {
-    const symbol = checker.getSymbolAtLocation(node);
-    if (symbol?.valueDeclaration && isVariableDeclaration(symbol.valueDeclaration)) {
-        const declaration = symbol.valueDeclaration;
-
-        if (declaration.initializer) {
-            if (
-                isSatisfiesExpression(declaration.initializer) ||
-                isAsExpression(declaration.initializer)
-            ) {
-                return isStringLiteral(declaration.initializer.expression)
-                    ? declaration.initializer.expression.text
-                    : isNumericLiteral(declaration.initializer.expression)
-                      ? parseFloat(declaration.initializer.expression.text)
-                      : undefined;
-            } else if (isStringLiteralLike(declaration.initializer)) {
-                return declaration.initializer.text;
-            } else if (isNumericLiteral(declaration.initializer)) {
-                return parseFloat(declaration.initializer.text);
-            }
-        }
+    const type = checker.getTypeAtLocation(node);
+    if (type.isNumberLiteral() || type.isStringLiteral()) {
+        return type.value;
     }
     return undefined;
 }
