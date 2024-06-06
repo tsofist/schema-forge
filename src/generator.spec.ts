@@ -25,9 +25,9 @@ describe('generator for a5', () => {
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
             schemaId: 'test',
-            tsconfigFrom: './tsconfig.build.json',
+            tsconfigFrom: './tsconfig.build-test.json',
             sourcesDirectoryPattern: 'test-sources/a5',
-            sourcesFilesPattern: 'service-api.ts',
+            sourcesFilesPattern: ['service-api.ts', 'types.ts'],
             outputSchemaFile,
             outputSchemaMetadataFile,
             expose: 'all',
@@ -54,6 +54,7 @@ describe('generator for a5', () => {
             'DomainValuesType',
             'NamesType',
             'NamesTypeAbnormal',
+            'NumN',
             'Nums',
             'Some',
             'Variadic',
@@ -129,7 +130,7 @@ describe('generator for a4', () => {
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
-            tsconfigFrom: './tsconfig.build.json',
+            tsconfigFrom: './tsconfig.build-test.json',
             sourcesDirectoryPattern: 'test-sources/a4',
             sourcesFilesPattern: 'service-api.ts',
             outputSchemaFile,
@@ -161,7 +162,7 @@ describe('generator for a3', () => {
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
-            tsconfigFrom: './tsconfig.build.json',
+            tsconfigFrom: './tsconfig.build-test.json',
             sourcesDirectoryPattern: 'test-sources/a3',
             sourcesFilesPattern: 'service-api.ts',
             outputSchemaFile,
@@ -215,7 +216,7 @@ describe('generator for a2', () => {
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
-            tsconfigFrom: './tsconfig.build.json',
+            tsconfigFrom: './tsconfig.build-test.json',
             sourcesDirectoryPattern: 'test-sources/a2',
             sourcesFilesPattern: 'service-api.ts',
             outputSchemaFile,
@@ -248,9 +249,9 @@ describe('generator for a1', () => {
             explicitPublic: true,
 
             schemaId,
-            tsconfigFrom: './tsconfig.build.json',
+            tsconfigFrom: './tsconfig.build-test.json',
             sourcesDirectoryPattern: 'test-sources/a1',
-            sourcesFilesPattern: 'service.api.ts',
+            sourcesFilesPattern: ['service.api.ts', '*.api.ts'],
             outputSchemaFile,
             outputSchemaMetadataFile,
         });

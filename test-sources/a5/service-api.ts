@@ -5,7 +5,6 @@ import { NumN } from './types';
  */
 type DomainValue = `v:${string}`;
 
-// todo Unsupported statement kind: 243 (FirstStatement)
 const DomainValues = ['v:1', 'v:2', 'v:3'] satisfies DomainValue[];
 
 /**
@@ -13,7 +12,6 @@ const DomainValues = ['v:1', 'v:2', 'v:3'] satisfies DomainValue[];
  */
 type DomainValuesType = (typeof DomainValues)[number];
 
-// todo Unsupported statement kind: 243 (FirstStatement)
 const Name1 = 'v:name1' satisfies DomainValue;
 const Name2 = 'v:name2' satisfies DomainValue;
 const Name3 = 'abnormal' as DomainValue;

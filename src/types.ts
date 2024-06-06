@@ -37,7 +37,7 @@ export interface SchemaForgeOptions extends SchemaForgeBaseOptions {
      *      service-api.ts
      *      *.{api,api-types}.ts
      */
-    readonly sourcesFilesPattern: string;
+    readonly sourcesFilesPattern: string | string[];
     /**
      * Path to tsconfig.json
      */

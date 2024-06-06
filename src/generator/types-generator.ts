@@ -32,6 +32,7 @@ import {
     TypeChecker,
     TypeElement,
     TypeReferenceNode,
+    VariableDeclaration,
 } from 'typescript';
 import { buildAPIInterfaceSchemaSignature } from '../index';
 import { SchemaForgeSignatureSuffix } from '../types';
@@ -44,13 +45,14 @@ import {
 
 interface Options extends SchemaForgeBaseOptions {
     tsconfig: string;
-    sourcesPattern: string;
+    sourcesPattern: string[];
 }
 
 interface GeneratorContext {
     readonly program: Program;
     readonly options: Options;
     readonly fileContent: string[];
+
     registerDefinition(...name: string[]): void;
 }
 
@@ -59,7 +61,7 @@ export async function generateDraftTypeFiles(options: Options) {
     const sourcesTypesGeneratorConfig: Config = {
         ...SG_CONFIG_DEFAULTS,
         expose: options.expose,
-        path: `${options.sourcesPattern}`,
+        path: options.sourcesPattern.length > 1 ? undefined : options.sourcesPattern[0],
         tsconfig: options.tsconfig,
         ...SG_CONFIG_MANDATORY,
     };
@@ -110,11 +112,12 @@ export async function generateDraftTypeFiles(options: Options) {
             }
 
             switch (statement.kind) {
+                case SyntaxKind.ImportDeclaration:
+                case SyntaxKind.VariableStatement:
+                    continue;
                 case SyntaxKind.EnumDeclaration:
                     passDeclaration(statement as EnumDeclaration, context);
                     break;
-                case SyntaxKind.ImportDeclaration:
-                    continue;
                 case SyntaxKind.TypeAliasDeclaration:
                     passDeclaration(statement as TypeAliasDeclaration, context);
                     break;
@@ -166,7 +169,7 @@ export async function generateDraftTypeFiles(options: Options) {
 }
 
 function passDeclaration(
-    statement: TypeAliasDeclaration | EnumDeclaration | InterfaceDeclaration,
+    statement: TypeAliasDeclaration | EnumDeclaration | InterfaceDeclaration | VariableDeclaration,
     context: GeneratorContext,
 ) {
     context.registerDefinition(statement.name.getText());

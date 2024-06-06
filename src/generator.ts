@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { createHash } from 'node:crypto';
 import { unlink } from 'node:fs/promises';
+import { asArray } from '@tsofist/stem/lib/as-array';
 import { raise } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
 import { keysOf } from '@tsofist/stem/lib/object/keys';
@@ -18,7 +19,9 @@ import {
 
 export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaForgeResult> {
     const { schemaId, sourcesDirectoryPattern, outputSchemaFile } = options;
-    const sourcesPattern = `${sourcesDirectoryPattern}/${options.sourcesFilesPattern}`;
+    const sourcesPattern = asArray(options.sourcesFilesPattern).map(
+        (filesPattern) => `${sourcesDirectoryPattern}/${filesPattern}`,
+    );
 
     let tsconfig = options.tsconfig;
     let tsconfigGenerated = false;
@@ -32,7 +35,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                 compilerOptions: { noUnusedLocals: boolean };
             };
 
-            config.include = [sourcesPattern];
+            config.include = sourcesPattern;
             config.compilerOptions.noUnusedLocals = false;
 
             tsconfig = `./tsconfig.schema-forge-generated.${randomString(5)}.tmp.json`;
