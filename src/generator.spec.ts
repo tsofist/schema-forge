@@ -104,6 +104,14 @@ describe('generator for a5', () => {
                 variadicList1: {
                     $ref: '#/definitions/VariadicList1',
                 },
+                indexedField1: {
+                    dbIndex: 'ix_some_indexed_field',
+                    type: 'number',
+                },
+                indexedField2: {
+                    dbIndex: true,
+                    type: 'number',
+                },
             },
             required: [
                 'vals',
@@ -116,8 +124,11 @@ describe('generator for a5', () => {
                 'variadicList',
                 'variadicList1',
                 'abnormalNames',
+                'indexedField1',
+                'indexedField2',
             ],
             additionalProperties: false,
+            dbEntity: 'cmn.some',
         });
     });
 });

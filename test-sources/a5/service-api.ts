@@ -41,6 +41,7 @@ type VariadicList1 = [Nums, NamesType][number];
 
 /**
  * @public
+ * @dbEntity cmn.some
  */
 export interface Some {
     vals: DomainValuesType;
@@ -54,4 +55,12 @@ export interface Some {
     variadicList1: VariadicList1;
     //
     abnormalNames: NamesTypeAbnormal;
+    /**
+     * @dbIndex ix_some_indexed_field
+     */
+    indexedField1: number;
+    /**
+     * @dbIndex
+     */
+    indexedField2: number;
 }

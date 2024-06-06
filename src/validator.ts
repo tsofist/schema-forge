@@ -134,6 +134,8 @@ function addJSDocKeywords(engine: Ajv) {
     const PropertyNamePattern = '^[a-z][a-zA-Z0-9]+$';
     const MethodNamePattern = PropertyNamePattern;
     const MemberNamePattern = `${InterfaceNamePattern.substring(0, InterfaceNamePattern.length - 1)}#${PropertyNamePattern.substring(1)}`;
+    const IXNamePattern = '^ix_[a-z][a-zA-Z0-9_]+$';
+    const EntityNamePattern = '^([a-zA-Z_][a-z0-9_]*\\.)?[a-z_][a-z0-9_]*$';
 
     engine.addKeyword({
         keyword: 'hash',
@@ -172,6 +174,22 @@ function addJSDocKeywords(engine: Ajv) {
         metaSchema: {
             type: 'string',
             pattern: MemberNamePattern,
+        },
+    });
+
+    engine.addKeyword({
+        keyword: 'dbIndex',
+        metaSchema: {
+            type: ['string', 'boolean'],
+            pattern: IXNamePattern,
+        },
+    });
+
+    engine.addKeyword({
+        keyword: 'dbEntity',
+        metaSchema: {
+            type: 'string',
+            pattern: EntityNamePattern,
         },
     });
 }

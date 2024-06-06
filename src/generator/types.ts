@@ -15,7 +15,7 @@ export const SG_CONFIG_DEFAULTS: Config = {
     additionalProperties: false,
     expose: 'export',
     strictTuples: true,
-    extraTags: ['member', 'method', 'interface', 'property'],
+    extraTags: ['member', 'method', 'interface', 'property', 'dbIndex', 'dbEntity'],
     encodeRefs: false,
     markdownDescription: false,
     discriminatorType: undefined,
