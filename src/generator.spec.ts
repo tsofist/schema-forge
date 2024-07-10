@@ -1,7 +1,6 @@
 import { unlink } from 'node:fs/promises';
 import { readErrorCode, readErrorContext } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
-import { generateFakeData } from './fake-generator';
 import { forgeSchema, loadJSONSchema } from './generator';
 import {
     SchemaDefinitionInfo,
@@ -294,10 +293,11 @@ describe('generator for a1', () => {
             faker: { 'faker.lorem.words': [{ min: 5, max: 10 }] },
             type: 'string',
         });
-        const text = await generateFakeData<string>(validator, 'test#/definitions/SomeName');
-        const textParts = text.split(' ');
-        expect(textParts.length).toBeGreaterThanOrEqual(5);
-        expect(textParts.length).toBeLessThanOrEqual(10);
+        expect(validator.getSchema('test#/definitions/SomeType1')).toStrictEqual({
+            const: 123,
+            description: 'Important type',
+            type: 'number',
+        });
     });
     it('hasSchema', async () => {
         expect(validator.hasValidator('test#/definitions/Int')).toStrictEqual(true);

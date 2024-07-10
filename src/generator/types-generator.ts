@@ -149,7 +149,7 @@ export async function generateDraftTypeFiles(options: Options) {
 
         await writeFile(
             outputFileName,
-            [source.getText(), context.fileContent.join('\n')].join('\n'),
+            [source.getFullText(), context.fileContent.join('\n')].join('\n'),
             { encoding: 'utf8' },
         );
         files.push(outputFileName);

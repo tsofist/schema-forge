@@ -1,5 +1,7 @@
 /**
  * @public
+ *
+ * @description Important type
  */
 export type SomeType1 = 123;
 
