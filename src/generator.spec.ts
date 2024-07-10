@@ -1,6 +1,7 @@
 import { unlink } from 'node:fs/promises';
 import { readErrorCode, readErrorContext } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
+import { generateFakeData } from './fake-generator';
 import { forgeSchema, loadJSONSchema } from './generator';
 import {
     SchemaDefinitionInfo,
@@ -262,7 +263,7 @@ describe('generator for a1', () => {
             schemaId,
             tsconfigFrom: './tsconfig.build-test.json',
             sourcesDirectoryPattern: 'test-sources/a1',
-            sourcesFilesPattern: ['service.api.ts', '*.api.ts'],
+            sourcesFilesPattern: ['service.api.ts', '*.api.ts', 'types.ts'],
             outputSchemaFile,
             outputSchemaMetadataFile,
         });
@@ -281,14 +282,22 @@ describe('generator for a1', () => {
     it('generated schema should be valid', async () => {
         expect(forgeSchemaResult).toBeTruthy();
         expect(forgeSchemaResult!.schema.$id).toStrictEqual(schemaId);
-        expect(forgeSchemaResult!.generatedTemporaryFiles.length).toStrictEqual(1);
-        expect(forgeSchemaResult!.refs.length).toStrictEqual(8);
+        expect(forgeSchemaResult!.generatedTemporaryFiles.length).toStrictEqual(2);
+        expect(forgeSchemaResult!.refs.length).toStrictEqual(10);
     });
     it('getSchema', async () => {
         expect(validator.getValidator('test#/definitions/Int')!.schema).toStrictEqual({
             type: 'integer',
         });
         expect(validator.getValidator('#/definitions/NotExists')).toStrictEqual(undefined);
+        expect(validator.getSchema('test#/definitions/SomeName')).toStrictEqual({
+            faker: { 'faker.lorem.words': [{ min: 5, max: 10 }] },
+            type: 'string',
+        });
+        const text = await generateFakeData<string>(validator, 'test#/definitions/SomeName');
+        const textParts = text.split(' ');
+        expect(textParts.length).toBeGreaterThanOrEqual(5);
+        expect(textParts.length).toBeLessThanOrEqual(10);
     });
     it('hasSchema', async () => {
         expect(validator.hasValidator('test#/definitions/Int')).toStrictEqual(true);
@@ -421,6 +430,20 @@ describe('generator for a1', () => {
                 schemaId: 'test',
                 type: 'PositiveInt',
             },
+            {
+                kind: 0,
+                name: 'SomeName',
+                ref: 'test#/definitions/SomeName',
+                schemaId: 'test',
+                type: 'SomeName',
+            },
+            {
+                kind: 0,
+                name: 'SomeType1',
+                ref: 'test#/definitions/SomeType1',
+                schemaId: 'test',
+                type: 'SomeType1',
+            },
         ];
         const defsByName: any = {};
         for (const def of defs) {
@@ -429,7 +452,9 @@ describe('generator for a1', () => {
         expect(validator.listDefinitions()).toStrictEqual(defs);
 
         expect(
-            validator.listDefinitions((info) => info.kind === SchemaDefinitionKind.Type),
+            validator.listDefinitions(
+                (info) => info.kind === SchemaDefinitionKind.Type && !info.name.startsWith('Some'),
+            ),
         ).toStrictEqual([defsByName['Int'], defsByName['PositiveInt']]);
 
         expect(

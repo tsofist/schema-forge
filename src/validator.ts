@@ -1,7 +1,15 @@
 import { Nullable } from '@tsofist/stem';
 import { raiseEx } from '@tsofist/stem/lib/error';
 import { entries } from '@tsofist/stem/lib/object/entries';
-import Ajv, { ErrorObject, ErrorsTextOptions, Options, Schema, ValidateFunction } from 'ajv';
+import Ajv, {
+    AnySchema,
+    ErrorObject,
+    ErrorsTextOptions,
+    Options,
+    Schema,
+    SchemaObject,
+    ValidateFunction,
+} from 'ajv';
 import addFormats from 'ajv-formats';
 import {
     SchemaDefinitionInfo,
@@ -22,8 +30,9 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         allErrors: true,
         strict: true,
         strictSchema: true,
-        strictTypes: 'log',
+        strictTypes: false,
         strictTuples: false,
+        allowUnionTypes: true,
         coerceTypes: false,
         removeAdditional: false,
         unicodeRegExp: true,
@@ -118,9 +127,21 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         return result;
     }
 
+    function getSchema(ref: SchemaForgeDefinitionRef) {
+        return getValidator(ref)?.schema;
+    }
+
+    function getRootSchema(schemaId: string) {
+        return engine.schemas[schemaId]?.schema as
+            | (SchemaObject & { definitions?: AnySchema })
+            | undefined;
+    }
+
     return {
         hasValidator,
         getValidator,
+        getSchema,
+        getRootSchema,
         addSchema,
         validateBySchema,
         checkBySchema,
@@ -136,6 +157,7 @@ function addJSDocKeywords(engine: Ajv) {
     const MemberNamePattern = `${InterfaceNamePattern.substring(0, InterfaceNamePattern.length - 1)}#${PropertyNamePattern.substring(1)}`;
     const IXNamePattern = '^ix_[a-z][a-zA-Z0-9_]+$';
     const EntityNamePattern = '^([a-zA-Z_][a-z0-9_]*\\.)?[a-z_][a-z0-9_]*$';
+    const FakerModulePattern = '^faker\\.[a-zA-Z.]+$';
 
     engine.addKeyword({
         keyword: 'hash',
@@ -174,6 +196,41 @@ function addJSDocKeywords(engine: Ajv) {
         metaSchema: {
             type: 'string',
             pattern: MemberNamePattern,
+        },
+    });
+
+    /**
+     * @see https://fakerjs.dev/api/person.html
+     */
+    engine.addKeyword({
+        keyword: 'faker',
+        metaSchema: {
+            oneOf: [
+                {
+                    // https://fakerjs.dev/api/person.html
+                    // https://fakerjs.dev/api/company.html#name
+                    // https://github.com/json-schema-faker/json-schema-faker/blob/master/docs/USAGE.md
+                    // example (schema):
+                    //   faker: 'faker.person.fullName'
+                    //   faker: 'faker.person.firstName'
+                    //   faker: 'faker.company.name'
+                    // example (jsdoc):
+                    //   @faker faker.company.name
+                    type: 'string',
+                    pattern: FakerModulePattern,
+                },
+                {
+                    // https://fakerjs.dev/api/lorem.html#words
+                    // example (schema):
+                    //   faker: { 'faker.lorem.words': [{ min: 30, max: 50 }] },
+                    // example (jsdoc):
+                    //   @faker { 'faker.lorem.words': [{ min: 5, max: 10 }] }
+                    type: 'object',
+                    propertyNames: {
+                        pattern: FakerModulePattern,
+                    },
+                },
+            ],
         },
     });
 
