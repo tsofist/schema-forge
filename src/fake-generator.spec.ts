@@ -52,6 +52,10 @@ describe('generateFakeData', () => {
                         id2: {
                             type: 'array',
                             items: { $ref: '#/definitions/ForeignInt' },
+                            examples: [
+                                [1, 2, 3],
+                                [4, 5, 6],
+                            ],
                         },
                         url: { $ref: '#/definitions/Url' },
                     },

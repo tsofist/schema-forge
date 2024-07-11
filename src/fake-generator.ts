@@ -10,8 +10,7 @@ const PRUNE_PROPS = Array.from(
     new Set([
         '$ref',
         '$comment',
-        'description',
-        'examples',
+        //
         ...(SG_CONFIG_DEFAULTS.extraTags || []),
     ]),
 );
@@ -31,7 +30,14 @@ export async function generateFakeData<T = unknown>(
     {
         const rootSchemaId = substr(source, 0, '#')!;
         for (const def of validator.listDefinitions()) {
-            const schema = validator.getSchema(def.ref) as SchemaObject;
+            let schema = validator.getSchema(def.ref) as SchemaObject;
+
+            // todo: fix this
+            if (schema.$ref) {
+                const { description, examples, ...rest } = schema;
+                schema = rest;
+            }
+
             if (rootSchemaId === def.schemaId) {
                 refs[`#/definitions/${def.name}`] = schema;
             } else {
