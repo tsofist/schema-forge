@@ -12,7 +12,7 @@ export type SomeType2 = 456;
 
 /**
  * @public
- * @faker { 'faker.lorem.words': [{ min: 5, max: 10 }] }
+ * @faker { 'lorem.words': [{ min: 5, max: 10 }] }
  */
 export type SomeName = string;
 

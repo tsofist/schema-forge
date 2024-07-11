@@ -157,7 +157,7 @@ function addJSDocKeywords(engine: Ajv) {
     const MemberNamePattern = `${InterfaceNamePattern.substring(0, InterfaceNamePattern.length - 1)}#${PropertyNamePattern.substring(1)}`;
     const IXNamePattern = '^ix_[a-z][a-zA-Z0-9_]+$';
     const EntityNamePattern = '^([a-zA-Z_][a-z0-9_]*\\.)?[a-z_][a-z0-9_]*$';
-    const FakerModulePattern = '^faker\\.[a-zA-Z.]+$';
+    const FakerModulePattern = '^[a-zA-Z.]+$';
 
     engine.addKeyword({
         keyword: 'hash',
@@ -211,20 +211,20 @@ function addJSDocKeywords(engine: Ajv) {
                     // https://fakerjs.dev/api/company.html#name
                     // https://github.com/json-schema-faker/json-schema-faker/blob/master/docs/USAGE.md
                     // example (schema):
-                    //   faker: 'faker.person.fullName'
-                    //   faker: 'faker.person.firstName'
-                    //   faker: 'faker.company.name'
+                    //   faker: 'person.fullName'
+                    //   faker: 'person.firstName'
+                    //   faker: 'company.name'
                     // example (jsdoc):
-                    //   @faker faker.company.name
+                    //   @faker company.name
                     type: 'string',
                     pattern: FakerModulePattern,
                 },
                 {
                     // https://fakerjs.dev/api/lorem.html#words
                     // example (schema):
-                    //   faker: { 'faker.lorem.words': [{ min: 30, max: 50 }] },
+                    //   faker: { 'lorem.words': [{ min: 30, max: 50 }] },
                     // example (jsdoc):
-                    //   @faker { 'faker.lorem.words': [{ min: 5, max: 10 }] }
+                    //   @faker { 'lorem.words': [{ min: 5, max: 10 }] }
                     type: 'object',
                     propertyNames: {
                         pattern: FakerModulePattern,

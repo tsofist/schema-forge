@@ -290,7 +290,7 @@ describe('generator for a1', () => {
         });
         expect(validator.getValidator('#/definitions/NotExists')).toStrictEqual(undefined);
         expect(validator.getSchema('test#/definitions/SomeName')).toStrictEqual({
-            faker: { 'faker.lorem.words': [{ min: 5, max: 10 }] },
+            faker: { 'lorem.words': [{ min: 5, max: 10 }] },
             type: 'string',
         });
         expect(validator.getSchema('test#/definitions/SomeType1')).toStrictEqual({

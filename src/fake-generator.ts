@@ -1,3 +1,4 @@
+import * as fakerModule from '@faker-js/faker';
 import { substr } from '@tsofist/stem/lib/string/substr';
 import { SchemaObject } from 'ajv';
 import { JSONSchemaFaker, JSONSchemaFakerOptions, JSONSchemaFakerRefs } from 'json-schema-faker';
@@ -17,6 +18,7 @@ const PRUNE_PROPS = Array.from(
 
 export interface FakeGeneratorOptions extends JSONSchemaFakerOptions {
     locale?: string;
+    setupFakerModules?(faker: fakerModule.Faker): object;
 }
 
 export async function generateFakeData<T = unknown>(
@@ -38,9 +40,16 @@ export async function generateFakeData<T = unknown>(
         }
     }
 
-    const locale = options.locale;
-    const faker = await import(locale ? `@faker-js/faker/locale/${locale}` : '@faker-js/faker');
-    const generator = JSONSchemaFaker.extend('faker', () => faker);
+    const localeName = options.locale || 'en';
+    const locale = localeName in fakerModule ? (fakerModule as any)[localeName] : undefined;
+    const generator = JSONSchemaFaker.extend('faker', () => {
+        const faker = new fakerModule.Faker({ locale });
+        if (options.setupFakerModules) {
+            const modules = options.setupFakerModules(faker);
+            Object.assign(faker, modules);
+        }
+        return faker;
+    });
 
     generator.option({
         alwaysFakeOptionals: true,

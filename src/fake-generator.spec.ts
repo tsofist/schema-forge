@@ -38,7 +38,7 @@ describe('generateFakeData', () => {
                 type: 'array',
                 items: {
                     type: 'string',
-                    faker: 'faker.person.fullName',
+                    faker: 'person.fullName',
                     minLength: 20,
                 },
             },
@@ -82,9 +82,9 @@ describe('generateFakeData', () => {
                         description: 'Name',
                         // https://github.com/json-schema-faker/json-schema-faker/blob/master/docs/USAGE.md
                         // https://fakerjs.dev/api/company.html
-                        // faker: 'faker.company.name',
-                        // faker: { 'faker.finance.amount': [100, 10000, 2, '$'] },
-                        faker: { 'faker.lorem.words': [{ min: 30, max: 50 }] },
+                        // faker: 'company.name',
+                        // faker: { 'finance.amount': [100, 10000, 2, '$'] },
+                        faker: { 'lorem.words': [{ min: 30, max: 50 }] },
                     },
                     refs: {
                         type: 'object',
