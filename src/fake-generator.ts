@@ -1,4 +1,6 @@
 import * as fakerModule from '@faker-js/faker';
+import { hasOwnProperty } from '@tsofist/stem';
+import { ISOTimeString } from '@tsofist/stem/lib/cldr';
 import { substr } from '@tsofist/stem/lib/string/substr';
 import { SchemaObject } from 'ajv';
 import { JSONSchemaFaker, JSONSchemaFakerOptions, JSONSchemaFakerRefs } from 'json-schema-faker';
@@ -33,10 +35,7 @@ export async function generateFakeData<T = unknown>(
             let schema = validator.getSchema(def.ref) as SchemaObject;
 
             // todo: fix this
-            if (schema.$ref) {
-                const { description, examples, ...rest } = schema;
-                schema = rest;
-            }
+            schema = fixJSONSchemaFakerQuirks(schema);
 
             if (rootSchemaId === def.schemaId) {
                 refs[`#/definitions/${def.name}`] = schema;
@@ -48,8 +47,13 @@ export async function generateFakeData<T = unknown>(
 
     const localeName = options.locale || 'en';
     const locale = localeName in fakerModule ? (fakerModule as any)[localeName] : undefined;
+    const faker = new fakerModule.Faker({ locale });
+
     const generator = JSONSchemaFaker.extend('faker', () => {
-        const faker = new fakerModule.Faker({ locale });
+        Object.assign(faker, {
+            date: proxyFakerDateModule(faker.date),
+        });
+
         if (options.setupFakerModules) {
             const modules = options.setupFakerModules(faker);
             Object.assign(faker, modules);
@@ -64,8 +68,56 @@ export async function generateFakeData<T = unknown>(
         ...options,
     });
 
+    generator.format('iso-time', (): ISOTimeString => {
+        return substr(faker.date.anytime() as unknown as string, 'T', '.')!;
+    });
+
     const schema = validator.getSchema(source);
     if (schema == null) throw new Error(`Schema not found: ${source}`);
 
     return generator.generate(schema as SchemaObject, refs) as T;
+}
+
+function proxyFakerDateModule<T extends object>(obj: T): T {
+    return new Proxy(obj, {
+        get(target, prop, receiver) {
+            const originalValue = Reflect.get(target, prop, receiver);
+
+            if (typeof originalValue === 'function') {
+                return function (this: any, ...args: any[]) {
+                    const result = originalValue.apply(this, args);
+                    return result instanceof Date ? result.toISOString() : result;
+                };
+            }
+
+            return originalValue;
+        },
+    });
+}
+
+function fixJSONSchemaFakerQuirks(schema: SchemaObject): SchemaObject {
+    if (typeof schema !== 'object' || schema == null) {
+        return schema;
+    }
+
+    if (schema.$ref) {
+        const { description, examples, ...rest } = schema;
+
+        for (const key in rest) {
+            if (hasOwnProperty.call(rest, key)) {
+                rest[key] = fixJSONSchemaFakerQuirks(rest[key]);
+            }
+        }
+        return rest;
+    } else if (Array.isArray(schema)) {
+        return schema.map(fixJSONSchemaFakerQuirks);
+    }
+
+    const result: SchemaObject = {};
+    for (const key in schema) {
+        if (hasOwnProperty.call(schema, key)) {
+            result[key] = fixJSONSchemaFakerQuirks(schema[key]);
+        }
+    }
+    return result;
 }

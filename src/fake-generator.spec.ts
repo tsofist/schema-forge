@@ -90,6 +90,14 @@ describe('generateFakeData', () => {
                         // faker: { 'finance.amount': [100, 10000, 2, '$'] },
                         faker: { 'lorem.words': [{ min: 30, max: 50 }] },
                     },
+                    datetime: {
+                        type: 'string',
+                        faker: 'date.recent',
+                    },
+                    time: {
+                        type: 'string',
+                        format: 'iso-time',
+                    },
                     refs: {
                         type: 'object',
                         additionalProperties: false,
@@ -103,7 +111,7 @@ describe('generateFakeData', () => {
                         description: 'Linked entities',
                     },
                 },
-                required: ['name', 'refs'],
+                required: ['name', 'refs', 'datetime', 'time'],
                 description: 'CMS: Entity',
                 dbEntity: 'cms.entity',
             },
@@ -158,8 +166,16 @@ describe('generateFakeData', () => {
         }
         {
             const source = 'test-2#/definitions/CMSEntity';
-            const data = await generateFakeData(validator, source, { locale: 'ru' });
+            const data = await generateFakeData<any>(validator, source, { locale: 'ru' });
+
             expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);
+
+            expect(typeof data.datetime).toStrictEqual('string');
+            expect(data.datetime).toMatch(/.*Z$/);
+            expect(new Date(data.datetime)).not.toStrictEqual('Invalid Date');
+
+            expect(typeof data.time).toStrictEqual('string');
+            expect(data.time).toMatch(/^[0-9]{2}:[0-9]{2}:[0-9]{2}$/);
         }
     });
 });
