@@ -17,9 +17,11 @@ const PRUNE_PROPS = Array.from(
     ]),
 );
 
+export type SetupFakerModules = (faker: fakerModule.Faker) => object;
+
 export interface FakeGeneratorOptions extends JSONSchemaFakerOptions {
     locale?: string;
-    setupFakerModules?(faker: fakerModule.Faker): object;
+    setupFakerModules?: SetupFakerModules[];
 }
 
 export async function generateFakeData<T = unknown>(
@@ -54,9 +56,11 @@ export async function generateFakeData<T = unknown>(
             date: proxyFakerDateModule(faker.date),
         });
 
-        if (options.setupFakerModules) {
-            const modules = options.setupFakerModules(faker);
-            Object.assign(faker, modules);
+        if (options.setupFakerModules?.length) {
+            for (const item of options.setupFakerModules) {
+                const modules = item(faker);
+                Object.assign(faker, modules);
+            }
         }
         return faker;
     });
@@ -64,8 +68,8 @@ export async function generateFakeData<T = unknown>(
     generator.option({
         alwaysFakeOptionals: true,
         refDepthMax: 1_000,
-        pruneProperties: PRUNE_PROPS,
         ...options,
+        pruneProperties: PRUNE_PROPS,
     });
 
     generator.format('iso-time', (): ISOTimeString => {
