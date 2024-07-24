@@ -161,7 +161,7 @@ describe('generator for a4', () => {
         expect(forgeSchemaResult).toBeTruthy();
         const defs = forgeSchemaResult?.schema?.definitions;
         expect(defs).toBeTruthy();
-        expect(Object.keys(defs)).toStrictEqual(['API', 'Enum', 'Some', 'Some2']);
+        expect(Object.keys(defs)).toStrictEqual(['API', 'Enum', 'FormatMode', 'Some', 'Some2']);
     });
 });
 

@@ -1,5 +1,6 @@
 import { NonEmptyString } from '@tsofist/stem';
 
+export { FormatMode } from 'ajv-formats/dist/formats';
 export { Some2 } from '../a3/service-api';
 
 /**

@@ -5,6 +5,9 @@ import { raise } from '@tsofist/stem/lib/error';
 import { TextBuilder } from '@tsofist/stem/lib/string/text-builder';
 import { Config, createProgram } from 'ts-json-schema-generator';
 import {
+    CompilerHost,
+    CompilerOptions,
+    createCompilerHost,
     DeclarationStatement,
     EnumDeclaration,
     ExportDeclaration,
@@ -25,7 +28,9 @@ import {
     JSDocTag,
     MethodSignature,
     Program,
+    resolveModuleName,
     SignatureDeclaration,
+    SourceFile,
     Statement,
     SyntaxKind,
     TypeAliasDeclaration,
@@ -50,6 +55,9 @@ interface Options extends SchemaForgeBaseOptions {
 
 interface GeneratorContext {
     readonly program: Program;
+    readonly compilerOptions: CompilerOptions;
+    readonly compilerHost: CompilerHost;
+    readonly typeChecker: TypeChecker;
     readonly options: Options;
     readonly fileContent: string[];
 
@@ -71,12 +79,18 @@ export async function generateDraftTypeFiles(options: Options) {
 
     const program: Program = createProgram(sourcesTypesGeneratorConfig);
     const checker = program.getTypeChecker();
+    const compilerOptions = program.getCompilerOptions();
+    const compilerHost = createCompilerHost(compilerOptions);
+
     const fileNames = program.getRootFileNames();
     const namesBySourceFile = new Map<string, Set<string>>();
 
     for (const sourceFileName of fileNames) {
         const context: GeneratorContext = {
             program,
+            compilerOptions,
+            compilerHost,
+            typeChecker: checker,
             options,
             fileContent: [],
             registerDefinition(...names: string[]) {
@@ -123,11 +137,7 @@ export async function generateDraftTypeFiles(options: Options) {
                     break;
                 case SyntaxKind.InterfaceDeclaration:
                     if (hasJSDocTag(statement, 'api')) {
-                        processAPIInterfaceDeclaration(
-                            statement as InterfaceDeclaration,
-                            context,
-                            checker,
-                        );
+                        processAPIInterfaceDeclaration(statement as InterfaceDeclaration, context);
                     } else {
                         passDeclaration(statement as InterfaceDeclaration, context);
                     }
@@ -187,16 +197,29 @@ function processExportDeclaration(
         !statement.moduleSpecifier ||
         !isStringLiteral(statement.moduleSpecifier)
     ) {
-        raise(`Only inline types reexport supported. Use: export { Type } from './some-module';`);
+        raise(`
+            Only inline types reexport supported.
+            Use: export { Type } from './some-module';
+            Or: export { Type } from 'some-external-module';
+        `);
     }
 
-    let modulePath = statement.moduleSpecifier.text;
-    if (!isAbsolute(modulePath)) {
-        modulePath = resolve(dirname(sourceFileName), modulePath);
+    let module: SourceFile | undefined;
+    const moduleSpecifier = statement.moduleSpecifier.text;
+
+    if (!isAbsolute(moduleSpecifier)) {
+        const fn = resolve(dirname(sourceFileName), moduleSpecifier) + '.ts';
+        module = context.program.getSourceFile(fn);
     }
 
-    const module = context.program.getSourceFile(modulePath + '.ts');
-    if (!module) return;
+    if (!module) {
+        const fn = resolveModuleFileName(sourceFileName, context, moduleSpecifier);
+        if (fn) module = context.program.getSourceFile(fn);
+    }
+
+    if (!module) {
+        raise(`Module for ${moduleSpecifier} not found`);
+    }
 
     for (const element of statement.exportClause.elements) {
         const typeName = element.name.escapedText;
@@ -227,7 +250,6 @@ interface DefinitionMetadata {
 function processAPIInterfaceDeclaration(
     statement: InterfaceDeclaration,
     context: GeneratorContext,
-    checker: TypeChecker,
 ) {
     const definitionsMetaList: DefinitionMetadata[] = [];
 
@@ -327,7 +349,8 @@ function processAPIInterfaceDeclaration(
     if (statement.heritageClauses) {
         for (const clause of statement.heritageClauses) {
             for (const type of clause.types) {
-                const declaration = checker.getTypeAtLocation(type).symbol?.declarations?.[0];
+                const declaration =
+                    context.typeChecker.getTypeAtLocation(type).symbol?.declarations?.[0];
                 if (
                     declaration &&
                     isInterfaceDeclaration(declaration) &&
@@ -445,4 +468,18 @@ function hasJSDocTag(statement: Statement | TypeElement, tagName: string) {
             return tag.tagName.escapedText === tagName;
         }) != null
     );
+}
+
+function resolveModuleFileName(
+    sourceFileName: string,
+    context: GeneratorContext,
+    moduleSpecifier: string,
+): string | undefined {
+    const resolvedModule = resolveModuleName(
+        moduleSpecifier,
+        sourceFileName,
+        context.compilerOptions,
+        context.compilerHost,
+    ).resolvedModule;
+    return resolvedModule?.resolvedFileName;
 }
