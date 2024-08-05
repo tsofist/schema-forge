@@ -13,6 +13,7 @@ import {
     ExportDeclaration,
     getAllJSDocTags,
     getAllJSDocTagsOfKind,
+    getJSDocCommentsAndTags,
     getJSDocDeprecatedTag,
     getJSDocPrivateTag,
     getJSDocPublicTag,
@@ -25,8 +26,10 @@ import {
     isNamedExports,
     isStringLiteral,
     isTypeAliasDeclaration,
+    JSDocComment,
     JSDocTag,
     MethodSignature,
+    NodeArray,
     Program,
     resolveModuleName,
     SignatureDeclaration,
@@ -428,21 +431,31 @@ function readJSDocDescription(
 ): string | undefined {
     let value = undefined;
     let fallback: string | undefined = undefined;
-    const isTag = (tag: JSDocTag): tag is JSDocTag => {
-        if (tag.kind === SyntaxKind.JSDocTag && tag.tagName.escapedText === 'description') {
-            value = getTextOfJSDocComment(tag.comment);
-        }
-        if (
-            useFallbackDescription &&
-            fallback === undefined &&
-            tag.parent.kind === SyntaxKind.JSDoc &&
-            tag.parent.comment
-        ) {
-            fallback = getTextOfJSDocComment(tag.parent.comment);
-        }
-        return false;
-    };
-    getAllJSDocTags(node, isTag);
+
+    {
+        const isTag = (tag: JSDocTag): tag is JSDocTag => {
+            if (tag.kind === SyntaxKind.JSDocTag && tag.tagName.escapedText === 'description') {
+                value = getTextOfJSDocComment(tag.comment);
+            }
+            if (
+                useFallbackDescription &&
+                fallback === undefined &&
+                tag.parent.kind === SyntaxKind.JSDoc &&
+                tag.parent.comment
+            ) {
+                fallback = getTextOfJSDocComment(tag.parent.comment);
+            }
+            return false;
+        };
+        getAllJSDocTags(node, isTag);
+    }
+
+    if (value === undefined && useFallbackDescription && fallback === undefined) {
+        const comment = getJSDocCommentsAndTags(node).find(
+            (item) => item.kind === SyntaxKind.JSDoc && item.comment,
+        ) as NodeArray<JSDocComment> | undefined;
+        if (comment) fallback = getTextOfJSDocComment(comment);
+    }
 
     if (value === undefined && useFallbackDescription && fallback !== undefined) {
         value = fallback;

@@ -53,8 +53,10 @@ export interface ExportedInterfaceB {
     /** @private */
     propertyB: string;
 
+    /** Description for methodA */
     methodA(argA: PositiveInt): void;
 
+    /** @description Description for methodB */
     methodB(argA: number, argB: true): Promise<void>;
 }
 

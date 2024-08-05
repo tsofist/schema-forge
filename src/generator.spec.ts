@@ -482,4 +482,15 @@ describe('generator for a1', () => {
             defsByName['NonExportedInterfaceD_methodA_Args'],
         ]);
     });
+
+    it('should be valid descriptions', () => {
+        const schema: any = validator.getSchema(
+            'test#/definitions/ExportedInterfaceB_InterfaceDeclaration',
+        );
+        expect(schema).toBeTruthy();
+        expect(schema.description).toStrictEqual('TAG: Description for ExportedInterfaceB');
+        expect(schema.properties.propertyA.description).toStrictEqual('Description for propertyA');
+        expect(schema.properties.methodA.description).toBeUndefined();
+        expect(schema.properties.methodB.description).toStrictEqual('Description for methodB');
+    });
 });
