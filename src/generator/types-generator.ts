@@ -26,10 +26,8 @@ import {
     isNamedExports,
     isStringLiteral,
     isTypeAliasDeclaration,
-    JSDocComment,
     JSDocTag,
     MethodSignature,
-    NodeArray,
     Program,
     resolveModuleName,
     SignatureDeclaration,
@@ -452,8 +450,8 @@ function readJSDocDescription(
 
     if (value === undefined && useFallbackDescription && fallback === undefined) {
         const comment = getJSDocCommentsAndTags(node).find(
-            (item) => item.kind === SyntaxKind.JSDoc && item.comment,
-        ) as NodeArray<JSDocComment> | undefined;
+            (item) => item.kind === SyntaxKind.JSDoc && item.comment != null,
+        )?.comment;
         if (comment) fallback = getTextOfJSDocComment(comment);
     }
 
