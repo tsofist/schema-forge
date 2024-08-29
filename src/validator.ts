@@ -42,9 +42,10 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
     if (useAdditionalFormats) engine = addFormats(engine);
 
     function getValidator<T = unknown>(
-        ref: SchemaForgeDefinitionRef,
+        ref: SchemaForgeDefinitionRef | object,
     ): ValidateFunction<T> | undefined {
-        return engine.getSchema(ref);
+        if (typeof ref === 'string') return engine.getSchema<T>(ref);
+        return engine.compile<T>(ref);
     }
 
     function hasValidator(ref: SchemaForgeDefinitionRef) {
