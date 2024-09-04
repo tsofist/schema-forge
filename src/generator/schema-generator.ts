@@ -1,7 +1,6 @@
 import { raise } from '@tsofist/stem/lib/error';
 import Ajv, { SchemaObject } from 'ajv';
 import {
-    Config,
     createFormatter,
     createParser,
     createProgram,
@@ -11,6 +10,7 @@ import {
     StringType,
     SubNodeParser,
 } from 'ts-json-schema-generator';
+import { CompletedConfig, DEFAULT_CONFIG } from 'ts-json-schema-generator/dist/src/Config';
 import { LiteralValue } from 'ts-json-schema-generator/src/Type/LiteralType';
 import { Identifier, Node, Program, SyntaxKind, TypeChecker, TypeFlags } from 'typescript';
 import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX, TypeExposeKind } from './types';
@@ -18,7 +18,7 @@ import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX, TypeExposeKi
 interface Options {
     tsconfig: string;
     sourcesDirectoryPattern: string;
-    sourcesTypesGeneratorConfig: Config;
+    sourcesTypesGeneratorConfig: CompletedConfig;
     outputSchemaFile: string;
     definitions: string[];
     schemaId?: string;
@@ -35,12 +35,13 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         }
     }
 
-    const generatorConfig: Config = {
+    const generatorConfig: CompletedConfig = {
+        ...DEFAULT_CONFIG,
         ...SG_CONFIG_DEFAULTS,
-        expose: options.expose,
+        expose: options.expose ?? SG_CONFIG_DEFAULTS.expose,
         path: `${options.sourcesDirectoryPattern}/*${TMP_FILES_SUFFIX}.ts`,
         tsconfig: options.tsconfig,
-        discriminatorType: options.openAPI ? 'open-api' : undefined,
+        discriminatorType: options.openAPI ? 'open-api' : DEFAULT_CONFIG.discriminatorType,
         ...SG_CONFIG_MANDATORY,
     };
     const generatorProgram: Program = createProgram(generatorConfig);

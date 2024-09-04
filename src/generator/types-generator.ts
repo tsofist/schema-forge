@@ -3,7 +3,8 @@ import { basename, dirname, extname, isAbsolute, resolve } from 'path';
 import { asBool } from '@tsofist/stem/lib/as-bool';
 import { raise } from '@tsofist/stem/lib/error';
 import { TextBuilder } from '@tsofist/stem/lib/string/text-builder';
-import { Config, createProgram } from 'ts-json-schema-generator';
+import { createProgram } from 'ts-json-schema-generator';
+import { CompletedConfig, DEFAULT_CONFIG } from 'ts-json-schema-generator/dist/src/Config';
 import {
     CompilerHost,
     CompilerOptions,
@@ -67,11 +68,13 @@ interface GeneratorContext {
 
 export async function generateDraftTypeFiles(options: Options) {
     const explicitPublic = asBool(options.explicitPublic, true);
-    const sourcesTypesGeneratorConfig: Config = {
+    const sourcesTypesGeneratorConfig: CompletedConfig = {
+        ...DEFAULT_CONFIG,
         ...SG_CONFIG_DEFAULTS,
-        expose: options.expose,
+        expose: options.expose ?? SG_CONFIG_DEFAULTS.expose,
         path: options.sourcesPattern.length > 1 ? undefined : options.sourcesPattern[0],
         tsconfig: options.tsconfig,
+        discriminatorType: DEFAULT_CONFIG.discriminatorType,
         ...SG_CONFIG_MANDATORY,
     };
 

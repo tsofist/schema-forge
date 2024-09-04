@@ -10,7 +10,7 @@ export const SG_CONFIG_MANDATORY: Config = {
     skipTypeCheck: false,
 };
 
-export const SG_CONFIG_DEFAULTS: Config = {
+export const SG_CONFIG_DEFAULTS = {
     sortProps: true,
     additionalProperties: false,
     expose: 'export',
@@ -19,7 +19,7 @@ export const SG_CONFIG_DEFAULTS: Config = {
     encodeRefs: false,
     markdownDescription: false,
     discriminatorType: undefined,
-};
+} satisfies Config;
 
 export interface SchemaForgeBaseOptions {
     /**
