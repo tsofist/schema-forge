@@ -77,6 +77,7 @@ export interface SchemaForgeMetadata {
     refs: PRec<string, SchemaForgeDefinitionRef>;
     names: PRec<SchemaForgeDefinitionRef>;
     serviceRefs: PRec<string, SchemaForgeDefinitionRef>;
+    serviceNames: PRec<SchemaForgeDefinitionRef>;
 }
 
 export interface SchemaForgeResult {

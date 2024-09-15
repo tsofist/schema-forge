@@ -104,6 +104,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                     refs: {},
                     names: {},
                     serviceRefs: {},
+                    serviceNames: {},
                 };
 
                 const defs = new Set(Object.keys(schema.definitions));
@@ -114,6 +115,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                     defs.delete(name);
                 }
                 for (const name of defs) {
+                    map.serviceNames[name] = `${options.schemaId || ''}#/definitions/${name}`;
                     map.serviceRefs[`${options.schemaId || ''}#/definitions/${name}`] = name;
                 }
 
