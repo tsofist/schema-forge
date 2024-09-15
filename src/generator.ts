@@ -75,7 +75,6 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                     }
                 }
                 {
-                    delete schema.hash;
                     const algorithm =
                         options.schemaMetadata?.hash == null
                             ? 'md5'
@@ -86,6 +85,8 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                         schema.hash = createHash(algorithm, {})
                             .update(JSON.stringify(schema))
                             .digest('hex');
+                    } else {
+                        delete schema.hash;
                     }
                 }
                 const content = JSON.stringify(schema, null, 2);

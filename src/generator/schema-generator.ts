@@ -55,6 +55,7 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
     const result: SchemaObject = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         $id: options.schemaId,
+        hash: '',
         definitions: {},
     };
     for (const definitionName of options.definitions) {
