@@ -226,7 +226,7 @@ function processExportDeclaration(
     }
 
     for (const element of statement.exportClause.elements) {
-        const typeName = element.name.escapedText;
+        const typeName = element.name.getText();
         const statement = module.statements.find((value) => {
             if (
                 isTypeAliasDeclaration(value) ||

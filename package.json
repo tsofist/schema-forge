@@ -21,8 +21,8 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@faker-js/faker": "^8.4.1",
-    "@tsofist/stem": "^1.28.1",
+    "@faker-js/faker": "^9.0.1",
+    "@tsofist/stem": "^1.28.2",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "json-schema-faker": "^0.5.6",
@@ -30,15 +30,15 @@
     "tslib": "^2.7.0"
   },
   "devDependencies": {
-    "@tsofist/web-buddy": "^1.11.0",
-    "@types/jest": "^29.5.12",
-    "@types/node": "^18.19.49",
+    "@tsofist/web-buddy": "^1.12.0",
+    "@types/jest": "^29.5.13",
+    "@types/node": "^18.19.50",
     "@types/supertest": "^6.0.2",
     "jest": "^29.7.0",
     "rimraf": "^5.0.10",
     "supertest": "^6.3.4",
     "ts-jest": "^29.2.5",
-    "typescript": "~5.5.4"
+    "typescript": "~5.6.2"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
