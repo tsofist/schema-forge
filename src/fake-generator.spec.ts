@@ -27,6 +27,7 @@ describe('generateFakeData', () => {
             'Url': {
                 type: 'string',
                 format: 'uri',
+                faker: 'sf.url',
                 $comment: 'Test comment',
             },
             'ForeignInt': {
@@ -66,18 +67,18 @@ describe('generateFakeData', () => {
                 type: 'string',
                 format: 'uuid',
             },
-            'CMSServiceID': {
+            'ServiceID': {
                 $ref: '#/definitions/UUID',
-                description: 'CMS: ID of a service',
+                description: 'ID of a service',
             },
-            'UniqueItemsArray<CMSServiceID>': {
+            'UniqueItemsArray<ServiceID>': {
                 type: 'array',
                 items: {
-                    $ref: '#/definitions/CMSServiceID',
+                    $ref: '#/definitions/ServiceID',
                 },
                 uniqueItems: true,
             },
-            'CMSEntity': {
+            'Entity': {
                 type: 'object',
                 additionalProperties: false,
                 properties: {
@@ -103,7 +104,7 @@ describe('generateFakeData', () => {
                         additionalProperties: false,
                         properties: {
                             services: {
-                                $ref: '#/definitions/UniqueItemsArray<CMSServiceID>',
+                                $ref: '#/definitions/UniqueItemsArray<ServiceID>',
                                 description: 'Linked services',
                             },
                         },
@@ -112,8 +113,8 @@ describe('generateFakeData', () => {
                     },
                 },
                 required: ['name', 'refs', 'datetime', 'time'],
-                description: 'CMS: Entity',
-                dbEntity: 'cms.entity',
+                description: 'Entity',
+                dbEntity: 'entity',
             },
         },
     };
@@ -165,7 +166,7 @@ describe('generateFakeData', () => {
             expect((data as string[]).join(' ')).toMatch(/[=^+U+0400–U+04FF\s\S@/_-]+/);
         }
         {
-            const source = 'test-2#/definitions/CMSEntity';
+            const source = 'test-2#/definitions/Entity';
             const data = await generateFakeData<any>(validator, source, { locale: 'ru' });
 
             expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);

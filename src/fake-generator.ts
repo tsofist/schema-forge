@@ -1,5 +1,6 @@
 import * as fakerModule from '@faker-js/faker';
-import { hasOwnProperty } from '@tsofist/stem';
+import { ArrayMay, hasOwnProperty } from '@tsofist/stem';
+import { asArray } from '@tsofist/stem/lib/as-array';
 import { ISOTimeString } from '@tsofist/stem/lib/cldr';
 import { substr } from '@tsofist/stem/lib/string/substr';
 import { SchemaObject } from 'ajv';
@@ -18,9 +19,11 @@ const PRUNE_PROPS = Array.from(
 );
 
 export type SetupFakerModules = (faker: fakerModule.Faker) => object;
+export type FakerRangeNum = Parameters<fakerModule.HelpersModule['rangeToNumber']>[0];
 
+type LocaleName = keyof typeof fakerModule.allLocales;
 export interface FakeGeneratorOptions extends JSONSchemaFakerOptions {
-    locale?: string;
+    locale?: ArrayMay<LocaleName>;
     setupFakerModules?: SetupFakerModules[];
 }
 
@@ -47,21 +50,26 @@ export async function generateFakeData<T = unknown>(
         }
     }
 
-    const localeName = options.locale || 'en';
-    const locale = localeName in fakerModule ? (fakerModule as any)[localeName] : undefined;
-    const faker = new fakerModule.Faker({ locale });
+    const faker = new fakerModule.Faker({
+        locale: asArray<LocaleName>(options.locale || ['en' satisfies LocaleName]).map(
+            (name) => fakerModule.allLocales[name],
+        ),
+    });
 
     const generator = JSONSchemaFaker.extend('faker', () => {
         Object.assign(faker, {
             date: proxyFakerDateModule(faker.date),
         });
 
-        if (options.setupFakerModules?.length) {
-            for (const item of options.setupFakerModules) {
-                const modules = item(faker);
-                Object.assign(faker, modules);
-            }
+        for (const item of [
+            //
+            ...EmbeddedModules,
+            ...(options.setupFakerModules || []),
+        ]) {
+            const modules = item(faker);
+            Object.assign(faker, modules);
         }
+
         return faker;
     });
 
@@ -81,6 +89,23 @@ export async function generateFakeData<T = unknown>(
 
     return generator.generate(schema as SchemaObject, refs) as T;
 }
+
+const EmbeddedModules: SetupFakerModules[] = [
+    (faker) => ({
+        sf: {
+            url(
+                prefix: string = 'https://example.com',
+                parts: FakerRangeNum = { min: 1, max: 5 },
+                words: FakerRangeNum = { min: 1, max: 3 },
+            ): string {
+                const pathParts = new Array(faker.helpers.rangeToNumber(parts))
+                    .fill('')
+                    .map(() => faker.lorem.slug(words));
+                return `${prefix}/${pathParts.join('/')}`;
+            },
+        },
+    }),
+];
 
 function proxyFakerDateModule<T extends object>(obj: T): T {
     return new Proxy(obj, {
