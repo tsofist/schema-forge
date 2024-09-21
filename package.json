@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.0.1",
-    "@tsofist/stem": "^1.28.2",
+    "@tsofist/stem": "^1.29.1",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "json-schema-faker": "^0.5.6",
