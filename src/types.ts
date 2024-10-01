@@ -65,6 +65,16 @@ export interface SchemaForgeOptions extends SchemaForgeBaseOptions {
      * @default false
      */
     readonly openapiCompatible?: boolean;
+    /**
+     * Determines whether to sort the properties of object schemas in alphabetical order.
+     *      If set to `true`, the tool will sort both the fields in the `properties` section
+     *        and the field names in the `required` array for object-schema definitions.
+     *      Sorting can improve readability and consistency,
+     *        but may affect the order in which properties appear in generated outputs.
+     *      Applicable only to schemas of type `object`.
+     * @default false
+     */
+    readonly sortObjectProperties?: boolean;
 }
 
 export interface SchemaForgeMetadata {

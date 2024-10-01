@@ -172,6 +172,7 @@ export async function generateDraftTypeFiles(options: Options) {
     if (options.definitionsFilter) {
         definitions = definitions.filter(options.definitionsFilter);
     }
+
     definitions.sort();
 
     return {
