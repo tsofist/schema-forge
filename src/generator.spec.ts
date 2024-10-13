@@ -15,6 +15,77 @@ import { createSchemaForgeValidator, SchemaForgeValidator } from './validator';
 
 const KEEP_ARTEFACTS = false;
 
+describe('generator for a6', () => {
+    const outputSchemaFile = './a6.generated.schema.tmp.json';
+    const outputSchemaMetadataFile = './a6.generated.definitions.tmp.json';
+
+    let forgeSchemaResult: SchemaForgeResult | undefined;
+    let validator: SchemaForgeValidator;
+
+    beforeAll(async () => {
+        forgeSchemaResult = await forgeSchema({
+            schemaId: 'test',
+            tsconfigFrom: './tsconfig.build-test.json',
+            sourcesDirectoryPattern: 'test-sources/a6',
+            sourcesFilesPattern: ['service-api.ts', 'types.ts'],
+            outputSchemaFile,
+            outputSchemaMetadataFile,
+            expose: 'all',
+            explicitPublic: true,
+        });
+        validator = createSchemaForgeValidator({}, true);
+        const schema = await loadJSONSchema([outputSchemaFile]);
+        validator.addSchema(schema);
+    });
+    afterAll(async () => {
+        if (!KEEP_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
+    });
+
+    it('generated schema should be valid', async () => {
+        expect(forgeSchemaResult).toBeTruthy();
+        const defs = forgeSchemaResult?.schema?.definitions;
+        expect(defs).toBeTruthy();
+
+        expect(validator.getValidator('test#/definitions/CollectionItemID1')!.schema).toStrictEqual(
+            {
+                $ref: '#/definitions/UUID',
+                format: 'uuid',
+                description: 'This is Collection item ID (inherits from UUID)',
+            },
+        );
+
+        expect(validator.getValidator('test#/definitions/CollectionItemID2')!.schema).toStrictEqual(
+            {
+                format: 'uuid',
+                type: 'string',
+            },
+        );
+
+        {
+            const rec = validator.getValidator(
+                'test#/definitions/PRec<CollectionItem,UUID>',
+            )!.schema;
+            expect(rec).toBeTruthy();
+            expect((rec as any).propertyNames).toStrictEqual({
+                format: 'uuid',
+            });
+        }
+        {
+            const rec = validator.getValidator(
+                'test#/definitions/PRec<CollectionItem,CollectionItemID1>',
+            )!.schema;
+            expect(rec).toBeTruthy();
+            expect((rec as any).propertyNames).toStrictEqual({
+                format: 'uuid',
+                description: 'This is Collection item ID (inherits from UUID)',
+            });
+        }
+    });
+});
+
 describe('generator for a5', () => {
     const outputSchemaFile = './a5.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a5.generated.definitions.tmp.json';

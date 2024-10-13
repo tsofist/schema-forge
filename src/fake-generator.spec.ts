@@ -118,11 +118,27 @@ describe('generateFakeData', () => {
             },
         },
     };
+    const testSchema3: SchemaObject = {
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        $id: 'test-3',
+        definitions: {
+            RecursiveObject: {
+                type: 'object',
+                properties: {
+                    some1: { type: 'string' },
+                    some2: { $ref: '#/definitions/RecursiveObject' },
+                },
+            },
+        },
+    };
 
     let validator: SchemaForgeValidator;
 
     beforeEach(async () => {
-        validator = createSchemaForgeValidator({ schemas: [testSchema1, testSchema2] }, true);
+        validator = createSchemaForgeValidator(
+            { schemas: [testSchema1, testSchema2, testSchema3] },
+            true,
+        );
     });
 
     it('default behavior', async () => {
@@ -177,6 +193,27 @@ describe('generateFakeData', () => {
 
             expect(typeof data.time).toStrictEqual('string');
             expect(data.time).toMatch(/^[0-9]{2}:[0-9]{2}:[0-9]{2}$/);
+        }
+    });
+
+    it('should handle recursive schemas', async () => {
+        const source = 'test-3#/definitions/RecursiveObject';
+        const count = 10;
+        for (let i = 0; i < count; i++) {
+            const data = await generateFakeData(validator, source, {
+                reuseProperties: false,
+                failOnInvalidFormat: true,
+                failOnInvalidTypes: true,
+
+                minItems: 1,
+                maxItems: 4,
+                locale: ['ru', 'en'],
+                fixedProbabilities: false,
+                optionalsProbability: 0.75,
+                refDepthMax: 20,
+            });
+            expect(data).toBeDefined();
+            expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);
         }
     });
 });

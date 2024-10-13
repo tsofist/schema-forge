@@ -4,18 +4,36 @@ import { isEmptyObject } from '@tsofist/stem/lib/object/is-empty';
 import { compareStringsAsc } from '@tsofist/stem/lib/string/compare';
 import Ajv, { SchemaObject } from 'ajv';
 import {
+    Annotations,
     createFormatter,
     createParser,
     createProgram,
+    ExtendedAnnotationsReader,
     LiteralType,
+    LiteralValue,
     NumberType,
     SchemaGenerator,
     StringType,
     SubNodeParser,
+    CompletedConfig,
+    DEFAULT_CONFIG,
 } from 'ts-json-schema-generator';
-import { CompletedConfig, DEFAULT_CONFIG } from 'ts-json-schema-generator/dist/src/Config';
-import { LiteralValue } from 'ts-json-schema-generator/src/Type/LiteralType';
-import { Identifier, Node, Program, SyntaxKind, TypeChecker, TypeFlags } from 'typescript';
+import {
+    getAllJSDocTags,
+    Identifier,
+    isIdentifier,
+    isIntersectionTypeNode,
+    isTypeAliasDeclaration,
+    isTypeReferenceNode,
+    isUnionTypeNode,
+    JSDocTag,
+    Node,
+    Program,
+    SymbolFlags,
+    SyntaxKind,
+    TypeChecker,
+    TypeFlags,
+} from 'typescript';
 import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX, TypeExposeKind } from './types';
 
 interface Options {
@@ -53,6 +71,7 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
     const parser = createParser(generatorProgram, options.sourcesTypesGeneratorConfig, (parser) => {
         parser.addNodeParser(new ArrayLiteralExpressionIdentifierParser(typeChecker));
     });
+
     const formatter = createFormatter(options.sourcesTypesGeneratorConfig);
     const generator = new SchemaGenerator(generatorProgram, parser, formatter, generatorConfig);
 
@@ -95,11 +114,7 @@ function sortProperties<T extends SchemaObject>(schema: T): T {
         );
     };
 
-    let processed = 0;
-
     const process = (item: unknown) => {
-        processed++;
-
         if (!item) return;
 
         if (Array.isArray(item)) {
@@ -164,4 +179,63 @@ function getIdentifierLiteralValue(
         return type.value;
     }
     return undefined;
+}
+
+function hasInheritDocTag(node: Node): boolean {
+    return (
+        getAllJSDocTags(node, (tag): tag is JSDocTag => {
+            return tag.tagName.text === 'inheritDoc';
+        }).length > 0
+    );
+}
+
+{
+    // Support for @inheritDoc tag to enforce inheritance of annotations
+
+    const getAnnotations = ExtendedAnnotationsReader.prototype.getAnnotations;
+
+    ExtendedAnnotationsReader.prototype.getAnnotations = function getAnnotationsWithInheritance(
+        node: Node,
+    ): Annotations | undefined {
+        if (!hasInheritDocTag(node)) return getAnnotations.call(this, node);
+
+        const checker =
+            ((this as any).typeChecker as TypeChecker) || raise('TypeChecker is not available');
+        const result: Annotations = {};
+
+        if (
+            !('ref' in result) &&
+            !('$ref' in result) &&
+            //
+            isTypeAliasDeclaration(node) &&
+            //
+            isTypeReferenceNode(node.type) &&
+            isIdentifier(node.type.typeName) &&
+            !isUnionTypeNode(node.type) &&
+            !isIntersectionTypeNode(node.type)
+        ) {
+            const alias = checker.getSymbolAtLocation(node.type.typeName);
+            const symbol =
+                alias && SymbolFlags.Alias & alias.flags
+                    ? checker.getAliasedSymbol(alias)
+                    : undefined;
+
+            const inheritedAnn: Annotations = {};
+            if (symbol && symbol.declarations?.length) {
+                for (const declaration of symbol.declarations) {
+                    const ann = getAnnotations.call(this, declaration);
+                    if (ann) Object.assign(inheritedAnn, ann);
+                }
+            }
+
+            Object.assign(result, inheritedAnn);
+        }
+
+        {
+            const ann = getAnnotations.call(this, node);
+            if (ann) Object.assign(result, ann);
+        }
+
+        return isEmptyObject(result) ? undefined : result;
+    };
 }
