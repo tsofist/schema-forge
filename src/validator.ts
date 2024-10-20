@@ -53,7 +53,7 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
     }
 
     function addSchema(schema: Schema[]) {
-        engine.addSchema(schema, undefined, undefined, true);
+        engine.addSchema(schema);
     }
 
     function validationErrorsText(errors: Nullable<ErrorObject[]>, options?: ErrorsTextOptions) {
