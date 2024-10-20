@@ -21,9 +21,9 @@ const PRUNE_PROPS = Array.from(
 export type SetupFakerModules = (faker: fakerModule.Faker) => object;
 export type FakerRangeNum = Parameters<fakerModule.HelpersModule['rangeToNumber']>[0];
 
-type LocaleName = keyof typeof fakerModule.allLocales;
+export type FakeGeneratorLocaleName = keyof typeof fakerModule.allLocales;
 export interface FakeGeneratorOptions extends JSONSchemaFakerOptions {
-    locale?: ArrayMay<LocaleName>;
+    locale?: ArrayMay<FakeGeneratorLocaleName>;
     setupFakerModules?: SetupFakerModules[];
 }
 
@@ -51,9 +51,9 @@ export async function generateFakeData<T = unknown>(
     }
 
     const faker = new fakerModule.Faker({
-        locale: asArray<LocaleName>(options.locale || ['en' satisfies LocaleName]).map(
-            (name) => fakerModule.allLocales[name],
-        ),
+        locale: asArray<FakeGeneratorLocaleName>(
+            options.locale || ['en' satisfies FakeGeneratorLocaleName],
+        ).map((name) => fakerModule.allLocales[name]),
     });
 
     const generator = JSONSchemaFaker.extend('faker', () => {
@@ -77,6 +77,7 @@ export async function generateFakeData<T = unknown>(
         alwaysFakeOptionals: true,
         refDepthMax: 1_000,
         ...options,
+        resolveJsonPath: false,
         pruneProperties: PRUNE_PROPS,
     });
 
