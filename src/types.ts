@@ -105,7 +105,7 @@ export type SchemaNotFoundErrorContext = SchemaForgeValidationContextBase & {
 export const SchemaForgeValidationErrorCode: ErrorCode = 'EC_SCHEMA_VALIDATION_FAILED';
 export type SchemaForgeValidationErrorContext = SchemaForgeValidationErrorContextBase & {
     schema: SchemaForgeDefinitionRef;
-    errors: ErrorObject[];
+    errors: SchemaForgeValidationReport;
 };
 
 export interface SchemaForgeValidationContextBase {
@@ -115,9 +115,16 @@ export interface SchemaForgeValidationContextBase {
 
 export interface SchemaForgeValidationErrorContextBase extends SchemaForgeValidationContextBase {
     schema: SchemaForgeDefinitionRef;
-    errors: ErrorObject[];
+    errors: SchemaForgeValidationReport;
 }
 
+/**
+ * Reference to schema definition
+ * @example
+ *     ''
+ *     '#/definitions/MyType'
+ *     'SomeSchemaId#/definitions/MyType'
+ */
 export type SchemaForgeDefinitionRef = '' | `${string}#/definitions/${string}`;
 
 export enum SchemaDefinitionKind {
@@ -160,8 +167,7 @@ export type SchemaDefinitionInfo = SDIType | SDIAPIInterface | SDIMethodArgument
 
 export interface SchemaForgeValidationResult {
     valid: boolean;
-    errors: Nullable<ErrorObject[]>;
-
+    errors: Nullable<SchemaForgeValidationReport>;
     errorsText(options?: ErrorsTextOptions): string;
 }
 

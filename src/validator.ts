@@ -1,15 +1,7 @@
 import { Nullable } from '@tsofist/stem';
 import { raiseEx } from '@tsofist/stem/lib/error';
 import { entries } from '@tsofist/stem/lib/object/entries';
-import Ajv, {
-    AnySchema,
-    ErrorObject,
-    ErrorsTextOptions,
-    Options,
-    Schema,
-    SchemaObject,
-    ValidateFunction,
-} from 'ajv';
+import Ajv, { AnySchema, ErrorsTextOptions, Options, Schema, SchemaObject } from 'ajv';
 import addFormats from 'ajv-formats';
 import {
     SchemaDefinitionInfo,
@@ -17,6 +9,8 @@ import {
     SchemaForgeValidationContextBase,
     SchemaForgeValidationErrorCode,
     SchemaForgeValidationErrorContext,
+    SchemaForgeValidationFunction,
+    SchemaForgeValidationReport,
     SchemaForgeValidationResult,
     SchemaNotFoundErrorCode,
     SchemaNotFoundErrorContext,
@@ -41,25 +35,50 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
     addJSDocKeywords(engine);
     if (useAdditionalFormats) engine = addFormats(engine);
 
-    function getValidator<T = unknown>(
-        ref: SchemaForgeDefinitionRef | object,
-    ): ValidateFunction<T> | undefined {
-        if (typeof ref === 'string') return engine.getSchema<T>(ref);
-        return engine.compile<T>(ref);
+    /**
+     * Get schema (or definition) validation function
+     */
+    function getValidator<TData = unknown>(
+        ref: SchemaForgeDefinitionRef | AnySchema,
+    ): SchemaForgeValidationFunction<TData> | undefined {
+        if (typeof ref === 'string') return engine.getSchema<TData>(ref);
+        return engine.compile<TData>(ref);
     }
 
+    /**
+     * Check if schema exists
+     */
     function hasValidator(ref: SchemaForgeDefinitionRef) {
         return engine.getSchema(ref) != null;
     }
 
+    /**
+     * Add root schema(s) to registry
+     */
     function addSchema(schema: Schema[]) {
         engine.addSchema(schema);
     }
 
-    function validationErrorsText(errors: Nullable<ErrorObject[]>, options?: ErrorsTextOptions) {
+    /**
+     * Remove root schema(s) from registry using Schema object, Reference or RegExp pattern to math Schema ID
+     */
+    function removeSchema(schemaIdentity?: AnySchema | SchemaForgeDefinitionRef | RegExp) {
+        engine.removeSchema(schemaIdentity);
+    }
+
+    /**
+     * Get validation errors text
+     */
+    function validationErrorsText(
+        errors: Nullable<SchemaForgeValidationReport>,
+        options?: ErrorsTextOptions,
+    ) {
         return engine.errorsText(errors, options);
     }
 
+    /**
+     * Validate data by schema definition reference
+     */
     function validateBySchema(
         ref: SchemaForgeDefinitionRef,
         data: unknown,
@@ -76,16 +95,20 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
             rootData: {},
             dynamicAnchors: {},
         });
+        const errors = validator.errors;
 
         return {
             valid,
-            errors: validator.errors,
+            errors,
             errorsText(options?: ErrorsTextOptions) {
-                return validationErrorsText(validator.errors, options);
+                return validationErrorsText(errors, options);
             },
         };
     }
 
+    /**
+     * Check (throw error if invalid) data by schema definition reference
+     */
     function checkBySchema<
         T = unknown,
         Ctx extends SchemaForgeValidationContextBase = SchemaForgeValidationContextBase,
@@ -102,7 +125,7 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         return result.valid;
     }
 
-    function forEachDefinitions(callback: (name: string, schema: string) => void) {
+    function forEachDefinitions(callback: (definitionName: string, schemaId: string) => void) {
         for (const [schemaId, env] of entries(engine.schemas)) {
             if (
                 env &&
@@ -117,6 +140,9 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         }
     }
 
+    /**
+     * List schema definitions
+     */
     function listDefinitions(
         predicate?: (info: SchemaDefinitionInfo) => boolean,
     ): SchemaDefinitionInfo[] {
@@ -128,10 +154,16 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         return result;
     }
 
+    /**
+     * Get schema object of definition by reference
+     */
     function getSchema(ref: SchemaForgeDefinitionRef) {
         return getValidator(ref)?.schema;
     }
 
+    /**
+     * Get root schema object
+     */
     function getRootSchema(schemaId: string) {
         return engine.schemas[schemaId]?.schema as
             | (SchemaObject & { definitions?: AnySchema })
@@ -139,6 +171,7 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
     }
 
     return {
+        removeSchema,
         hasValidator,
         getValidator,
         getSchema,
