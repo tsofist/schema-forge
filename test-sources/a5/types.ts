@@ -1,4 +1,4 @@
-export const NumN = 133 as const;
+export const NumN = 133;
 
 /**
  * @public
