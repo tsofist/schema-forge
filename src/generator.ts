@@ -17,6 +17,8 @@ import {
     SchemaForgeResult,
 } from './types';
 
+const KEEP_ARTEFACTS = false;
+
 export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaForgeResult> {
     const { schemaId, sourcesDirectoryPattern, outputSchemaFile } = options;
     const sourcesPattern = asArray(options.sourcesFilesPattern).map(
@@ -69,6 +71,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                     expose: options.expose,
                     openAPI: options.openapiCompatible,
                     sortObjectProperties: options.sortObjectProperties,
+                    allowUseFallbackDescription: options.allowUseFallbackDescription,
                 });
                 if (options.schemaMetadata) {
                     for (const key of keysOf(options.schemaMetadata)) {
@@ -126,7 +129,9 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                 });
             }
         } finally {
-            await Promise.all(files.map((fileName) => unlink(fileName).catch(noop)));
+            if (!KEEP_ARTEFACTS) {
+                await Promise.all(files.map((fileName) => unlink(fileName).catch(noop)));
+            }
         }
 
         return {

@@ -15,6 +15,53 @@ import { createSchemaForgeValidator, SchemaForgeValidator } from './validator';
 
 const KEEP_ARTEFACTS = false;
 
+describe('generator for a7', () => {
+    const outputSchemaFile = './a7.generated.schema.tmp.json';
+    const outputSchemaMetadataFile = './a7.generated.definitions.tmp.json';
+
+    let forgeSchemaResult: SchemaForgeResult | undefined;
+    let validator: SchemaForgeValidator;
+
+    beforeAll(async () => {
+        forgeSchemaResult = await forgeSchema({
+            schemaId: 'test',
+            allowUseFallbackDescription: true,
+            tsconfigFrom: './tsconfig.build-test.json',
+            sourcesDirectoryPattern: 'test-sources/a7',
+            sourcesFilesPattern: ['service-api.ts', 'types.ts'],
+            outputSchemaFile,
+            outputSchemaMetadataFile,
+            expose: 'all',
+            explicitPublic: true,
+        });
+        validator = createSchemaForgeValidator({}, true);
+        const schema = await loadJSONSchema([outputSchemaFile]);
+        validator.addSchema(schema);
+    });
+    afterAll(async () => {
+        if (!KEEP_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
+    });
+
+    it('generated schema should be valid', async () => {
+        expect(forgeSchemaResult).toBeTruthy();
+        const schema = validator.getSchema('test#/definitions/SomeAPI_doSomeWithUser_Args') as any;
+        expect(schema).toBeTruthy();
+        expect(schema.items).toStrictEqual([
+            { $ref: '#/definitions/User', title: 'user', description: 'Target user' },
+            { type: 'boolean', title: 'checkActive' },
+            { type: 'boolean', title: 'useLogger' },
+        ]);
+        expect(schema.description).toStrictEqual(
+            'Arguments for Method:SomeAPI#doSomeWithUser (user*, checkActive*, useLogger)',
+        );
+        expect(schema.minItems).toStrictEqual(2);
+        expect(schema.maxItems).toStrictEqual(3);
+    });
+});
+
 describe('generator for a6', () => {
     const outputSchemaFile = './a6.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a6.generated.definitions.tmp.json';
@@ -290,6 +337,7 @@ describe('generator for a3', () => {
         ]);
     });
 });
+
 describe('generator for a2', () => {
     const outputSchemaFile = './a2.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a2.generated.definitions.tmp.json';

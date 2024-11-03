@@ -1,39 +1,35 @@
-import { URec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
-import { isEmptyObject } from '@tsofist/stem/lib/object/is-empty';
-import { compareStringsAsc } from '@tsofist/stem/lib/string/compare';
+import '../util/patch.extended-annotations-reader';
 import Ajv, { SchemaObject } from 'ajv';
 import {
-    Annotations,
+    AnnotatedType,
+    ChainNodeParser,
+    CompletedConfig,
+    Context,
     createFormatter,
     createParser,
     createProgram,
-    ExtendedAnnotationsReader,
+    DEFAULT_CONFIG,
     LiteralType,
     LiteralValue,
     NumberType,
     SchemaGenerator,
     StringType,
     SubNodeParser,
-    CompletedConfig,
-    DEFAULT_CONFIG,
+    TupleType,
 } from 'ts-json-schema-generator';
 import {
-    getAllJSDocTags,
     Identifier,
-    isIdentifier,
-    isIntersectionTypeNode,
-    isTypeAliasDeclaration,
-    isTypeReferenceNode,
-    isUnionTypeNode,
-    JSDocTag,
+    isNamedTupleMember,
+    isTupleTypeNode,
     Node,
-    Program,
-    SymbolFlags,
     SyntaxKind,
+    TupleTypeNode,
     TypeChecker,
     TypeFlags,
 } from 'typescript';
+import { sortProperties } from '../util/sort-properties';
+import { readJSDocDescription } from '../util/tsc';
 import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX, TypeExposeKind } from './types';
 
 interface Options {
@@ -46,6 +42,7 @@ interface Options {
     expose?: TypeExposeKind;
     openAPI?: boolean;
     sortObjectProperties?: boolean;
+    allowUseFallbackDescription?: boolean;
 }
 
 export async function generateSchemaByDraftTypes(options: Options): Promise<SchemaObject> {
@@ -57,6 +54,8 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         }
     }
 
+    const allowUseFallbackDescription = options.allowUseFallbackDescription;
+
     const generatorConfig: CompletedConfig = {
         ...DEFAULT_CONFIG,
         ...SG_CONFIG_DEFAULTS,
@@ -66,9 +65,12 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         discriminatorType: options.openAPI ? 'open-api' : DEFAULT_CONFIG.discriminatorType,
         ...SG_CONFIG_MANDATORY,
     };
-    const generatorProgram: Program = createProgram(generatorConfig);
+    const generatorProgram = createProgram(generatorConfig);
     const typeChecker = generatorProgram.getTypeChecker();
     const parser = createParser(generatorProgram, options.sourcesTypesGeneratorConfig, (parser) => {
+        parser.addNodeParser(
+            new TupleTypeParser(parser as ChainNodeParser, allowUseFallbackDescription),
+        );
         parser.addNodeParser(new ArrayLiteralExpressionIdentifierParser(typeChecker));
     });
 
@@ -97,51 +99,36 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
     return result;
 }
 
-function sortProperties<T extends SchemaObject>(schema: T): T {
-    const stack: unknown[] = [];
+export class TupleTypeParser implements SubNodeParser {
+    constructor(
+        protected readonly childNodeParser: ChainNodeParser,
+        protected readonly allowUseFallbackDescription: boolean | undefined,
+    ) {}
 
-    const isTarget = (
-        target: unknown,
-    ): target is { type: 'object'; properties: URec; required?: string[] } => {
-        return (
-            target != null &&
-            typeof target === 'object' &&
-            'type' in target &&
-            target.type === 'object' &&
-            'properties' in target &&
-            typeof target.properties === 'object' &&
-            !isEmptyObject(target.properties)
-        );
-    };
-
-    const process = (item: unknown) => {
-        if (!item) return;
-
-        if (Array.isArray(item)) {
-            stack.push(...item);
-        } else {
-            if (isTarget(item)) {
-                item.properties = Object.fromEntries(
-                    Object.entries(item.properties).sort(([a], [b]) => compareStringsAsc(a, b)),
-                );
-                if (item.required?.length) item.required.sort(compareStringsAsc);
-            }
-            if (typeof item === 'object') {
-                stack.push(...Object.values(item));
-            }
-        }
-    };
-
-    process(schema);
-    while (stack.length) {
-        process(stack.pop());
+    supportsNode(node: Node): boolean {
+        return isTupleTypeNode(node);
     }
 
-    return schema;
+    createType(node: TupleTypeNode, context: Context) {
+        const items = node.elements.map((element) => {
+            const type = this.childNodeParser.createType(element, context);
+
+            if (isNamedTupleMember(element)) {
+                const description = readJSDocDescription(element, this.allowUseFallbackDescription);
+                const nullable = type instanceof AnnotatedType ? type.isNullable() : false;
+                if (nullable) console.log(description, nullable);
+                return description ? new AnnotatedType(type, { description }, nullable) : type;
+            }
+
+            return type;
+        });
+
+        return new TupleType(items);
+    }
 }
 
 class ArrayLiteralExpressionIdentifierParser implements SubNodeParser {
-    constructor(private readonly checker: TypeChecker) {}
+    constructor(protected readonly checker: TypeChecker) {}
 
     supportsNode(node: Node): boolean {
         return (
@@ -179,63 +166,4 @@ function getIdentifierLiteralValue(
         return type.value;
     }
     return undefined;
-}
-
-function hasInheritDocTag(node: Node): boolean {
-    return (
-        getAllJSDocTags(node, (tag): tag is JSDocTag => {
-            return tag.tagName.text === 'inheritDoc';
-        }).length > 0
-    );
-}
-
-{
-    // Support for @inheritDoc tag to enforce inheritance of annotations
-
-    const getAnnotations = ExtendedAnnotationsReader.prototype.getAnnotations;
-
-    ExtendedAnnotationsReader.prototype.getAnnotations = function getAnnotationsWithInheritance(
-        node: Node,
-    ): Annotations | undefined {
-        if (!hasInheritDocTag(node)) return getAnnotations.call(this, node);
-
-        const checker =
-            ((this as any).typeChecker as TypeChecker) || raise('TypeChecker is not available');
-        const result: Annotations = {};
-
-        if (
-            !('ref' in result) &&
-            !('$ref' in result) &&
-            //
-            isTypeAliasDeclaration(node) &&
-            //
-            isTypeReferenceNode(node.type) &&
-            isIdentifier(node.type.typeName) &&
-            !isUnionTypeNode(node.type) &&
-            !isIntersectionTypeNode(node.type)
-        ) {
-            const alias = checker.getSymbolAtLocation(node.type.typeName);
-            const symbol =
-                alias && SymbolFlags.Alias & alias.flags
-                    ? checker.getAliasedSymbol(alias)
-                    : undefined;
-
-            const inheritedAnn: Annotations = {};
-            if (symbol && symbol.declarations?.length) {
-                for (const declaration of symbol.declarations) {
-                    const ann = getAnnotations.call(this, declaration);
-                    if (ann) Object.assign(inheritedAnn, ann);
-                }
-            }
-
-            Object.assign(result, inheritedAnn);
-        }
-
-        {
-            const ann = getAnnotations.call(this, node);
-            if (ann) Object.assign(result, ann);
-        }
-
-        return isEmptyObject(result) ? undefined : result;
-    };
 }

@@ -9,40 +9,40 @@ import {
     CompilerHost,
     CompilerOptions,
     createCompilerHost,
-    DeclarationStatement,
     EnumDeclaration,
     ExportDeclaration,
-    getAllJSDocTags,
-    getAllJSDocTagsOfKind,
-    getJSDocCommentsAndTags,
     getJSDocDeprecatedTag,
     getJSDocPrivateTag,
     getJSDocPublicTag,
     getTextOfJSDocComment,
-    Identifier,
     InterfaceDeclaration,
     isEnumDeclaration,
     isExportDeclaration,
     isInterfaceDeclaration,
+    isMethodSignature,
     isNamedExports,
+    isPropertySignature,
     isStringLiteral,
     isTypeAliasDeclaration,
-    JSDocTag,
-    MethodSignature,
     Program,
-    resolveModuleName,
-    SignatureDeclaration,
     SourceFile,
     Statement,
     SyntaxKind,
     TypeAliasDeclaration,
     TypeChecker,
     TypeElement,
-    TypeReferenceNode,
     VariableDeclaration,
 } from 'typescript';
 import { buildAPIInterfaceSchemaSignature } from '../index';
 import { SchemaForgeSignatureSuffix } from '../types';
+import {
+    hasJSDocTag,
+    readInterfaceGenericText,
+    readJSDocDescription,
+    readMemberTypeName,
+    readNodeName,
+    resolveModuleFileName,
+} from '../util/tsc';
 import {
     SchemaForgeBaseOptions,
     SG_CONFIG_DEFAULTS,
@@ -183,6 +183,8 @@ export async function generateDraftTypeFiles(options: Options) {
     };
 }
 
+const S = ' '.repeat(4);
+
 function passDeclaration(
     statement: TypeAliasDeclaration | EnumDeclaration | InterfaceDeclaration | VariableDeclaration,
     context: GeneratorContext,
@@ -218,8 +220,13 @@ function processExportDeclaration(
     }
 
     if (!module) {
-        const fn = resolveModuleFileName(sourceFileName, context, moduleSpecifier);
-        if (fn) module = context.program.getSourceFile(fn);
+        const filename = resolveModuleFileName(
+            sourceFileName,
+            moduleSpecifier,
+            context.compilerOptions,
+            context.compilerHost,
+        );
+        if (filename) module = context.program.getSourceFile(filename);
     }
 
     if (!module) {
@@ -249,21 +256,21 @@ interface DefinitionMetadata {
     name: string;
     description?: string;
     deprecated?: string;
-    desc: [argsText: string, resultTypeName: string] | string;
+    desc:
+        | [argsText: string, resultTypeName: string] // Method signature
+        | string; // Property type
 }
 
 function processAPIInterfaceDeclaration(
     statement: InterfaceDeclaration,
     context: GeneratorContext,
 ) {
+    const allowUseFallbackDescription = context.options.allowUseFallbackDescription;
     const definitionsMetaList: DefinitionMetadata[] = [];
 
     const interfaceName = readNodeName(statement);
     const interfaceGenericText = readInterfaceGenericText(statement);
-    const interfaceDesc = readJSDocDescription(
-        statement,
-        context.options.allowUseFallbackDescription,
-    );
+    const interfaceDesc = readJSDocDescription(statement, allowUseFallbackDescription);
     const interfaceDeprecated = getTextOfJSDocComment(getJSDocDeprecatedTag(statement)?.comment);
 
     function onMember(member: TypeElement) {
@@ -271,28 +278,33 @@ function processAPIInterfaceDeclaration(
         if (isPrivate) return;
 
         const memberName = readNodeName(member);
-        const memberDescription = readJSDocDescription(
-            member,
-            context.options.allowUseFallbackDescription,
-        );
+        const memberDescription = readJSDocDescription(member, allowUseFallbackDescription);
 
         const deprecated = getTextOfJSDocComment(getJSDocDeprecatedTag(member)?.comment);
 
-        if (member.kind === SyntaxKind.MethodSignature) {
-            const method = member as MethodSignature;
+        if (isMethodSignature(member)) {
+            const method = member;
             const minArgsNum = method.parameters.filter((param) => !param.questionToken).length;
             const maxArgsNum = method.parameters.length;
-
+            const argsNames: string[] = [];
             const argsTypesText = method.parameters
                 .map((parameter) => {
-                    return (
-                        parameter.type?.getText() ||
-                        raise(`No type specified for ${method.name.getText()}`)
-                    );
+                    const name = parameter.name.getText();
+                    argsNames.push(name);
+                    const text =
+                        parameter.type?.getText() || raise(`No type specified for ${name}`);
+                    let desc = readJSDocDescription(parameter, allowUseFallbackDescription, false);
+                    desc = desc ? `/** @description ${desc} */ ` : '';
+                    return `${S}${desc}${name}: ${text}`;
                 })
-                .join(',');
+                .join(',\n');
+            const argsNamesText = argsNames
+                .map((item, index) => {
+                    return `${item}${index + 1 <= minArgsNum ? '*' : ''}`;
+                })
+                .join(', ');
 
-            const resultTypeName = readMemberType(method);
+            const resultTypeName = readMemberTypeName(method);
 
             const definitionNameArgs = buildAPIInterfaceSchemaSignature(
                 interfaceName,
@@ -321,13 +333,13 @@ function processAPIInterfaceDeclaration(
                     `/**`,
                     ` * @interface ${interfaceName}`,
                     ` * @member ${interfaceName}#${memberName}`,
-                    ` * @description Arguments for ${comment}`,
+                    ` * @description Arguments for ${comment} ${argsNames.length ? `(${argsNamesText})` : ''}`,
                     ` * @comment ${comment}`,
                     ` *`,
-                    minArgsNum > 0 ? ` * @minItems ${minArgsNum}` : ``,
+                    minArgsNum > 0 ? ` * @minItems ${minArgsNum}` : ` *`,
                     ` * @maxItems ${maxArgsNum}`,
                     ` */`,
-                    `export type ${definitionNameArgs} = [${argsTypesText}];`,
+                    `export type ${definitionNameArgs} = readonly [\n${argsTypesText}\n];`,
                     ``,
                     // RESULT
                     `/**`,
@@ -340,12 +352,12 @@ function processAPIInterfaceDeclaration(
                     ``,
                 ],
             );
-        } else {
+        } else if (isPropertySignature(member)) {
             definitionsMetaList.push({
                 name: memberName,
                 description: memberDescription,
                 deprecated,
-                desc: readMemberType(member as SignatureDeclaration)!,
+                desc: readMemberTypeName(member) || 'unknown',
             });
         }
     }
@@ -412,89 +424,4 @@ function processAPIInterfaceDeclaration(
         context.registerDefinition(buildAPIInterfaceSchemaSignature(interfaceName));
         context.fileContent.push(interfaceText.stringify('\n'));
     }
-}
-
-function readMemberType(member: MethodSignature | SignatureDeclaration): string | undefined {
-    if (member.type?.kind === SyntaxKind.TypeReference) {
-        const type = member.type as TypeReferenceNode;
-        if (type.typeName.getText() !== 'Promise') {
-            return type.getText();
-        } else if (type.typeArguments) {
-            return type.typeArguments[0].getText();
-        }
-        return 'unknown';
-    }
-    return member.type?.getText();
-}
-
-function readJSDocDescription(
-    node: TypeElement | DeclarationStatement,
-    useFallbackDescription: boolean = false,
-): string | undefined {
-    let value = undefined;
-    let fallback: string | undefined = undefined;
-
-    {
-        const isTag = (tag: JSDocTag): tag is JSDocTag => {
-            if (tag.kind === SyntaxKind.JSDocTag && tag.tagName.escapedText === 'description') {
-                value = getTextOfJSDocComment(tag.comment);
-            }
-            if (
-                useFallbackDescription &&
-                fallback === undefined &&
-                tag.parent.kind === SyntaxKind.JSDoc &&
-                tag.parent.comment
-            ) {
-                fallback = getTextOfJSDocComment(tag.parent.comment);
-            }
-            return false;
-        };
-        getAllJSDocTags(node, isTag);
-    }
-
-    if (value === undefined && useFallbackDescription && fallback === undefined) {
-        const comment = getJSDocCommentsAndTags(node).find(
-            (item) => item.kind === SyntaxKind.JSDoc && item.comment != null,
-        )?.comment;
-        if (comment) fallback = getTextOfJSDocComment(comment);
-    }
-
-    if (value === undefined && useFallbackDescription && fallback !== undefined) {
-        value = fallback;
-    }
-
-    return value;
-}
-
-function readNodeName(node: TypeElement | DeclarationStatement): string {
-    return (node.name as Identifier).escapedText + '';
-}
-
-function readInterfaceGenericText(node: TypeElement | DeclarationStatement): string {
-    if (isInterfaceDeclaration(node) && node.typeParameters?.length) {
-        return `<${node.typeParameters[0].getText()}>`;
-    }
-    return '';
-}
-
-function hasJSDocTag(statement: Statement | TypeElement, tagName: string) {
-    return (
-        getAllJSDocTagsOfKind(statement, SyntaxKind.JSDocTag).find((tag) => {
-            return tag.tagName.escapedText === tagName;
-        }) != null
-    );
-}
-
-function resolveModuleFileName(
-    sourceFileName: string,
-    context: GeneratorContext,
-    moduleSpecifier: string,
-): string | undefined {
-    const resolvedModule = resolveModuleName(
-        moduleSpecifier,
-        sourceFileName,
-        context.compilerOptions,
-        context.compilerHost,
-    ).resolvedModule;
-    return resolvedModule?.resolvedFileName;
 }
