@@ -115,7 +115,7 @@ function proxyFakerDateModule<T extends object>(obj: T): T {
 
             if (typeof originalValue === 'function') {
                 return function (this: any, ...args: any[]) {
-                    const result = originalValue.apply(this, args);
+                    const result: unknown = originalValue.apply(this, args);
                     return result instanceof Date ? result.toISOString() : result;
                 };
             }
@@ -135,6 +135,7 @@ function fixJSONSchemaFakerQuirks(schema: SchemaObject): SchemaObject {
 
         for (const key in rest) {
             if (hasOwnProperty.call(rest, key)) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 rest[key] = fixJSONSchemaFakerQuirks(rest[key]);
             }
         }
@@ -146,6 +147,7 @@ function fixJSONSchemaFakerQuirks(schema: SchemaObject): SchemaObject {
     const result: SchemaObject = {};
     for (const key in schema) {
         if (hasOwnProperty.call(schema, key)) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             result[key] = fixJSONSchemaFakerQuirks(schema[key]);
         }
     }

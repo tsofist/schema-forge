@@ -3,6 +3,8 @@ import { SchemaObject } from 'ajv';
 import { generateFakeData } from './fake-generator';
 import { createSchemaForgeValidator, SchemaForgeValidator } from './validator';
 
+/* eslint-disable @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-argument */
+
 describe('generateFakeData', () => {
     const testSchema1: SchemaObject = {
         $schema: 'http://json-schema.org/draft-07/schema#',
@@ -134,7 +136,7 @@ describe('generateFakeData', () => {
 
     let validator: SchemaForgeValidator;
 
-    beforeEach(async () => {
+    beforeEach(() => {
         validator = createSchemaForgeValidator(
             { schemas: [testSchema1, testSchema2, testSchema3] },
             true,

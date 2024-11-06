@@ -1,5 +1,7 @@
 import { PositiveInt } from '@tsofist/stem/lib/number/types';
 
+/* eslint-disable @typescript-eslint/method-signature-style */
+
 /**
  * Description for Service
  */

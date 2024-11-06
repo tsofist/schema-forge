@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import { createHash } from 'node:crypto';
 import { unlink } from 'node:fs/promises';
+import { URec } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
 import { raise } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
@@ -111,7 +112,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                     serviceNames: {},
                 };
 
-                const defs = new Set(Object.keys(schema.definitions));
+                const defs = new Set(Object.keys((schema.definitions || {}) as URec));
                 for (const name of definitions) {
                     const ref: SchemaForgeDefinitionRef = `${options.schemaId || ''}#/definitions/${name}`;
                     map.names[name] = ref;

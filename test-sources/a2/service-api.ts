@@ -2,6 +2,8 @@ import { NonEmptyString } from '@tsofist/stem';
 import { UUID } from '@tsofist/stem/lib/crypto/uuid/types';
 import { User, UserID } from './types';
 
+/* eslint-disable @typescript-eslint/method-signature-style */
+
 /**
  * By default, if you declare this interface as public,
  *   it will still get into the schema even if it is not exported from the target module

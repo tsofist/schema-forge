@@ -1,4 +1,4 @@
-import { Nullable } from '@tsofist/stem';
+import { Nullable, URec } from '@tsofist/stem';
 import { raiseEx } from '@tsofist/stem/lib/error';
 import { entries } from '@tsofist/stem/lib/object/entries';
 import Ajv, { AnySchema, ErrorsTextOptions, Options, Schema, SchemaObject } from 'ajv';
@@ -131,9 +131,10 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
                 env &&
                 typeof env.schema === 'object' &&
                 !schemaId.startsWith('http') &&
-                env.schema.definitions
+                env.schema.definitions &&
+                typeof env.schema.definitions === 'object'
             ) {
-                for (const name of Object.keys(env.schema.definitions)) {
+                for (const name of Object.keys(env.schema.definitions as URec)) {
                     callback(name, schemaId);
                 }
             }

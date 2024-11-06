@@ -15,6 +15,9 @@ import { createSchemaForgeValidator, SchemaForgeValidator } from './validator';
 
 const KEEP_ARTEFACTS = false;
 
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 describe('generator for a7', () => {
     const outputSchemaFile = './a7.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a7.generated.definitions.tmp.json';
@@ -45,7 +48,7 @@ describe('generator for a7', () => {
         }
     });
 
-    it('generated schema should be valid', async () => {
+    it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
         const schema = validator.getSchema('test#/definitions/SomeAPI_doSomeWithUser_Args') as any;
         expect(schema).toBeTruthy();
@@ -91,7 +94,7 @@ describe('generator for a6', () => {
         }
     });
 
-    it('generated schema should be valid', async () => {
+    it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
         const defs = forgeSchemaResult?.schema?.definitions;
         expect(defs).toBeTruthy();
@@ -162,7 +165,7 @@ describe('generator for a5', () => {
         }
     });
 
-    it('generated schema should be valid', async () => {
+    it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
         const defs = forgeSchemaResult?.schema?.definitions;
         expect(defs).toBeTruthy();
@@ -275,7 +278,7 @@ describe('generator for a4', () => {
         }
     });
 
-    it('generated schema should be valid', async () => {
+    it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
         const defs = forgeSchemaResult?.schema?.definitions;
         expect(defs).toBeTruthy();
@@ -306,7 +309,7 @@ describe('generator for a3', () => {
         }
     });
 
-    it('generated schema should be valid', async () => {
+    it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
     });
 
@@ -360,7 +363,7 @@ describe('generator for a2', () => {
         }
     });
 
-    it('generated schema should be valid', async () => {
+    it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
     });
 });
@@ -397,13 +400,13 @@ describe('generator for a1', () => {
         }
     });
 
-    it('generated schema should be valid', async () => {
+    it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
         expect(forgeSchemaResult!.schema.$id).toStrictEqual(schemaId);
         expect(forgeSchemaResult!.generatedTemporaryFiles.length).toStrictEqual(2);
         expect(forgeSchemaResult!.refs.length).toStrictEqual(10);
     });
-    it('getSchema', async () => {
+    it('getSchema', () => {
         expect(validator.getValidator('test#/definitions/Int')!.schema).toStrictEqual({
             type: 'integer',
         });
@@ -418,11 +421,11 @@ describe('generator for a1', () => {
             type: 'number',
         });
     });
-    it('hasSchema', async () => {
+    it('hasSchema', () => {
         expect(validator.hasValidator('test#/definitions/Int')).toStrictEqual(true);
         expect(validator.hasValidator('test#/definitions/!Int')).toStrictEqual(false);
     });
-    it('checkBySchema', async () => {
+    it('checkBySchema', () => {
         expect(() =>
             validator.checkBySchema(
                 'test#/definitions/ExportedInterfaceB_InterfaceDeclaration',
@@ -471,7 +474,7 @@ describe('generator for a1', () => {
             }
         }
     });
-    it('listDefinitions', async () => {
+    it('listDefinitions', () => {
         const defs: SchemaDefinitionInfo[] = [
             {
                 ref: 'test#/definitions/ExportedInterfaceB_InterfaceDeclaration',

@@ -9,5 +9,5 @@ export function formatSchemaForgeError(error: Error, dir = '') {
             getNewLine: () => '\n',
         });
     }
-    return error.message || error + '';
+    return error.message || String(error);
 }

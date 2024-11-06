@@ -1,5 +1,6 @@
-import { raise } from '@tsofist/stem/lib/error';
 import '../util/patch.extended-annotations-reader';
+import { URec } from '@tsofist/stem';
+import { raise } from '@tsofist/stem/lib/error';
 import Ajv, { SchemaObject } from 'ajv';
 import {
     AnnotatedType,
@@ -87,7 +88,9 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         const schema = generator.createSchema(definitionName);
         Object.assign(result.definitions, schema.definitions);
     }
-    result.definitions = Object.fromEntries(Object.entries(result.definitions || {}).sort());
+    result.definitions = Object.fromEntries(
+        Object.entries((result.definitions || {}) as URec).sort(),
+    );
 
     if (options.sortObjectProperties) sortProperties(result.definitions);
 

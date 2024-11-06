@@ -4,7 +4,7 @@ import { compareStringsAsc } from '@tsofist/stem/lib/string/compare';
 import { SchemaObject } from 'ajv';
 
 export function sortProperties<T extends SchemaObject>(schema: T): T {
-    const stack: unknown[] = [];
+    const stack: T[] = [];
 
     const isTarget = (
         target: unknown,
@@ -20,7 +20,7 @@ export function sortProperties<T extends SchemaObject>(schema: T): T {
         );
     };
 
-    const process = (item: unknown) => {
+    const process = (item: T | undefined) => {
         if (!item) return;
 
         if (Array.isArray(item)) {
@@ -33,7 +33,7 @@ export function sortProperties<T extends SchemaObject>(schema: T): T {
                 if (item.required?.length) item.required.sort(compareStringsAsc);
             }
             if (typeof item === 'object') {
-                stack.push(...Object.values(item));
+                stack.push(...(Object.values(item) as T[]));
             }
         }
     };

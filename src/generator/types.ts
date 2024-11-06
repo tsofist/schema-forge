@@ -19,6 +19,7 @@ export const SG_CONFIG_DEFAULTS = {
     encodeRefs: false,
     markdownDescription: false,
     discriminatorType: undefined,
+    functions: 'hide',
 } satisfies Config;
 
 export interface SchemaForgeBaseOptions {
@@ -38,7 +39,7 @@ export interface SchemaForgeBaseOptions {
      * Filter for definitions
      * Important: dependencies will not be filtered
      */
-    definitionsFilter?(name: string): boolean;
+    definitionsFilter?: (name: string) => boolean;
     /**
      * Create shared $ref definitions for all types
      *

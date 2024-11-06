@@ -16,6 +16,7 @@ import { hasJSDocTag } from './tsc';
 {
     // Support for @inheritDoc tag to enforce inheritance of annotations
 
+    // eslint-disable-next-line @typescript-eslint/unbound-method
     const getAnnotations = ExtendedAnnotationsReader.prototype.getAnnotations;
 
     ExtendedAnnotationsReader.prototype.getAnnotations = function getAnnotationsWithInheritance(
@@ -23,8 +24,8 @@ import { hasJSDocTag } from './tsc';
     ): Annotations | undefined {
         if (!hasJSDocTag(node, 'inheritDoc')) return getAnnotations.call(this, node);
 
-        const checker =
-            ((this as any).typeChecker as TypeChecker) || raise('TypeChecker is not available');
+        // @ts-expect-error access to private property
+        const checker = (this.typeChecker as TypeChecker) || raise('TypeChecker is not available');
         const result: Annotations = {};
 
         if (

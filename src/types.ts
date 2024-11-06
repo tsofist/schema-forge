@@ -168,7 +168,7 @@ export type SchemaDefinitionInfo = SDIType | SDIAPIInterface | SDIMethodArgument
 export interface SchemaForgeValidationResult {
     valid: boolean;
     errors: Nullable<SchemaForgeValidationReport>;
-    errorsText(options?: ErrorsTextOptions): string;
+    errorsText: (options?: ErrorsTextOptions) => string;
 }
 
 export type SchemaForgeValidationFunction<T = unknown> = ValidateFunction<T>;

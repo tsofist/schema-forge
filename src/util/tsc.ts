@@ -7,6 +7,7 @@ import {
     getTextOfJSDocComment,
     Identifier,
     isInterfaceDeclaration,
+    isJSDocUnknownTag,
     isTypeReferenceNode,
     JSDocTag,
     MethodSignature,
@@ -14,11 +15,12 @@ import {
     Node,
     PropertySignature,
     resolveModuleName,
+    SignatureDeclarationBase,
     SyntaxKind,
 } from 'typescript';
 
 export function readMemberTypeName(
-    member: MethodSignature | PropertySignature,
+    member: MethodSignature | PropertySignature | SignatureDeclarationBase,
 ): string | undefined {
     const type = member.type;
 
@@ -44,7 +46,7 @@ export function readJSDocDescription(
 
     {
         const isTag = (tag: JSDocTag): tag is JSDocTag => {
-            if (tag.kind === SyntaxKind.JSDocTag && tag.tagName.escapedText === 'description') {
+            if (isJSDocUnknownTag(tag) && tag.tagName.escapedText === 'description') {
                 value = getTextOfJSDocComment(tag.comment);
             }
             if (
