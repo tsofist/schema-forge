@@ -1,3 +1,4 @@
+import '@total-typescript/ts-reset';
 import { substr } from '@tsofist/stem/lib/string/substr';
 import {
     SchemaDefinitionInfo,

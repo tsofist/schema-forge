@@ -1,7 +1,8 @@
 import * as fakerModule from '@faker-js/faker';
-import { ArrayMay, hasOwnProperty } from '@tsofist/stem';
+import { ArrayMay } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
 import { ISOTimeString } from '@tsofist/stem/lib/cldr';
+import { hasOwn } from '@tsofist/stem/lib/object/has-own';
 import { substr } from '@tsofist/stem/lib/string/substr';
 import { SchemaObject } from 'ajv';
 import { JSONSchemaFaker, JSONSchemaFakerOptions, JSONSchemaFakerRefs } from 'json-schema-faker';
@@ -134,19 +135,19 @@ function fixJSONSchemaFakerQuirks(schema: SchemaObject): SchemaObject {
         const { description, examples, ...rest } = schema;
 
         for (const key in rest) {
-            if (hasOwnProperty.call(rest, key)) {
+            if (hasOwn(rest, key)) {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 rest[key] = fixJSONSchemaFakerQuirks(rest[key]);
             }
         }
         return rest;
     } else if (Array.isArray(schema)) {
-        return schema.map(fixJSONSchemaFakerQuirks);
+        return (schema as SchemaObject[]).map(fixJSONSchemaFakerQuirks);
     }
 
     const result: SchemaObject = {};
     for (const key in schema) {
-        if (hasOwnProperty.call(schema, key)) {
+        if (hasOwn(schema, key)) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             result[key] = fixJSONSchemaFakerQuirks(schema[key]);
         }

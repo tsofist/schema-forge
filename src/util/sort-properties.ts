@@ -20,7 +20,7 @@ export function sortProperties<T extends SchemaObject>(schema: T): T {
         );
     };
 
-    const process = (item: T | undefined) => {
+    const process = (item: T | T[] | undefined) => {
         if (!item) return;
 
         if (Array.isArray(item)) {
