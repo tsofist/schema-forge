@@ -18,6 +18,7 @@ import {
     InterfaceDeclaration,
     isEnumDeclaration,
     isExportDeclaration,
+    isFunctionTypeNode,
     isInterfaceDeclaration,
     isMethodSignature,
     isNamedExports,
@@ -25,6 +26,7 @@ import {
     isStringLiteral,
     isTypeAliasDeclaration,
     Program,
+    SignatureDeclarationBase,
     SourceFile,
     Statement,
     SyntaxKind,
@@ -63,7 +65,7 @@ interface GeneratorContext {
     readonly options: Options;
     readonly fileContent: string[];
 
-    registerDefinition(...name: string[]): void;
+    registerDefinition: (...name: string[]) => void;
 }
 
 export async function generateDraftTypeFiles(options: Options) {
@@ -273,6 +275,81 @@ function processAPIInterfaceDeclaration(
     const interfaceDesc = readJSDocDescription(statement, allowUseFallbackDescription);
     const interfaceDeprecated = getTextOfJSDocComment(getJSDocDeprecatedTag(statement)?.comment);
 
+    function onSignature(
+        method: SignatureDeclarationBase,
+        memberName: string,
+        memberDescription: string | undefined,
+        deprecated: string | undefined,
+    ) {
+        const minArgsNum = method.parameters.filter((param) => !param.questionToken).length;
+        const maxArgsNum = method.parameters.length;
+        const argsNames: string[] = [];
+        const argsTypesText = method.parameters
+            .map((parameter) => {
+                const name = parameter.name.getText();
+                argsNames.push(name);
+                const text = parameter.type?.getText() || raise(`No type specified for ${name}`);
+                let desc = readJSDocDescription(parameter, allowUseFallbackDescription, false);
+                desc = desc ? `/** @description ${desc} */ ` : '';
+                return `${S}${desc}${name}: ${text}`;
+            })
+            .join(',\n');
+        const argsNamesText = argsNames
+            .map((item, index) => {
+                return `${item}${index + 1 <= minArgsNum ? '*' : ''}`;
+            })
+            .join(', ');
+
+        const resultTypeName = readMemberTypeName(method);
+
+        const definitionNameArgs = buildAPIInterfaceSchemaSignature(
+            interfaceName,
+            memberName,
+            SchemaForgeSignatureSuffix.MethodArguments,
+        );
+        const definitionNameResult = buildAPIInterfaceSchemaSignature(
+            interfaceName,
+            memberName,
+            SchemaForgeSignatureSuffix.MethodResult,
+        );
+
+        const comment = `Method:${interfaceName}#${memberName}`;
+
+        definitionsMetaList.push({
+            name: memberName,
+            description: memberDescription,
+            deprecated,
+            desc: [definitionNameArgs, definitionNameResult],
+        });
+
+        context.registerDefinition(definitionNameArgs, definitionNameResult);
+        context.fileContent.push(
+            ...[
+                // ARGUMENTS
+                `/**`,
+                ` * @interface ${interfaceName}`,
+                ` * @member ${interfaceName}#${memberName}`,
+                ` * @description Arguments for ${comment} ${argsNames.length ? `(${argsNamesText})` : ''}`,
+                ` * @comment ${comment}`,
+                ` *`,
+                minArgsNum > 0 ? ` * @minItems ${minArgsNum}` : ` *`,
+                ` * @maxItems ${maxArgsNum}`,
+                ` */`,
+                `export type ${definitionNameArgs} = readonly [\n${argsTypesText}\n];`,
+                ``,
+                // RESULT
+                `/**`,
+                ` * @interface ${interfaceName}`,
+                ` * @member ${interfaceName}#${memberName}`,
+                ` * @description Result type for ${comment}`,
+                ` * @comment ${comment}`,
+                ` */`,
+                `export type ${definitionNameResult} = ${resultTypeName || '[ unnamed ]'};`,
+                ``,
+            ],
+        );
+    }
+
     function onMember(member: TypeElement) {
         const isPrivate = getJSDocPrivateTag(member) != null || hasJSDocTag(member, 'internal');
         if (isPrivate) return;
@@ -283,82 +360,18 @@ function processAPIInterfaceDeclaration(
         const deprecated = getTextOfJSDocComment(getJSDocDeprecatedTag(member)?.comment);
 
         if (isMethodSignature(member)) {
-            const method = member;
-            const minArgsNum = method.parameters.filter((param) => !param.questionToken).length;
-            const maxArgsNum = method.parameters.length;
-            const argsNames: string[] = [];
-            const argsTypesText = method.parameters
-                .map((parameter) => {
-                    const name = parameter.name.getText();
-                    argsNames.push(name);
-                    const text =
-                        parameter.type?.getText() || raise(`No type specified for ${name}`);
-                    let desc = readJSDocDescription(parameter, allowUseFallbackDescription, false);
-                    desc = desc ? `/** @description ${desc} */ ` : '';
-                    return `${S}${desc}${name}: ${text}`;
-                })
-                .join(',\n');
-            const argsNamesText = argsNames
-                .map((item, index) => {
-                    return `${item}${index + 1 <= minArgsNum ? '*' : ''}`;
-                })
-                .join(', ');
-
-            const resultTypeName = readMemberTypeName(method);
-
-            const definitionNameArgs = buildAPIInterfaceSchemaSignature(
-                interfaceName,
-                memberName,
-                SchemaForgeSignatureSuffix.MethodArguments,
-            );
-            const definitionNameResult = buildAPIInterfaceSchemaSignature(
-                interfaceName,
-                memberName,
-                SchemaForgeSignatureSuffix.MethodResult,
-            );
-
-            const comment = `Method:${interfaceName}#${memberName}`;
-
-            definitionsMetaList.push({
-                name: memberName,
-                description: memberDescription,
-                deprecated,
-                desc: [definitionNameArgs, definitionNameResult],
-            });
-
-            context.registerDefinition(definitionNameArgs, definitionNameResult);
-            context.fileContent.push(
-                ...[
-                    // ARGUMENTS
-                    `/**`,
-                    ` * @interface ${interfaceName}`,
-                    ` * @member ${interfaceName}#${memberName}`,
-                    ` * @description Arguments for ${comment} ${argsNames.length ? `(${argsNamesText})` : ''}`,
-                    ` * @comment ${comment}`,
-                    ` *`,
-                    minArgsNum > 0 ? ` * @minItems ${minArgsNum}` : ` *`,
-                    ` * @maxItems ${maxArgsNum}`,
-                    ` */`,
-                    `export type ${definitionNameArgs} = readonly [\n${argsTypesText}\n];`,
-                    ``,
-                    // RESULT
-                    `/**`,
-                    ` * @interface ${interfaceName}`,
-                    ` * @member ${interfaceName}#${memberName}`,
-                    ` * @description Result type for ${comment}`,
-                    ` * @comment ${comment}`,
-                    ` */`,
-                    `export type ${definitionNameResult} = ${resultTypeName};`,
-                    ``,
-                ],
-            );
+            onSignature(member, memberName, memberDescription, deprecated);
         } else if (isPropertySignature(member)) {
-            definitionsMetaList.push({
-                name: memberName,
-                description: memberDescription,
-                deprecated,
-                desc: readMemberTypeName(member) || 'unknown',
-            });
+            if (member.type && isFunctionTypeNode(member.type)) {
+                onSignature(member.type, memberName, memberDescription, deprecated);
+            } else {
+                definitionsMetaList.push({
+                    name: memberName,
+                    description: memberDescription,
+                    deprecated,
+                    desc: readMemberTypeName(member) || 'unknown',
+                });
+            }
         }
     }
 
@@ -402,7 +415,7 @@ function processAPIInterfaceDeclaration(
                     ` */`,
                     isMethod
                         ? `${member.name}: [${member.desc[0]}, ${member.desc[1]}];`
-                        : `${member.name}: ${member.desc};`,
+                        : `${member.name}: ${member.desc as string};`,
                 ],
                 2,
             );

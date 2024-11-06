@@ -25,12 +25,12 @@ export interface SomeAPI {
      * @param checkActive Check user activity
      * @param useLogger Use logger when performing operation
      */
-    doSomeWithUser(
+    doSomeWithUser: (
         /** @description Target user */
         user: User,
         checkActive: boolean,
         useLogger?: boolean,
-    ): Promise<void>;
+    ) => Promise<void>;
 
-    do2(): Promise<[]>;
+    do2: () => Promise<[]>;
 }
