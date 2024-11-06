@@ -27,11 +27,11 @@ export interface FakeGeneratorOptions extends JSONSchemaFakerOptions {
     setupFakerModules?: SetupFakerModules[];
 }
 
-export async function generateFakeData<T = unknown>(
+export function generateFakeData<T = unknown>(
     validator: SchemaForgeValidator,
     source: SchemaForgeDefinitionRef,
     options: FakeGeneratorOptions = {},
-): Promise<T> {
+): T {
     const refs: JSONSchemaFakerRefs = {};
 
     {
