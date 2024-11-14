@@ -21,15 +21,15 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.2.0",
-    "@tsofist/stem": "^1.40.0",
+    "@tsofist/stem": "^1.43.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "json-schema-faker": "^0.5.7",
+    "json-schema-faker": "^0.5.8",
     "ts-json-schema-generator": "^2.3.0",
     "tslib": "^2.8.1"
   },
   "devDependencies": {
-    "@tsofist/web-buddy": "^1.14.0",
+    "@tsofist/web-buddy": "^1.16.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.17.6",
     "@types/supertest": "^6.0.2",
