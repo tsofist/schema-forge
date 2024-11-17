@@ -1,6 +1,7 @@
 import { Nullable, URec } from '@tsofist/stem';
 import { raiseEx } from '@tsofist/stem/lib/error';
 import { entries } from '@tsofist/stem/lib/object/entries';
+import { nonNullableValues } from '@tsofist/stem/lib/object/values';
 import Ajv, { AnySchema, ErrorsTextOptions, Options, Schema, SchemaObject } from 'ajv';
 import addFormats from 'ajv-formats';
 import {
@@ -19,21 +20,50 @@ import { parseSchemaDefinitionInfo } from './index';
 
 export type SchemaForgeValidator = ReturnType<typeof createSchemaForgeValidator>;
 
+const DEF_OPTIONS: Options = {
+    allErrors: true,
+    strict: true,
+    strictSchema: true,
+    strictTypes: false,
+    strictTuples: false,
+    allowUnionTypes: true,
+    coerceTypes: false,
+    removeAdditional: false,
+    unicodeRegExp: true,
+};
+
 export function createSchemaForgeValidator(engineOptions?: Options, useAdditionalFormats = false) {
-    let engine = new Ajv({
-        allErrors: true,
-        strict: true,
-        strictSchema: true,
-        strictTypes: false,
-        strictTuples: false,
-        allowUnionTypes: true,
-        coerceTypes: false,
-        removeAdditional: false,
-        unicodeRegExp: true,
+    engineOptions = {
+        ...DEF_OPTIONS,
         ...engineOptions,
-    });
+    };
+
+    let rev = 0;
+    let engine = new Ajv(engineOptions);
     addJSDocKeywords(engine);
     if (useAdditionalFormats) engine = addFormats(engine);
+
+    /**
+     * Clone validator with overridden options
+     */
+    function clone(
+        options?: Omit<Options, 'schemas'>,
+        onSchema?: (value: SchemaObject) => SchemaObject,
+    ) {
+        const schemas: AnySchema[] = [];
+        for (const env of nonNullableValues(engine.schemas)) {
+            if (env.meta) continue;
+            schemas.push(onSchema ? onSchema(env.schema as SchemaObject) : env.schema);
+        }
+
+        const opts: Options = {
+            ...engineOptions,
+            schemas,
+            ...options,
+        };
+
+        return createSchemaForgeValidator(opts, useAdditionalFormats);
+    }
 
     /**
      * Get schema (or definition) validation function
@@ -57,6 +87,7 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
      */
     function addSchema(schema: Schema[]) {
         engine.addSchema(schema);
+        rev++;
     }
 
     /**
@@ -64,6 +95,7 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
      */
     function removeSchema(schemaIdentity?: AnySchema | SchemaForgeDefinitionRef | RegExp) {
         engine.removeSchema(schemaIdentity);
+        rev++;
     }
 
     /**
@@ -172,6 +204,10 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
     }
 
     return {
+        get rev() {
+            return rev;
+        },
+        clone,
         removeSchema,
         hasValidator,
         getValidator,
