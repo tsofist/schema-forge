@@ -45,6 +45,30 @@ describe('generateFakeData', () => {
                     minLength: 20,
                 },
             },
+            'IntWithDescription': {
+                $ref: 'test-1#/definitions/Int',
+                description: 'Foreign Int from test-1',
+                $comment: 'Test comment',
+            },
+            'JSFQuirks': {
+                type: 'array',
+                minItems: 10,
+                items: {
+                    type: 'object',
+                    additionalProperties: false,
+                    properties: {
+                        id2: {
+                            type: 'array',
+                            items: { $ref: '#/definitions/IntWithDescription' },
+                            examples: [
+                                [1, 2, 3],
+                                [4, 5, 6],
+                            ],
+                        },
+                    },
+                    required: ['id2'],
+                },
+            },
             'List': {
                 type: 'array',
                 items: {
@@ -167,6 +191,12 @@ describe('generateFakeData', () => {
     });
 
     it('complex, nested data should be handled correctly', async () => {
+        {
+            const source = 'test-2#/definitions/JSFQuirks';
+            const data = await generateFakeData(validator, source, {});
+            expect(data).toBeDefined();
+            expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);
+        }
         {
             const source = 'test-2#/definitions/List';
             const data = await generateFakeData(validator, source);
