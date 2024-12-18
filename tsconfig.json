@@ -4,7 +4,8 @@
     "outDir": "lib",
     "target": "ES2021",
     "module": "CommonJS",
-    "allowSyntheticDefaultImports": true
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
   "include": ["src", "test-sources"],
   "exclude": ["node_modules"]
