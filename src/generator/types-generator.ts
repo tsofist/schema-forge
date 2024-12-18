@@ -25,6 +25,8 @@ import {
     isPropertySignature,
     isStringLiteral,
     isTypeAliasDeclaration,
+    NodeArray,
+    ParameterDeclaration,
     Program,
     SignatureDeclarationBase,
     SourceFile,
@@ -281,7 +283,7 @@ function processAPIInterfaceDeclaration(
         memberDescription: string | undefined,
         deprecated: string | undefined,
     ) {
-        const minArgsNum = method.parameters.filter((param) => !param.questionToken).length;
+        const minArgsNum = countRequiredParams(method.parameters);
         const maxArgsNum = method.parameters.length;
         const argsNames: string[] = [];
         const argsTypesText = method.parameters
@@ -332,7 +334,7 @@ function processAPIInterfaceDeclaration(
                 ` * @description Arguments for ${comment} ${argsNames.length ? `(${argsNamesText})` : ''}`,
                 ` * @comment ${comment}`,
                 ` *`,
-                minArgsNum > 0 ? ` * @minItems ${minArgsNum}` : ` *`,
+                ` * @minItems ${minArgsNum}`,
                 ` * @maxItems ${maxArgsNum}`,
                 ` */`,
                 `export type ${definitionNameArgs} = readonly [\n${argsTypesText}\n];`,
@@ -437,4 +439,14 @@ function processAPIInterfaceDeclaration(
         context.registerDefinition(buildAPIInterfaceSchemaSignature(interfaceName));
         context.fileContent.push(interfaceText.stringify('\n'));
     }
+}
+
+function countRequiredParams(params: NodeArray<ParameterDeclaration>) {
+    let result = 0;
+    for (const param of params) {
+        if (param.questionToken != null) break;
+        if (param.dotDotDotToken != null) raise('Rest arguments are not supported yet');
+        result++;
+    }
+    return result;
 }

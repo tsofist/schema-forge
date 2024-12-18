@@ -27,6 +27,13 @@ export interface API {
     methodE1(): Promise<undefined>;
     methodE2(): Promise<null>;
     methodF(): Promise<null | number>;
+    methodG0(arg0?: boolean): Promise<never>;
+    methodG1(arg0?: boolean, arg1?: boolean): Promise<never>;
+    methodG2(arg0: boolean, arg1?: boolean): Promise<never>;
+    // todo supports for rest args
+    // methodG3(...args: boolean[]): Promise<never>;
+    // methodG4(arg0: string, ...args: boolean[]): Promise<never>;
+    // methodG5( todo array with jsdoc
 }
 
 /**
@@ -36,7 +43,18 @@ export interface API {
  */
 export interface BAPI extends API {
     methodY(arg1: string): Promise<void>;
+    // methodG(arg0: boolean): Promise<never>; // todo supports for method override
 }
+
+// todo supports for extends with omitted methods
+// /**
+//  * @public
+//  * @api
+//  * @description BAPI descriptions
+//  */
+// export interface BAPIOmit extends Omit<API, 'methodG0' | 'methodG1' | 'methodG2'> {
+//     methodY(arg1: string): Promise<void>;
+// }
 
 interface IndoorInterface {
     a1: AdditionalType;

@@ -321,6 +321,38 @@ describe('generator for a3', () => {
         expect(props.propWithGeneric).toBeTruthy();
         expect(props.propWithGeneric.$ref).toStrictEqual('#/definitions/NonEmptyString');
     });
+    it('optional args in API methods should works', () => {
+        {
+            const props = forgeSchemaResult!.schema.definitions?.API_methodG0_Args;
+            expect(props).toBeTruthy();
+            expect(props.minItems).toStrictEqual(0);
+            expect(props.maxItems).toStrictEqual(1);
+        }
+        {
+            const props = forgeSchemaResult!.schema.definitions?.API_methodG1_Args;
+            expect(props).toBeTruthy();
+            expect(props.minItems).toStrictEqual(0);
+            expect(props.maxItems).toStrictEqual(2);
+        }
+        {
+            const props = forgeSchemaResult!.schema.definitions?.API_methodG2_Args;
+            expect(props).toBeTruthy();
+            expect(props.minItems).toStrictEqual(1);
+            expect(props.maxItems).toStrictEqual(2);
+        }
+        // {
+        //     const props = forgeSchemaResult!.schema.definitions?.API_methodG3_Args;
+        //     expect(props).toBeTruthy();
+        //     expect(props.minItems).toStrictEqual(0);
+        //     expect(props.maxItems).toBeUndefined();
+        // }
+        // {
+        //     const props = forgeSchemaResult!.schema.definitions?.API_methodG4_Args;
+        //     expect(props).toBeTruthy();
+        //     expect(props.minItems).toStrictEqual(1);
+        //     expect(props.maxItems).toBeUndefined();
+        // }
+    });
 
     it('extends should works', () => {
         const props = forgeSchemaResult!.schema.definitions?.BAPI_InterfaceDeclaration.properties;
@@ -336,6 +368,9 @@ describe('generator for a3', () => {
             'methodE1',
             'methodE2',
             'methodF',
+            'methodG0',
+            'methodG1',
+            'methodG2',
             'methodY',
         ]);
     });
