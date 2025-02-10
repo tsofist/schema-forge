@@ -1,4 +1,17 @@
+import { Rec } from '@tsofist/stem';
+import {
+    isLocalISODateString,
+    isLocalISODateTimeString,
+    isLocalISOTimeString,
+    isZuluISODateString,
+    isZuluISODateTimeString,
+    isZuluISOTimeString,
+} from '@tsofist/stem/lib/cldr/date-time/guards';
+import { ISODateTimeType, TypedDateTimeString } from '@tsofist/stem/lib/cldr/date-time/types';
+import { EnumKeys, extractEnumKeys } from '@tsofist/stem/lib/enum';
 import { isInt } from '@tsofist/stem/lib/number/guards';
+import { entries } from '@tsofist/stem/lib/object/entries';
+import { camelCase } from '@tsofist/stem/lib/string/case/camel';
 import { SchemaObject } from 'ajv';
 import { generateFakeData } from './fake-generator';
 import { createSchemaForgeValidator, SchemaForgeValidator } from './validator';
@@ -123,7 +136,7 @@ describe('generateFakeData', () => {
                     },
                     time: {
                         type: 'string',
-                        format: 'iso-time',
+                        faker: 'cldr.localTime',
                     },
                     refs: {
                         type: 'object',
@@ -157,12 +170,32 @@ describe('generateFakeData', () => {
             },
         },
     };
+    const testSchema4: SchemaObject = {
+        $schema: 'http://json-schema.org/draft-07/schema#',
+        $id: 'test-4',
+        definitions: {
+            CLDR: {
+                type: 'object',
+                properties: {},
+            },
+        },
+    } as const;
+
+    {
+        for (const name of extractEnumKeys(ISODateTimeType)) {
+            const method = camelCase(name);
+            testSchema4.definitions.CLDR.properties[name] = {
+                type: 'string',
+                faker: `cldr.${method}`,
+            };
+        }
+    }
 
     let validator: SchemaForgeValidator;
 
     beforeEach(() => {
         validator = createSchemaForgeValidator(
-            { schemas: [testSchema1, testSchema2, testSchema3] },
+            { schemas: [testSchema1, testSchema2, testSchema3, testSchema4] },
             true,
         );
     });
@@ -246,6 +279,30 @@ describe('generateFakeData', () => {
             });
             expect(data).toBeDefined();
             expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);
+        }
+    });
+
+    it('should handle CLDR formats', async () => {
+        const data: Rec<
+            TypedDateTimeString,
+            EnumKeys<typeof ISODateTimeType>
+        > = await generateFakeData(validator, 'test-4#/definitions/CLDR');
+
+        const guards: Rec<(v: unknown) => boolean, ISODateTimeType> = {
+            [ISODateTimeType.LocalDate]: isLocalISODateString,
+            [ISODateTimeType.LocalTime]: isLocalISOTimeString,
+            [ISODateTimeType.LocalDateTime]: isLocalISODateTimeString,
+            [ISODateTimeType.ZuluDate]: isZuluISODateString,
+            [ISODateTimeType.ZuluTime]: isZuluISOTimeString,
+            [ISODateTimeType.ZuluDateTime]: isZuluISODateTimeString,
+        };
+
+        expect(data).toBeDefined();
+
+        for (const [name, value] of entries(data)) {
+            const g = guards[ISODateTimeType[name]];
+            expect(g).toBeDefined();
+            expect(g(value)).toStrictEqual(true);
         }
     });
 });

@@ -1,7 +1,16 @@
 import * as fakerModule from '@faker-js/faker';
 import { ARec, ArrayMay } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
-import { ISOTimeString } from '@tsofist/stem/lib/cldr';
+import { dateToTypedString } from '@tsofist/stem/lib/cldr/date-time/native-date';
+import {
+    ISODateTimeType,
+    LocalISODateString,
+    LocalISODateTimeString,
+    LocalISOTimeString,
+    ZuluISODateString,
+    ZuluISODateTimeString,
+    ZuluISOTimeString,
+} from '@tsofist/stem/lib/cldr/date-time/types';
 import { entries } from '@tsofist/stem/lib/object/entries';
 import { substr } from '@tsofist/stem/lib/string/substr';
 import { SchemaObject } from 'ajv';
@@ -60,10 +69,6 @@ export function createFakeGeneratorHost(
             refDepthMax: 1_000,
             ...options,
             resolveJsonPath: false,
-        });
-
-        generator.format('iso-time', (): ISOTimeString => {
-            return substr(faker.date.anytime() as unknown as string, 'T', '.')!;
         });
 
         return {
@@ -134,6 +139,32 @@ const EmbeddedModules: SetupFakerModules[] = [
                     .fill('')
                     .map(() => faker.lorem.slug(pathWords));
                 return `${origin}/${pathParts.join('/')}`;
+            },
+        },
+        cldr: {
+            /** FakerModule: cldr.localDateTime */
+            localDateTime(): LocalISODateTimeString {
+                return dateToTypedString(new Date(), ISODateTimeType.LocalDateTime, true)!;
+            },
+            /** FakerModule: cldr.localDate */
+            localDate(): LocalISODateString {
+                return dateToTypedString(new Date(), ISODateTimeType.LocalDate)!;
+            },
+            /** FakerModule: cldr.localTime */
+            localTime(): LocalISOTimeString {
+                return dateToTypedString(new Date(), ISODateTimeType.LocalTime, true)!;
+            },
+            /** FakerModule: cldr.zuluDateTime */
+            zuluDateTime(): ZuluISODateTimeString {
+                return dateToTypedString(new Date(), ISODateTimeType.ZuluDateTime)!;
+            },
+            /** FakerModule: cldr.zuluDate */
+            zuluDate(): ZuluISODateString {
+                return dateToTypedString(new Date(), ISODateTimeType.ZuluDate)!;
+            },
+            /** FakerModule: cldr.zuluTime */
+            zuluTime(): ZuluISOTimeString {
+                return dateToTypedString(new Date(), ISODateTimeType.ZuluTime)!;
             },
         },
     }),
