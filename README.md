@@ -18,3 +18,7 @@ Main idea is to create type descriptions by whose schemes in the future it will 
 ## Validator
  
 todo
+
+
+#### License
+This project is licensed under the **LGPL-3.0** License – see the [LICENSE](LICENSE) file for details.
