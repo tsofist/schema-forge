@@ -1,10 +1,13 @@
 import { unlink } from 'node:fs/promises';
 import { readErrorCode, readErrorContext } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
+import { pickProps } from '@tsofist/stem/lib/object/pick';
+import { SchemaObject } from 'ajv';
 import { forgeSchema, loadJSONSchema } from './generator';
 import {
     SchemaDefinitionInfo,
     SchemaDefinitionKind,
+    SchemaForgeOptions,
     SchemaForgeResult,
     SchemaForgeValidationErrorCode,
     SchemaForgeValidationErrorContext,
@@ -22,8 +25,15 @@ describe('generator for a7', () => {
     const outputSchemaFile = './a7.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a7.generated.definitions.tmp.json';
 
+    const schemaMetadata: SchemaForgeOptions['schemaMetadata'] = {
+        title: 'Generator TEST',
+        version: '1.0.0',
+        $comment: 'WARN: This is a test schema.',
+    };
+
     let forgeSchemaResult: SchemaForgeResult | undefined;
     let validator: SchemaForgeValidator;
+    let loadedSchema: SchemaObject[];
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
@@ -36,16 +46,23 @@ describe('generator for a7', () => {
             outputSchemaMetadataFile,
             expose: 'all',
             explicitPublic: true,
+            schemaMetadata,
         });
         validator = createSchemaForgeValidator({}, true);
-        const schema = await loadJSONSchema([outputSchemaFile]);
-        validator.addSchema(schema);
+        loadedSchema = await loadJSONSchema([outputSchemaFile]);
+        validator.addSchema(loadedSchema);
     });
     afterAll(async () => {
         if (!KEEP_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
+    });
+
+    it('generated schema should have correct metadata', () => {
+        expect(forgeSchemaResult).toBeTruthy();
+        const schema = forgeSchemaResult!.schema;
+        expect(pickProps(schema, Object.keys(schemaMetadata))).toStrictEqual(schemaMetadata);
     });
 
     it('generated schema should be valid', () => {
@@ -62,6 +79,56 @@ describe('generator for a7', () => {
         );
         expect(schema.minItems).toStrictEqual(2);
         expect(schema.maxItems).toStrictEqual(3);
+    });
+});
+
+describe('validator for a7', () => {
+    const outputSchemaFile = './a7.generated.schema.tmp.json';
+    const outputSchemaMetadataFile = './a7.generated.definitions.tmp.json';
+
+    let validator: SchemaForgeValidator;
+    let loadedSchema: SchemaObject[];
+
+    beforeAll(async () => {
+        await forgeSchema({
+            schemaId: 'test',
+            allowUseFallbackDescription: true,
+            tsconfigFrom: './tsconfig.build-test.json',
+            sourcesDirectoryPattern: 'test-sources/a7',
+            sourcesFilesPattern: ['service-api.ts', 'types.ts'],
+            outputSchemaFile,
+            outputSchemaMetadataFile,
+            expose: 'all',
+            explicitPublic: true,
+        });
+        validator = createSchemaForgeValidator({}, true);
+        loadedSchema = await loadJSONSchema([outputSchemaFile]);
+        validator.addSchema(loadedSchema);
+    });
+    afterAll(async () => {
+        if (!KEEP_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
+    });
+
+    it('should be able to warm-up cache', async () => {
+        const initial = validator.compilationArtifactCount;
+        expect(initial).toStrictEqual(2);
+
+        validator.warmupCacheSync();
+        const warmed = validator.compilationArtifactCount;
+        expect(warmed).toStrictEqual(10);
+
+        validator.clear();
+        const cleared = validator.compilationArtifactCount;
+        expect(cleared).toStrictEqual(1);
+
+        validator.addSchema(loadedSchema);
+        expect(validator.compilationArtifactCount).toStrictEqual(initial);
+
+        await validator.warmupCache();
+        expect(validator.compilationArtifactCount).toStrictEqual(warmed);
     });
 });
 

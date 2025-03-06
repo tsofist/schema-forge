@@ -1,8 +1,17 @@
-import { Nullable, URec } from '@tsofist/stem';
-import { raiseEx } from '@tsofist/stem/lib/error';
+import { ArrayMay, Nullable, URec } from '@tsofist/stem';
+import { asArray } from '@tsofist/stem/lib/as-array';
+import { chunk } from '@tsofist/stem/lib/chunk';
+import { raise, raiseEx } from '@tsofist/stem/lib/error';
 import { entries } from '@tsofist/stem/lib/object/entries';
 import { nonNullableValues } from '@tsofist/stem/lib/object/values';
-import Ajv, { AnySchema, ErrorsTextOptions, Options, Schema, SchemaObject } from 'ajv';
+import { delay } from '@tsofist/stem/lib/timers/delay';
+import Ajv, {
+    ErrorsTextOptions,
+    Options,
+    SchemaObject,
+    ValidateFunction,
+    AsyncValidateFunction,
+} from 'ajv';
 import addFormats from 'ajv-formats';
 import {
     SchemaDefinitionInfo,
@@ -16,11 +25,14 @@ import {
     SchemaNotFoundErrorCode,
     SchemaNotFoundErrorContext,
 } from './types';
-import { parseSchemaDefinitionInfo } from './index';
+import { buildSchemaDefinitionRef, parseSchemaDefinitionInfo } from './index';
 
 export type SchemaForgeValidator = ReturnType<typeof createSchemaForgeValidator>;
+export type SchemaForgeValidatorOptions = Parameters<typeof createSchemaForgeValidator>;
 
 const DEF_OPTIONS: Options = {
+    meta: true,
+    defaultMeta: 'http://json-schema.org/draft-07/schema',
     allErrors: true,
     strict: true,
     strictSchema: true,
@@ -30,16 +42,35 @@ const DEF_OPTIONS: Options = {
     coerceTypes: false,
     removeAdditional: false,
     unicodeRegExp: true,
+    useDefaults: false,
+    addUsedSchema: false,
+    inlineRefs: true,
+    ownProperties: true,
+    discriminator: false,
+    code: {
+        es5: false,
+        esm: false,
+        optimize: 2,
+    },
 };
 
+/**
+ * Create SchemaForge Registry: a json-schema validator with additional features
+ */
 export function createSchemaForgeValidator(engineOptions?: Options, useAdditionalFormats = false) {
     engineOptions = {
         ...DEF_OPTIONS,
         ...engineOptions,
     };
+    const initialSchemas = engineOptions.schemas;
+    if (initialSchemas) delete engineOptions.schemas;
 
     let rev = 0;
     let engine = new Ajv(engineOptions);
+
+    engine.removeSchema();
+    if (initialSchemas) engine.addSchema(initialSchemas);
+
     addJSDocKeywords(engine);
     if (useAdditionalFormats) engine = addFormats(engine);
 
@@ -50,10 +81,13 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         options?: Omit<Options, 'schemas'>,
         onSchema?: (value: SchemaObject) => SchemaObject,
     ) {
-        const schemas: AnySchema[] = [];
+        const schemas: SchemaObject[] = [];
         for (const env of nonNullableValues(engine.schemas)) {
             if (env.meta) continue;
-            schemas.push(onSchema ? onSchema(env.schema as SchemaObject) : env.schema);
+            const schema = onSchema
+                ? onSchema(env.schema as SchemaObject)
+                : (env.schema as SchemaObject);
+            schemas.push(schema);
         }
 
         const opts: Options = {
@@ -69,32 +103,43 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
      * Get schema (or definition) validation function
      */
     function getValidator<TData = unknown>(
-        ref: SchemaForgeDefinitionRef | AnySchema,
+        ref: SchemaForgeDefinitionRef | SchemaObject,
     ): SchemaForgeValidationFunction<TData> | undefined {
         if (typeof ref === 'string') return engine.getSchema<TData>(ref);
-        return engine.compile<TData>(ref);
+        const result = engine.compile<TData>(ref);
+        checkIsSyncValidator(result);
+        return result;
     }
 
     /**
      * Check if schema exists
+     * WARN: this method may compile schema if it's not compiled yet
      */
     function hasValidator(ref: SchemaForgeDefinitionRef) {
-        return engine.getSchema(ref) != null;
+        return ref in engine.schemas || ref in engine.refs || engine.getSchema(ref) != null;
     }
 
     /**
      * Add root schema(s) to registry
      */
-    function addSchema(schema: Schema[]) {
+    function addSchema(schema: SchemaObject[]) {
         engine.addSchema(schema);
         rev++;
     }
 
     /**
-     * Remove root schema(s) from registry using Schema object, Reference or RegExp pattern to math Schema ID
+     * Remove root schema(s) from registry
      */
-    function removeSchema(schemaIdentity?: AnySchema | SchemaForgeDefinitionRef | RegExp) {
-        engine.removeSchema(schemaIdentity);
+    function removeSchema(ref: ArrayMay<SchemaForgeDefinitionRef>) {
+        for (const item of asArray(ref)) engine.removeSchema(item);
+        rev++;
+    }
+
+    /**
+     * Remove all schemas from registry
+     */
+    function clear() {
+        engine.removeSchema();
         rev++;
     }
 
@@ -157,7 +202,8 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         return result.valid;
     }
 
-    function forEachDefinitions(callback: (definitionName: string, schemaId: string) => void) {
+    function mapDefinitions<R>(callback: (definitionName: string, schemaId: string) => R): R[] {
+        const result = [];
         for (const [schemaId, env] of entries(engine.schemas)) {
             if (
                 env &&
@@ -167,10 +213,11 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
                 typeof env.schema.definitions === 'object'
             ) {
                 for (const name of Object.keys(env.schema.definitions as URec)) {
-                    callback(name, schemaId);
+                    result.push(callback(name, schemaId));
                 }
             }
         }
+        return result;
     }
 
     /**
@@ -180,7 +227,7 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         predicate?: (info: SchemaDefinitionInfo) => boolean,
     ): SchemaDefinitionInfo[] {
         const result: SchemaDefinitionInfo[] = [];
-        forEachDefinitions((name, schemaId) => {
+        mapDefinitions((name, schemaId) => {
             const info = parseSchemaDefinitionInfo(name, schemaId);
             if (predicate === undefined || predicate(info)) result.push(info);
         });
@@ -199,14 +246,49 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
      */
     function getRootSchema(schemaId: string) {
         return engine.schemas[schemaId]?.schema as
-            | (SchemaObject & { definitions?: AnySchema })
+            | (SchemaObject & { definitions?: SchemaObject })
             | undefined;
     }
 
+    /**
+     * Synchronously warm up validator cache
+     * This action is useful to pre-compile all schemas and their definitions
+     */
+    function warmupCacheSync() {
+        mapDefinitions((name, schemaId) => {
+            const ref = buildSchemaDefinitionRef(name, schemaId);
+            checkIsSyncValidator(engine.getSchema(ref));
+        });
+    }
+
+    /**
+     * Asynchronously warm up validator cache
+     * This action is useful to pre-compile all schemas and their definitions
+     */
+    async function warmupCache(schemasPerIteration = 5, delayMs = 1) {
+        await chunk(
+            mapDefinitions((name, schemaId) => buildSchemaDefinitionRef(name, schemaId)),
+            schemasPerIteration,
+            async (items) => {
+                for (const ref of items) engine.getSchema(ref);
+                return delay(delayMs);
+            },
+        );
+    }
+
     return {
+        get compilationArtifactCount(): number {
+            const names = new Set([
+                //
+                ...Object.keys(engine.refs),
+                ...Object.keys(engine.schemas),
+            ]);
+            return names.size;
+        },
         get rev() {
             return rev;
         },
+        clear,
         clone,
         removeSchema,
         hasValidator,
@@ -218,6 +300,8 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
         checkBySchema,
         validationErrorsText,
         listDefinitions,
+        warmupCache,
+        warmupCacheSync,
     };
 }
 
@@ -229,6 +313,14 @@ function addJSDocKeywords(engine: Ajv) {
     const IXNamePattern = '^ix_[a-z][a-zA-Z0-9_]+$';
     const EntityNamePattern = '^([a-zA-Z_][a-z0-9_]*\\.)?[a-z_][a-z0-9_]*$';
     const FakerModulePattern = '^[a-zA-Z.]+$';
+
+    engine.addKeyword({
+        keyword: 'version',
+        metaSchema: {
+            type: 'string',
+        },
+        dependencies: ['$id', '$schema'],
+    });
 
     engine.addKeyword({
         keyword: 'hash',
@@ -320,4 +412,12 @@ function addJSDocKeywords(engine: Ajv) {
             pattern: EntityNamePattern,
         },
     });
+}
+
+function checkIsSyncValidator(
+    fn: Nullable<ValidateFunction | AsyncValidateFunction>,
+): asserts fn is AsyncValidateFunction {
+    if (typeof fn === 'function' && '$async' in fn) {
+        raise('[SchemaForge] Asynchronous validation schemas are not supported');
+    }
 }

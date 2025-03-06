@@ -6,17 +6,12 @@ import { URec } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
 import { raise } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
-import { keysOf } from '@tsofist/stem/lib/object/keys';
 import { randomString } from '@tsofist/stem/lib/string/random';
 import { SchemaObject } from 'ajv';
 import { generateSchemaByDraftTypes } from './generator/schema-generator';
 import { generateDraftTypeFiles } from './generator/types-generator';
-import {
-    SchemaForgeDefinitionRef,
-    SchemaForgeMetadata,
-    SchemaForgeOptions,
-    SchemaForgeResult,
-} from './types';
+import { SchemaForgeMetadata, SchemaForgeOptions, SchemaForgeResult } from './types';
+import { buildSchemaDefinitionRef } from './index';
 
 const KEEP_ARTEFACTS = false;
 
@@ -54,38 +49,34 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                 sourcesPattern,
             });
 
-        const refs = definitions.map(
-            (item) => `${options.schemaId || ''}#/definitions/${item}`,
-        ) as SchemaForgeDefinitionRef[];
+        const refs = definitions.map((item) => buildSchemaDefinitionRef(item, options.schemaId));
 
         let schema: SchemaObject | undefined;
 
         try {
             {
-                schema = await generateSchemaByDraftTypes({
-                    schemaId,
-                    tsconfig,
-                    definitions,
-                    sourcesDirectoryPattern,
-                    outputSchemaFile,
-                    sourcesTypesGeneratorConfig,
-                    expose: options.expose,
-                    openAPI: options.openapiCompatible,
-                    sortObjectProperties: options.sortObjectProperties,
-                    allowUseFallbackDescription: options.allowUseFallbackDescription,
-                });
-                if (options.schemaMetadata) {
-                    for (const key of keysOf(options.schemaMetadata)) {
-                        schema[key] = options.schemaMetadata[key];
-                    }
-                }
+                schema = {
+                    ...(await generateSchemaByDraftTypes({
+                        schemaId,
+                        tsconfig,
+                        definitions,
+                        sourcesDirectoryPattern,
+                        outputSchemaFile,
+                        sourcesTypesGeneratorConfig,
+                        expose: options.expose,
+                        openapiCompatible: options.openapiCompatible,
+                        sortObjectProperties: options.sortObjectProperties,
+                        allowUseFallbackDescription: options.allowUseFallbackDescription,
+                    })),
+                    ...(options.schemaMetadata || {}),
+                };
+
                 {
                     const algorithm =
-                        options.schemaMetadata?.hash == null
+                        options.schemaMetadata?.hash == null ||
+                        options.schemaMetadata?.hash === true
                             ? 'md5'
-                            : options.schemaMetadata?.hash === true
-                              ? 'md5'
-                              : options.schemaMetadata.hash;
+                            : options.schemaMetadata.hash;
                     if (algorithm) {
                         schema.hash = createHash(algorithm, {})
                             .update(JSON.stringify(schema))
@@ -94,6 +85,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                         delete schema.hash;
                     }
                 }
+
                 const content = JSON.stringify(schema, null, 2);
                 await writeFile(options.outputSchemaFile, content, { encoding: 'utf8' });
             }
@@ -101,11 +93,11 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
             if (options.outputSchemaMetadataFile) {
                 const map: SchemaForgeMetadata = {
                     $id: options.schemaId || '',
-                    version: options.schemaMetadata?.version,
+                    schemaHash: schema.hash,
                     title: options.schemaMetadata?.title,
                     description: options.schemaMetadata?.description,
+                    version: options.schemaMetadata?.version,
                     $comment: options.schemaMetadata?.$comment,
-                    schemaHash: schema.hash,
                     refs: {},
                     names: {},
                     serviceRefs: {},
@@ -114,14 +106,15 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
 
                 const defs = new Set(Object.keys((schema.definitions || {}) as URec));
                 for (const name of definitions) {
-                    const ref: SchemaForgeDefinitionRef = `${options.schemaId || ''}#/definitions/${name}`;
+                    const ref = buildSchemaDefinitionRef(name, schemaId);
                     map.names[name] = ref;
                     map.refs[ref] = name;
                     defs.delete(name);
                 }
                 for (const name of defs) {
-                    map.serviceNames[name] = `${options.schemaId || ''}#/definitions/${name}`;
-                    map.serviceRefs[`${options.schemaId || ''}#/definitions/${name}`] = name;
+                    const ref = buildSchemaDefinitionRef(name, options.schemaId);
+                    map.serviceNames[name] = ref;
+                    map.serviceRefs[ref] = name;
                 }
 
                 const content = JSON.stringify(map, null, 2);

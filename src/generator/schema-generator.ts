@@ -41,7 +41,7 @@ interface Options {
     definitions: string[];
     schemaId?: string;
     expose?: TypeExposeKind;
-    openAPI?: boolean;
+    openapiCompatible?: boolean;
     sortObjectProperties?: boolean;
     allowUseFallbackDescription?: boolean;
 }
@@ -63,11 +63,15 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         expose: options.expose ?? SG_CONFIG_DEFAULTS.expose,
         path: `${options.sourcesDirectoryPattern}/*${TMP_FILES_SUFFIX}.ts`,
         tsconfig: options.tsconfig,
-        discriminatorType: options.openAPI ? 'open-api' : DEFAULT_CONFIG.discriminatorType,
+        discriminatorType: options.openapiCompatible
+            ? 'open-api'
+            : DEFAULT_CONFIG.discriminatorType,
         ...SG_CONFIG_MANDATORY,
     };
+
     const generatorProgram = createProgram(generatorConfig);
-    const typeChecker = generatorProgram.getTypeChecker();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const typeChecker: TypeChecker = generatorProgram.getTypeChecker();
     const parser = createParser(generatorProgram, options.sourcesTypesGeneratorConfig, (parser) => {
         parser.addNodeParser(
             new TupleTypeParser(parser as ChainNodeParser, allowUseFallbackDescription),
@@ -82,6 +86,10 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         $schema: 'http://json-schema.org/draft-07/schema#',
         $id: options.schemaId,
         hash: '',
+        title: undefined,
+        description: undefined,
+        version: undefined,
+        $comment: undefined,
         definitions: {},
     };
     for (const definitionName of options.definitions) {

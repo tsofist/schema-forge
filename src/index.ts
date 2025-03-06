@@ -35,6 +35,13 @@ export function buildAPIInterfaceSchemaSignature(
     return result;
 }
 
+export function buildSchemaDefinitionRef(
+    definitionName: string,
+    schemaId: string | undefined,
+): SchemaForgeDefinitionRef {
+    return `${schemaId || ''}#/definitions/${definitionName}`;
+}
+
 export function parseSchemaDefinitionInfo(name: string, schemaId: string): SchemaDefinitionInfo {
     const kind: SchemaDefinitionKind = name.endsWith(N_I)
         ? SchemaDefinitionKind.API
@@ -43,7 +50,7 @@ export function parseSchemaDefinitionInfo(name: string, schemaId: string): Schem
           : name.endsWith(N_R)
             ? SchemaDefinitionKind.APIMethodResult
             : SchemaDefinitionKind.Type;
-    const ref: SchemaForgeDefinitionRef = `${schemaId}#/definitions/${name}`;
+    const ref = buildSchemaDefinitionRef(name, schemaId);
     switch (kind) {
         case SchemaDefinitionKind.API:
             return {
