@@ -300,6 +300,27 @@ describe('generator for a5', () => {
                     dbIndex: true,
                     type: 'number',
                 },
+                indexedField3: {
+                    dbIndex: {
+                        name: 'ix_some_indexed_field3WithExtra',
+                        type: 'gin',
+                        unique: true,
+                    },
+                    type: 'number',
+                },
+                indexedField4: {
+                    dbIndex: [
+                        {
+                            name: 'ix_some_indexed_field4',
+                            type: 'gin',
+                            unique: true,
+                        },
+                        {
+                            type: 'btree',
+                        },
+                    ],
+                    type: 'number',
+                },
             },
             required: [
                 'vals',
@@ -314,6 +335,8 @@ describe('generator for a5', () => {
                 'abnormalNames',
                 'indexedField1',
                 'indexedField2',
+                'indexedField3',
+                'indexedField4',
             ],
             additionalProperties: false,
             dbEntity: 'cmn.some',

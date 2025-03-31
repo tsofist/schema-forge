@@ -397,11 +397,28 @@ function addJSDocKeywords(engine: Ajv) {
         },
     });
 
+    const DBIndexSettingsSchema = {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+            name: { type: 'string' },
+            unique: { type: 'boolean' },
+            type: {
+                type: 'string',
+                enum: ['btree', 'gin', 'gist'],
+            },
+        },
+    };
+
     engine.addKeyword({
         keyword: 'dbIndex',
         metaSchema: {
-            type: ['string', 'boolean'],
+            type: ['string', 'boolean', 'object', 'array'],
             pattern: IXNamePattern,
+            additionalProperties: false,
+            properties: DBIndexSettingsSchema.properties,
+            items: DBIndexSettingsSchema,
+            minItems: 1,
         },
     });
 
