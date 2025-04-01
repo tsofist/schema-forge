@@ -1,4 +1,4 @@
-import { ArrayMay, Nullable, URec } from '@tsofist/stem';
+import { ArrayMay, Nullable, Rec, URec } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
 import { chunk } from '@tsofist/stem/lib/chunk';
 import { raise, raiseEx } from '@tsofist/stem/lib/error';
@@ -25,6 +25,7 @@ import {
     SchemaNotFoundErrorCode,
     SchemaNotFoundErrorContext,
 } from './types';
+import { DBEntityOptions, DBIndexOptions, DBIndexTypeList } from './types/db.types';
 import { buildSchemaDefinitionRef, parseSchemaDefinitionInfo } from './index';
 
 export type SchemaForgeValidator = ReturnType<typeof createSchemaForgeValidator>;
@@ -397,36 +398,50 @@ function addJSDocKeywords(engine: Ajv) {
         },
     });
 
-    const DBIndexSettingsSchema = {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-            name: { type: 'string' },
-            unique: { type: 'boolean' },
-            type: {
-                type: 'string',
-                enum: ['btree', 'gin', 'gist'],
-            },
+    const DBIndexOptionsProperties = {
+        name: { type: 'string', pattern: IXNamePattern },
+        unique: { type: 'boolean' },
+        type: {
+            type: 'string',
+            enum: DBIndexTypeList,
         },
+    } as const satisfies Rec<unknown, keyof DBIndexOptions>;
+
+    const DBIndexSchema = {
+        type: ['string', 'boolean', 'object', 'array'],
+        pattern: IXNamePattern,
+        additionalProperties: false,
+        properties: DBIndexOptionsProperties,
+        items: {},
+        minItems: 1,
+    };
+
+    DBIndexSchema.items = {
+        ...DBIndexSchema,
+        type: ['string', 'boolean', 'object'],
     };
 
     engine.addKeyword({
         keyword: 'dbIndex',
-        metaSchema: {
-            type: ['string', 'boolean', 'object', 'array'],
-            pattern: IXNamePattern,
-            additionalProperties: false,
-            properties: DBIndexSettingsSchema.properties,
-            items: DBIndexSettingsSchema,
-            minItems: 1,
-        },
+        metaSchema: DBIndexSchema,
     });
 
     engine.addKeyword({
         keyword: 'dbEntity',
         metaSchema: {
-            type: 'string',
+            type: ['string', 'object'],
             pattern: EntityNamePattern,
+            additionalProperties: false,
+            properties: {
+                name: {
+                    type: 'string',
+                    pattern: EntityNamePattern,
+                },
+                indexes: {
+                    type: 'array',
+                    items: DBIndexSchema,
+                },
+            } satisfies Rec<unknown, keyof DBEntityOptions>,
         },
     });
 }

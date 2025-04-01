@@ -318,6 +318,8 @@ describe('generator for a5', () => {
                         {
                             type: 'btree',
                         },
+                        'ix_some_indexed_field4_1',
+                        true,
                     ],
                     type: 'number',
                 },

@@ -70,7 +70,9 @@ export interface Some {
     /**
      * @dbIndex [
      *      { type: "gin", unique: true, name: "ix_some_indexed_field4" },
-     *      { type: "btree" }
+     *      { type: "btree" },
+     *      "ix_some_indexed_field4_1",
+     *      true,
      * ]
      */
     indexedField4: number;
