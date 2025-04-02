@@ -309,6 +309,7 @@ export function createSchemaForgeValidator(engineOptions?: Options, useAdditiona
 function addJSDocKeywords(engine: Ajv) {
     const InterfaceNamePattern = '^[A-Z][a-zA-Z0-9]+$';
     const PropertyNamePattern = '^[a-z][a-zA-Z0-9]+$';
+    const NestedPropertyNamePattern = '^[a-z][a-zA-Z0-9.-]+$';
     const MethodNamePattern = PropertyNamePattern;
     const MemberNamePattern = `${InterfaceNamePattern.substring(0, InterfaceNamePattern.length - 1)}#${PropertyNamePattern.substring(1)}`;
     const IXNamePattern = '^ix_[a-z][a-zA-Z0-9_]+$';
@@ -441,7 +442,7 @@ function addJSDocKeywords(engine: Ajv) {
                     type: 'object',
                     additionalProperties: DBIndexSchema,
                     propertyNames: {
-                        pattern: PropertyNamePattern,
+                        pattern: NestedPropertyNamePattern,
                     },
                 },
             } satisfies Rec<unknown, keyof DBEntityOptions>,
