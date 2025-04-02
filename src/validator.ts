@@ -438,8 +438,11 @@ function addJSDocKeywords(engine: Ajv) {
                     pattern: EntityNamePattern,
                 },
                 indexes: {
-                    type: 'array',
-                    items: DBIndexSchema,
+                    type: 'object',
+                    additionalProperties: DBIndexSchema,
+                    propertyNames: {
+                        pattern: PropertyNamePattern,
+                    },
                 },
             } satisfies Rec<unknown, keyof DBEntityOptions>,
         },
