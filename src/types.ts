@@ -1,4 +1,4 @@
-import { Nullable, PRec } from '@tsofist/stem';
+import { NonEmptyString, Nullable, PRec } from '@tsofist/stem';
 import { ErrorCode } from '@tsofist/stem/lib/error';
 import { ErrorObject, ErrorsTextOptions, SchemaObject, ValidateFunction } from 'ajv';
 import { SchemaForgeBaseOptions } from './generator/types';
@@ -75,6 +75,12 @@ export interface SchemaForgeOptions extends SchemaForgeBaseOptions {
      * @default false
      */
     readonly sortObjectProperties?: boolean;
+    /**
+     * If you want to shrink the schema definition names, you have to provide a replacement function.
+     *
+     * WARN: this functionality is not compatible (yet) with `encodeRefs=true` option.
+     */
+    readonly shrinkDefinitionNames?: (definitionName: string) => undefined | NonEmptyString;
 }
 
 export interface SchemaForgeMetadata {

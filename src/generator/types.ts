@@ -29,6 +29,7 @@ export interface SchemaForgeBaseOptions {
      * @default true
      */
     readonly explicitPublic?: boolean;
+
     /**
      * By default, generator use description jsdoc-tag
      * If this option is true, then generator will use fallback description from type comment
@@ -39,7 +40,8 @@ export interface SchemaForgeBaseOptions {
      * Filter for definitions
      * Important: dependencies will not be filtered
      */
-    definitionsFilter?: (name: string) => boolean;
+    readonly definitionsFilter?: (name: string) => boolean;
+
     /**
      * Create shared $ref definitions for all types
      *

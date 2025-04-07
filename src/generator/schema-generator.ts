@@ -2,6 +2,7 @@ import '../util/patch.extended-annotations-reader';
 import { URec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
 import Ajv, { SchemaObject } from 'ajv';
+import { JSONPath } from 'jsonpath-plus';
 import {
     AnnotatedType,
     ChainNodeParser,
@@ -29,6 +30,7 @@ import {
     TypeChecker,
     TypeFlags,
 } from 'typescript';
+import { SchemaForgeOptions } from '../types';
 import { sortProperties } from '../util/sort-properties';
 import { readJSDocDescription } from '../util/tsc';
 import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX, TypeExposeKind } from './types';
@@ -44,6 +46,7 @@ interface Options {
     openapiCompatible?: boolean;
     sortObjectProperties?: boolean;
     allowUseFallbackDescription?: boolean;
+    shrinkDefinitionNames: SchemaForgeOptions['shrinkDefinitionNames'];
 }
 
 export async function generateSchemaByDraftTypes(options: Options): Promise<SchemaObject> {
@@ -91,11 +94,41 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         version: undefined,
         $comment: undefined,
         definitions: {},
-    };
+    } as const;
+
     for (const definitionName of options.definitions) {
         const schema = generator.createSchema(definitionName);
         Object.assign(result.definitions, schema.definitions);
     }
+
+    if (options.shrinkDefinitionNames) {
+        const replacement = new Set<string>();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        for (const name of Object.keys(result.definitions)) {
+            console.log('DEF::::', name);
+            const r = options.shrinkDefinitionNames(name);
+            if (r) {
+                if (replacement.has(r) || r in result.definitions) {
+                    raise(`Duplicate replacement definition name: ${r}`);
+                }
+                // rename property
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                result.definitions[r] = result.definitions[name];
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                delete result.definitions[name];
+                // rename references
+                const targets: { $ref: string }[] = JSONPath({
+                    path: `$..[?(@ && @.$ref == "#/definitions/${name}")]`,
+                    json: result,
+                    eval: 'safe',
+                });
+                targets.forEach((item) => {
+                    item.$ref = item.$ref.replace(`#/definitions/${name}`, `#/definitions/${r}`);
+                });
+            }
+        }
+    }
+
     result.definitions = Object.fromEntries(
         Object.entries((result.definitions || {}) as URec).sort(),
     );
@@ -105,6 +138,10 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
     await new Ajv({
         strict: true,
         allErrors: true,
+        strictSchema: true,
+        strictTypes: false,
+        strictTuples: false,
+        allowUnionTypes: true,
     }).validateSchema(result, true);
 
     return result;

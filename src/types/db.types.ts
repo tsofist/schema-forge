@@ -64,6 +64,8 @@ export type DBEntityOptions = {
      * Use string literal to set index name.
      */
     indexes?: {
-        [column: string]: DBIndexOptionsDef<true>;
+        [field: string]: DBIndexOptionsDef<true>;
     };
 };
+
+export type DBEntityOptionsDef = DBEntityOptions | string;

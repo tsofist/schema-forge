@@ -220,6 +220,10 @@ describe('generator for a5', () => {
             outputSchemaMetadataFile,
             expose: 'all',
             explicitPublic: true,
+            shrinkDefinitionNames: (definitionName) => {
+                if (definitionName === 'NamesType') return 'NT';
+                return undefined;
+            },
         });
         validator = createSchemaForgeValidator({}, true);
         const schema = await loadJSONSchema([outputSchemaFile]);
@@ -240,7 +244,7 @@ describe('generator for a5', () => {
             'DomainNum',
             'DomainValue',
             'DomainValuesType',
-            'NamesType',
+            'NT', // 'NamesType',
             'NamesTypeAbnormal',
             'NumN',
             'Nums',
@@ -250,7 +254,7 @@ describe('generator for a5', () => {
             'VariadicList',
             'VariadicList1',
         ]);
-        expect(validator.getValidator('test#/definitions/NamesType')!.schema).toStrictEqual({
+        expect(validator.getValidator('test#/definitions/NT')!.schema).toStrictEqual({
             type: 'string',
             enum: ['v:name1', 'v:name2'],
         });
@@ -264,7 +268,7 @@ describe('generator for a5', () => {
                     $ref: '#/definitions/DomainValuesType',
                 },
                 name0: {
-                    $ref: '#/definitions/NamesType',
+                    $ref: '#/definitions/NT',
                 },
                 name1: {
                     type: 'string',

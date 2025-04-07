@@ -1,7 +1,6 @@
-import { readFileSync } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
 import { createHash } from 'node:crypto';
-import { unlink } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
+import { readFile, writeFile, unlink } from 'node:fs/promises';
 import { URec } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
 import { raise } from '@tsofist/stem/lib/error';
@@ -67,6 +66,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
                         openapiCompatible: options.openapiCompatible,
                         sortObjectProperties: options.sortObjectProperties,
                         allowUseFallbackDescription: options.allowUseFallbackDescription,
+                        shrinkDefinitionNames: options.shrinkDefinitionNames,
                     })),
                     ...(options.schemaMetadata || {}),
                 };
