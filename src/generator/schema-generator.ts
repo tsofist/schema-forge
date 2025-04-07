@@ -105,24 +105,25 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         const replacement = new Set<string>();
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         for (const name of Object.keys(result.definitions)) {
-            console.log('DEF::::', name);
             const r = options.shrinkDefinitionNames(name);
             if (r) {
                 if (replacement.has(r) || r in result.definitions) {
                     raise(`Duplicate replacement definition name: ${r}`);
                 }
+
                 // rename property
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 result.definitions[r] = result.definitions[name];
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 delete result.definitions[name];
+
                 // rename references
                 const targets: { $ref: string }[] = JSONPath({
-                    path: `$..[?(@ && @.$ref == "#/definitions/${name}")]`,
+                    path: `$..[?(@ && @.$ref == "#/definitions/${escapeDefinitionNameForJSONPath(name)}")]`,
                     json: result,
                     eval: 'safe',
                 });
-                targets.forEach((item) => {
+                targets?.forEach((item) => {
                     item.$ref = item.$ref.replace(`#/definitions/${name}`, `#/definitions/${r}`);
                 });
             }
@@ -147,7 +148,11 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
     return result;
 }
 
-export class TupleTypeParser implements SubNodeParser {
+function escapeDefinitionNameForJSONPath(value: string): string {
+    return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+class TupleTypeParser implements SubNodeParser {
     constructor(
         protected readonly childNodeParser: ChainNodeParser,
         protected readonly allowUseFallbackDescription: boolean | undefined,
@@ -164,7 +169,6 @@ export class TupleTypeParser implements SubNodeParser {
             if (isNamedTupleMember(element)) {
                 const description = readJSDocDescription(element, this.allowUseFallbackDescription);
                 const nullable = type instanceof AnnotatedType ? type.isNullable() : false;
-                if (nullable) console.log(description, nullable);
                 return description ? new AnnotatedType(type, { description }, nullable) : type;
             }
 
