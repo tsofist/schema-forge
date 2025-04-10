@@ -118,7 +118,7 @@ describe('validator for a7', () => {
 
         validator.warmupCacheSync();
         const warmed = validator.compilationArtifactCount;
-        expect(warmed).toStrictEqual(10);
+        expect(warmed).toStrictEqual(9);
 
         validator.clear();
         const cleared = validator.compilationArtifactCount;
@@ -538,7 +538,8 @@ describe('generator for a1', () => {
         expect(forgeSchemaResult!.refs.length).toStrictEqual(10);
     });
     it('getSchema', () => {
-        expect(validator.getValidator('test#/definitions/Int')!.schema).toStrictEqual({
+        expect(validator.getValidator('test#/definitions/PositiveInt')!.schema).toStrictEqual({
+            minimum: 1,
             type: 'integer',
         });
         expect(validator.getValidator('#/definitions/NotExists')).toStrictEqual(undefined);
@@ -553,7 +554,9 @@ describe('generator for a1', () => {
         });
     });
     it('hasSchema', () => {
-        expect(validator.hasValidator('test#/definitions/Int')).toStrictEqual(true);
+        expect(validator.hasValidator('test#/definitions/SomeType1')).toStrictEqual(true);
+        expect(validator.hasValidator('test#/definitions/PositiveInt')).toStrictEqual(true);
+        expect(validator.hasValidator('test#/definitions/Int')).toStrictEqual(false);
         expect(validator.hasValidator('test#/definitions/!Int')).toStrictEqual(false);
     });
     it('checkBySchema', () => {
@@ -563,11 +566,11 @@ describe('generator for a1', () => {
                 {},
             ),
         ).toThrow(SchemaForgeValidationErrorCode);
-        expect(validator.checkBySchema('test#/definitions/Int', 1)).toStrictEqual(true);
-        expect(() => validator.checkBySchema('test#/definitions/Int', 1.1)).toThrow(
+        expect(validator.checkBySchema('test#/definitions/PositiveInt', 1)).toStrictEqual(true);
+        expect(() => validator.checkBySchema('test#/definitions/PositiveInt', 1.1)).toThrow(
             SchemaForgeValidationErrorCode,
         );
-        expect(() => validator.checkBySchema('!test#/definitions/Int', 1)).toThrow(
+        expect(() => validator.checkBySchema('!test#/definitions/PositiveInt', 1)).toThrow(
             SchemaNotFoundErrorCode,
         );
 
@@ -588,7 +591,7 @@ describe('generator for a1', () => {
         }
 
         {
-            const schema = 'test#/definitions/Int';
+            const schema = 'test#/definitions/PositiveInt';
             const message = 'ERROR!';
             try {
                 validator.checkBySchema(schema, 1.1, { errorMessage: message });
@@ -647,13 +650,6 @@ describe('generator for a1', () => {
                 method: 'methodB',
             },
             {
-                ref: 'test#/definitions/Int',
-                kind: 0,
-                name: 'Int',
-                schemaId: 'test',
-                type: 'Int',
-            },
-            {
                 ref: 'test#/definitions/NonExportedInterfaceD_InterfaceDeclaration',
                 kind: 1,
                 name: 'NonExportedInterfaceD_InterfaceDeclaration',
@@ -708,7 +704,7 @@ describe('generator for a1', () => {
             validator.listDefinitions(
                 (info) => info.kind === SchemaDefinitionKind.Type && !info.name.startsWith('Some'),
             ),
-        ).toStrictEqual([defsByName['Int'], defsByName['PositiveInt']]);
+        ).toStrictEqual([defsByName['PositiveInt']]);
 
         expect(
             validator.listDefinitions((info) => info.kind === SchemaDefinitionKind.API),

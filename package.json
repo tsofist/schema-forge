@@ -21,10 +21,10 @@
   },
   "dependencies": {
     "@faker-js/faker": "^9.6.0",
-    "@tsofist/stem": "^2.2.0",
+    "@tsofist/stem": "^3.0.2",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "json-schema-faker": "^0.5.8",
+    "json-schema-faker": "^0.5.9",
     "jsonpath-plus": "^10.3.0",
     "ts-json-schema-generator": "~2.3.0",
     "tslib": "^2.8.1"
@@ -32,13 +32,13 @@
   "devDependencies": {
     "@tsofist/web-buddy": "^1.21.0",
     "@types/jest": "^29.5.14",
-    "@types/node": "^20.17.28",
+    "@types/node": "^20.17.30",
     "@types/supertest": "^6.0.3",
     "jest": "^29.7.0",
     "rimraf": "^6.0.1",
     "supertest": "^7.1.0",
-    "ts-jest": "^29.3.0",
-    "typescript": "~5.8.2"
+    "ts-jest": "^29.3.1",
+    "typescript": "~5.8.3"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
