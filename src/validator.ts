@@ -402,6 +402,7 @@ function addJSDocKeywords(engine: Ajv) {
     const DBIndexOptionsProperties = {
         name: { type: 'string', pattern: IXNamePattern },
         unique: { type: 'boolean' },
+        pk: { type: 'boolean' },
         type: {
             type: 'string',
             enum: DBIndexTypeList,

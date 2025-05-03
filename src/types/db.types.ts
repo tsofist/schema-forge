@@ -25,6 +25,8 @@ export type DBIndexType = (typeof DBIndexTypeList)[number];
 
 /**
  * Database index options.
+ *
+ * @see https://dbml.dbdiagram.io/docs/#index-definition dbml spec
  */
 export type DBIndexOptions = {
     /**
@@ -42,6 +44,11 @@ export type DBIndexOptions = {
      * @default false
      */
     unique?: boolean;
+    /**
+     * Is it a primary key
+     * @default false
+     */
+    pk?: boolean;
 };
 
 export type DBIndexOptionsDef<B extends boolean = boolean> = ArrayMay<DBIndexOptions | string | B>;
