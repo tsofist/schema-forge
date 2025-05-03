@@ -407,6 +407,8 @@ function addJSDocKeywords(engine: Ajv) {
             type: 'string',
             enum: DBIndexTypeList,
         },
+        note: { type: 'string' },
+        comment: { type: 'string' },
     } as const satisfies Rec<unknown, keyof DBIndexOptions>;
 
     const DBIndexSchema = {
@@ -444,6 +446,15 @@ function addJSDocKeywords(engine: Ajv) {
                     additionalProperties: DBIndexSchema,
                     propertyNames: {
                         pattern: NestedPropertyNamePattern,
+                    },
+                },
+                note: { type: 'string' },
+                comment: { type: 'string' },
+                alias: { type: 'string' },
+                settings: {
+                    type: 'object',
+                    properties: {
+                        headercolor: { type: 'string' },
                     },
                 },
             } satisfies Rec<unknown, keyof DBEntityOptions>,

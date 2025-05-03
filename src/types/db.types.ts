@@ -1,4 +1,4 @@
-import { ArrayMay } from '@tsofist/stem';
+import { ArrayMay, HexString } from '@tsofist/stem';
 
 /**
  * Database index types.
@@ -49,12 +49,24 @@ export type DBIndexOptions = {
      * @default false
      */
     pk?: boolean;
+    /**
+     * Any important notes.
+     * Can be used in DDL.
+     */
+    note?: string;
+    /**
+     * Any important developer comments.
+     * Can't be used in DDL.
+     */
+    comment?: string;
 };
 
 export type DBIndexOptionsDef<B extends boolean = boolean> = ArrayMay<DBIndexOptions | string | B>;
 
 /**
  * Database entity options.
+ *
+ * @see https://dbml.dbdiagram.io/docs/#table-definition dbml spec
  */
 export type DBEntityOptions = {
     /**
@@ -73,6 +85,24 @@ export type DBEntityOptions = {
     indexes?: {
         [field: string]: DBIndexOptionsDef<true>;
     };
+    /**
+     * Any important notes.
+     * Can be used in DDL.
+     */
+    note?: string;
+    /**
+     * Any important developer comments.
+     * Can't be used in DDL.
+     */
+    comment?: string;
+    /**
+     * Table name alias.
+     */
+    alias?: string;
+    /**
+     * Settings.
+     */
+    settings?: { headercolor: HexString };
 };
 
 export type DBEntityOptionsDef = DBEntityOptions | string;
