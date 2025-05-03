@@ -1,4 +1,4 @@
-import { PositiveInt } from '@tsofist/stem/lib/number/types';
+import { PositiveInt } from '@tsofist/stem/lib/number/integer/types';
 
 /**
  * System User

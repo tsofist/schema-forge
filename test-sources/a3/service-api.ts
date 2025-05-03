@@ -1,5 +1,5 @@
 import { NonEmptyString } from '@tsofist/stem';
-import { Int, PositiveInt } from '@tsofist/stem/lib/number/types';
+import { Int, PositiveInt } from '@tsofist/stem/lib/number/integer/types';
 import { StringPhoneNumber } from '@tsofist/stem/lib/phone-number/types';
 
 /* eslint-disable @typescript-eslint/method-signature-style */

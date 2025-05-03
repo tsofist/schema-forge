@@ -1,5 +1,5 @@
 import { NonEmptyArray, NonEmptyString } from '@tsofist/stem';
-import { Int } from '@tsofist/stem/lib/number/types';
+import { Int } from '@tsofist/stem/lib/number/integer/types';
 import { StringPhoneNumber } from '@tsofist/stem/lib/phone-number/types';
 
 export type UserID = Int;

@@ -539,8 +539,11 @@ describe('generator for a1', () => {
     });
     it('getSchema', () => {
         expect(validator.getValidator('test#/definitions/PositiveInt')!.schema).toStrictEqual({
-            minimum: 1,
             type: 'integer',
+            minimum: 1,
+            maximum: 9007199254740991,
+            description: 'Positive integer value.',
+            faker: { 'number.int': [{ max: 10000, min: 1 }] },
         });
         expect(validator.getValidator('#/definitions/NotExists')).toStrictEqual(undefined);
         expect(validator.getSchema('test#/definitions/SomeName')).toStrictEqual({

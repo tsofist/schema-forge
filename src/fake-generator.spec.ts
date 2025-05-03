@@ -9,7 +9,7 @@ import {
 } from '@tsofist/stem/lib/cldr/date-time/guards';
 import { ISODateTimeType, TypedDateTimeString } from '@tsofist/stem/lib/cldr/date-time/types';
 import { EnumKeys, extractEnumKeys } from '@tsofist/stem/lib/enum';
-import { isInt } from '@tsofist/stem/lib/number/guards';
+import { isInt } from '@tsofist/stem/lib/number/integer/guards';
 import { entries } from '@tsofist/stem/lib/object/entries';
 import { camelCase } from '@tsofist/stem/lib/string/case/camel';
 import { SchemaObject } from 'ajv';
