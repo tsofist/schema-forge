@@ -21,6 +21,57 @@ const KEEP_ARTEFACTS = false;
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
+describe('generator for a8', () => {
+    const outputSchemaFile = './a8.generated.schema.tmp.json';
+    const outputSchemaMetadataFile = './a8.generated.definitions.tmp.json';
+
+    const schemaMetadata: SchemaForgeOptions['schemaMetadata'] = {
+        title: 'Generator TEST',
+        version: '1.0.0',
+        $comment: 'WARN: This is a test schema.',
+    };
+
+    let forgeSchemaResult: SchemaForgeResult | undefined;
+    let validator: SchemaForgeValidator;
+    let loadedSchema: SchemaObject[];
+
+    beforeAll(async () => {
+        forgeSchemaResult = await forgeSchema({
+            schemaId: 'test',
+            allowUseFallbackDescription: true,
+            tsconfigFrom: './tsconfig.build-test.json',
+            sourcesDirectoryPattern: 'test-sources/a8',
+            sourcesFilesPattern: ['service-api.ts', 'types.ts'],
+            outputSchemaFile,
+            outputSchemaMetadataFile,
+            expose: 'all',
+            explicitPublic: true,
+            schemaMetadata,
+        });
+        validator = createSchemaForgeValidator({}, true);
+        loadedSchema = await loadJSONSchema([outputSchemaFile]);
+        validator.addSchema(loadedSchema);
+    });
+    afterAll(async () => {
+        if (!KEEP_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
+    });
+
+    it('generated schema should have correct metadata', () => {
+        expect(forgeSchemaResult).toBeTruthy();
+        const schema = forgeSchemaResult!.schema;
+        expect(pickProps(schema, Object.keys(schemaMetadata))).toStrictEqual(schemaMetadata);
+    });
+
+    it('generated schema should be valid', () => {
+        expect(forgeSchemaResult).toBeTruthy();
+        const schema = validator.getSchema('test#/definitions/TypeFromJSON') as any;
+        expect(schema).toBeTruthy();
+    });
+});
+
 describe('generator for a7', () => {
     const outputSchemaFile = './a7.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a7.generated.definitions.tmp.json';

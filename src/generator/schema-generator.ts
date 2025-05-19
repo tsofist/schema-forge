@@ -14,21 +14,28 @@ import {
     DEFAULT_CONFIG,
     LiteralType,
     LiteralValue,
+    NodeParser,
     NumberType,
+    ReferenceType,
     SchemaGenerator,
     StringType,
     SubNodeParser,
     TupleType,
+    TypeofNodeParser,
 } from 'ts-json-schema-generator';
 import {
     Identifier,
+    isExpressionStatement,
     isNamedTupleMember,
+    isSourceFile,
     isTupleTypeNode,
     Node,
+    SymbolFlags,
     SyntaxKind,
     TupleTypeNode,
     TypeChecker,
     TypeFlags,
+    TypeQueryNode,
 } from 'typescript';
 import { SchemaForgeOptions } from '../types';
 import { sortProperties } from '../util/sort-properties';
@@ -80,6 +87,7 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
             new TupleTypeParser(parser as ChainNodeParser, allowUseFallbackDescription),
         );
         parser.addNodeParser(new ArrayLiteralExpressionIdentifierParser(typeChecker));
+        parser.addNodeParser(new TypeofNodeParserEx(typeChecker, parser as unknown as NodeParser));
     });
 
     const formatter = createFormatter(options.sourcesTypesGeneratorConfig);
@@ -150,6 +158,34 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
 
 function escapeDefinitionNameForJSONPath(value: string): string {
     return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+class TypeofNodeParserEx extends TypeofNodeParser {
+    override createType(node: TypeQueryNode, context: Context, reference?: ReferenceType) {
+        const tc: TypeChecker = this.typeChecker;
+
+        let symbol = tc.getSymbolAtLocation(node.exprName);
+        if (symbol && symbol.flags & SymbolFlags.Alias) {
+            symbol = tc.getAliasedSymbol(symbol);
+            const declaration = symbol.valueDeclaration;
+            if (
+                declaration &&
+                isSourceFile(declaration) &&
+                declaration.fileName.endsWith('.json')
+            ) {
+                const statement = declaration.statements.at(0);
+                if (statement && isExpressionStatement(statement)) {
+                    return this.childNodeParser.createType(
+                        statement.expression,
+                        context,
+                        reference,
+                    );
+                }
+            }
+        }
+
+        return super.createType(node, context, reference);
+    }
 }
 
 class TupleTypeParser implements SubNodeParser {
