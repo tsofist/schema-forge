@@ -1,21 +1,28 @@
-import { writeFile } from 'fs/promises';
-import { basename, dirname, extname, isAbsolute, resolve } from 'path';
-import { asBool } from '@tsofist/stem/lib/as-bool';
+import { writeFile } from 'node:fs/promises';
+import { basename, dirname, extname, isAbsolute, resolve } from 'node:path';
 import { raise } from '@tsofist/stem/lib/error';
 import { TextBuilder } from '@tsofist/stem/lib/string/text-builder';
 import { createProgram } from 'ts-json-schema-generator';
-import { CompletedConfig, DEFAULT_CONFIG } from 'ts-json-schema-generator/dist/src/Config';
+import { type CompletedConfig, DEFAULT_CONFIG } from 'ts-json-schema-generator/dist/src/Config';
 import {
-    CompilerHost,
-    CompilerOptions,
+    type EnumDeclaration,
+    type ExportDeclaration,
+    type InterfaceDeclaration,
+    type NodeArray,
+    type ParameterDeclaration,
+    type Program,
+    type SignatureDeclarationBase,
+    type SourceFile,
+    type Statement,
+    type TypeAliasDeclaration,
+    type TypeElement,
+    type VariableDeclaration,
+    SyntaxKind,
     createCompilerHost,
-    EnumDeclaration,
-    ExportDeclaration,
     getJSDocDeprecatedTag,
     getJSDocPrivateTag,
     getJSDocPublicTag,
     getTextOfJSDocComment,
-    InterfaceDeclaration,
     isEnumDeclaration,
     isExportDeclaration,
     isFunctionTypeNode,
@@ -25,20 +32,13 @@ import {
     isPropertySignature,
     isStringLiteral,
     isTypeAliasDeclaration,
-    NodeArray,
-    ParameterDeclaration,
-    Program,
-    SignatureDeclarationBase,
-    SourceFile,
-    Statement,
-    SyntaxKind,
-    TypeAliasDeclaration,
-    TypeChecker,
-    TypeElement,
-    VariableDeclaration,
 } from 'typescript';
-import { buildAPIInterfaceSchemaSignature } from '../index';
-import { SchemaForgeSignatureSuffix } from '../types';
+import {
+    buildAPIInterfaceSDS,
+    buildAPIMethodArgsSDS,
+    buildAPIMethodResultSDS,
+} from '../definition-info/api-signature';
+import { ForgeSchemaOptions } from '../types';
 import {
     hasJSDocTag,
     readInterfaceGenericText,
@@ -46,131 +46,31 @@ import {
     readMemberTypeName,
     readNodeName,
     resolveModuleFileName,
-} from '../util/tsc';
-import {
-    SchemaForgeBaseOptions,
-    SG_CONFIG_DEFAULTS,
-    SG_CONFIG_MANDATORY,
-    TMP_FILES_SUFFIX,
-} from './types';
+} from './helpers-tsc';
+import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY, TMP_FILES_SUFFIX } from './types';
 
-interface Options extends SchemaForgeBaseOptions {
-    tsconfig: string;
-    sourcesPattern: string[];
-}
-
-interface GeneratorContext {
-    readonly program: Program;
-    readonly compilerOptions: CompilerOptions;
-    readonly compilerHost: CompilerHost;
-    readonly typeChecker: TypeChecker;
-    readonly options: Options;
-    readonly fileContent: string[];
-
-    registerDefinition: (...name: string[]) => void;
-}
-
-export async function generateDraftTypeFiles(options: Options) {
-    const explicitPublic = asBool(options.explicitPublic, true);
+/**
+ * @internal
+ */
+export async function generateDraftTypeFiles(options: SFDTGOptions) {
     const sourcesTypesGeneratorConfig: CompletedConfig = {
         ...DEFAULT_CONFIG,
-        ...SG_CONFIG_DEFAULTS,
-        expose: options.expose ?? SG_CONFIG_DEFAULTS.expose,
+        ...SFG_CONFIG_DEFAULTS,
+        expose: options.expose ?? SFG_CONFIG_DEFAULTS.expose,
         path: options.sourcesPattern.length > 1 ? undefined : options.sourcesPattern[0],
         tsconfig: options.tsconfig,
         discriminatorType: DEFAULT_CONFIG.discriminatorType,
-        ...SG_CONFIG_MANDATORY,
+        ...SFG_CONFIG_MANDATORY,
     };
+    // const files: string[] = [];
+    const ctx = createContext(options, sourcesTypesGeneratorConfig);
+    let definitions = ctx.definitions;
 
-    const files: string[] = [];
-    let definitions: string[] = [];
+    for (const sourceFileName of ctx.fileNames) {
+        ctx.currentSourceFileName = sourceFileName;
+        ctx.currentFileContent = [];
 
-    const program: Program = createProgram(sourcesTypesGeneratorConfig);
-    const checker = program.getTypeChecker();
-    const compilerOptions = program.getCompilerOptions();
-    const compilerHost = createCompilerHost(compilerOptions);
-
-    const fileNames = program.getRootFileNames();
-    const namesBySourceFile = new Map<string, Set<string>>();
-
-    for (const sourceFileName of fileNames) {
-        const context: GeneratorContext = {
-            program,
-            compilerOptions,
-            compilerHost,
-            typeChecker: checker,
-            options,
-            fileContent: [],
-            registerDefinition(...names: string[]) {
-                let set = namesBySourceFile.get(sourceFileName);
-                if (!set) namesBySourceFile.set(sourceFileName, (set = new Set()));
-                for (const name of names) {
-                    definitions.push(name);
-                    set.add(name);
-                }
-            },
-        };
-
-        const source = program.getSourceFile(sourceFileName);
-        if (!source) continue;
-
-        const statements = [...source.statements];
-        while (statements.length) {
-            const statement = statements.pop();
-            if (!statement) break;
-
-            if (isExportDeclaration(statement)) {
-                processExportDeclaration(statement, sourceFileName, statements, context);
-                continue;
-            }
-
-            if (explicitPublic) {
-                const isPublic = getJSDocPublicTag(statement) != null;
-                if (!isPublic) continue;
-            } else {
-                const isPrivate =
-                    getJSDocPrivateTag(statement) != null || hasJSDocTag(statement, 'internal');
-                if (isPrivate) continue;
-            }
-
-            switch (statement.kind) {
-                case SyntaxKind.ImportDeclaration:
-                case SyntaxKind.VariableStatement:
-                    continue;
-                case SyntaxKind.EnumDeclaration:
-                    passDeclaration(statement as EnumDeclaration, context);
-                    break;
-                case SyntaxKind.TypeAliasDeclaration:
-                    passDeclaration(statement as TypeAliasDeclaration, context);
-                    break;
-                case SyntaxKind.InterfaceDeclaration:
-                    if (hasJSDocTag(statement, 'api')) {
-                        processAPIInterfaceDeclaration(statement as InterfaceDeclaration, context);
-                    } else {
-                        passDeclaration(statement as InterfaceDeclaration, context);
-                    }
-                    break;
-                default:
-                    console.error(`[current statement]`, statement.getText(), '\n');
-                    raise(
-                        `Unsupported statement kind: ${statement.kind} (${
-                            SyntaxKind[statement.kind]
-                        }) in ${sourceFileName}`,
-                    );
-            }
-        }
-
-        const outputFileName = `${dirname(sourceFileName)}/${basename(
-            sourceFileName,
-            extname(sourceFileName),
-        )}${TMP_FILES_SUFFIX}.ts`;
-
-        await writeFile(
-            outputFileName,
-            [source.getFullText(), context.fileContent.join('\n')].join('\n'),
-            { encoding: 'utf8' },
-        );
-        files.push(outputFileName);
+        await processSourceFile(sourceFileName, ctx);
     }
 
     if (options.definitionsFilter) {
@@ -180,27 +80,89 @@ export async function generateDraftTypeFiles(options: Options) {
     definitions.sort();
 
     return {
-        sourcesTypesGeneratorConfig,
-        files,
+        files: ctx.files,
         definitions,
-        namesBySourceFile,
+        sourcesTypesGeneratorConfig,
+        namesBySourceFile: ctx.namesBySourceFile,
     };
 }
 
-const S = ' '.repeat(4);
+async function processSourceFile(sourceFileName: string, context: SFDTGContext) {
+    const source = context.program.getSourceFile(sourceFileName);
+    if (!source) return;
+
+    const explicitPublic = context.options.explicitPublic ?? true;
+    const statements = [...source.statements];
+    const outputFileName = `${dirname(sourceFileName)}/${basename(
+        sourceFileName,
+        extname(sourceFileName),
+    )}${TMP_FILES_SUFFIX}.ts`;
+
+    while (statements.length) {
+        const statement = statements.pop();
+        if (!statement) break;
+
+        if (isExportDeclaration(statement)) {
+            processExportDeclaration(statement, statements, context);
+            continue;
+        }
+
+        if (explicitPublic) {
+            const isPublic = getJSDocPublicTag(statement) != null;
+            if (!isPublic) continue;
+        } else {
+            const isPrivate =
+                getJSDocPrivateTag(statement) != null || hasJSDocTag(statement, 'internal');
+            if (isPrivate) continue;
+        }
+
+        switch (statement.kind) {
+            case SyntaxKind.ImportDeclaration:
+            case SyntaxKind.VariableStatement:
+                continue;
+            case SyntaxKind.EnumDeclaration:
+                passDeclaration(statement as EnumDeclaration, context);
+                break;
+            case SyntaxKind.TypeAliasDeclaration:
+                passDeclaration(statement as TypeAliasDeclaration, context);
+                break;
+            case SyntaxKind.InterfaceDeclaration:
+                if (hasJSDocTag(statement, 'api')) {
+                    processAPIInterfaceDeclaration(statement as InterfaceDeclaration, context);
+                } else {
+                    passDeclaration(statement as InterfaceDeclaration, context);
+                }
+                break;
+            default:
+                console.error(`[current statement]`, statement.getText(), '\n');
+                raise(
+                    `Unsupported statement kind: ${statement.kind} (${
+                        SyntaxKind[statement.kind]
+                    }) in ${sourceFileName}`,
+                );
+        }
+    }
+
+    await writeFile(
+        outputFileName,
+        [source.getFullText(), context.currentFileContent.join('\n')].join('\n'),
+        { encoding: 'utf8' },
+    );
+
+    context.files.push(outputFileName);
+}
 
 function passDeclaration(
     statement: TypeAliasDeclaration | EnumDeclaration | InterfaceDeclaration | VariableDeclaration,
-    context: GeneratorContext,
+    context: SFDTGContext,
 ) {
-    context.registerDefinition(statement.name.getText());
+    context.registerDefinition(context.currentSourceFileName, statement.name.getText());
 }
 
 function processExportDeclaration(
     statement: ExportDeclaration,
-    sourceFileName: string,
     list: Statement[],
-    context: GeneratorContext,
+    context: SFDTGContext,
 ) {
     if (
         !statement.exportClause ||
@@ -219,13 +181,13 @@ function processExportDeclaration(
     const moduleSpecifier = statement.moduleSpecifier.text;
 
     if (!isAbsolute(moduleSpecifier)) {
-        const fn = resolve(dirname(sourceFileName), moduleSpecifier) + '.ts';
+        const fn = resolve(dirname(context.currentSourceFileName), moduleSpecifier) + '.ts';
         module = context.program.getSourceFile(fn);
     }
 
     if (!module) {
         const filename = resolveModuleFileName(
-            sourceFileName,
+            context.currentSourceFileName,
             moduleSpecifier,
             context.compilerOptions,
             context.compilerHost,
@@ -256,19 +218,7 @@ function processExportDeclaration(
     }
 }
 
-interface DefinitionMetadata {
-    name: string;
-    description?: string;
-    deprecated?: string;
-    desc:
-        | [argsText: string, resultTypeName: string] // Method signature
-        | string; // Property type
-}
-
-function processAPIInterfaceDeclaration(
-    statement: InterfaceDeclaration,
-    context: GeneratorContext,
-) {
+function processAPIInterfaceDeclaration(statement: InterfaceDeclaration, context: SFDTGContext) {
     const allowUseFallbackDescription = context.options.allowUseFallbackDescription;
     const definitionsMetaList: DefinitionMetadata[] = [];
 
@@ -304,16 +254,8 @@ function processAPIInterfaceDeclaration(
 
         const resultTypeName = readMemberTypeName(method);
 
-        const definitionNameArgs = buildAPIInterfaceSchemaSignature(
-            interfaceName,
-            memberName,
-            SchemaForgeSignatureSuffix.MethodArguments,
-        );
-        const definitionNameResult = buildAPIInterfaceSchemaSignature(
-            interfaceName,
-            memberName,
-            SchemaForgeSignatureSuffix.MethodResult,
-        );
+        const definitionNameArgs = buildAPIMethodArgsSDS(interfaceName, memberName);
+        const definitionNameResult = buildAPIMethodResultSDS(interfaceName, memberName);
 
         const comment = `Method:${interfaceName}#${memberName}`;
 
@@ -324,13 +266,17 @@ function processAPIInterfaceDeclaration(
             desc: [definitionNameArgs, definitionNameResult],
         });
 
-        context.registerDefinition(definitionNameArgs, definitionNameResult);
-        context.fileContent.push(
+        context.registerDefinition(
+            context.currentSourceFileName,
+            definitionNameArgs,
+            definitionNameResult,
+        );
+        context.currentFileContent.push(
             ...[
-                // ARGUMENTS
+                // Arguments ->
                 `/**`,
-                ` * @interface ${interfaceName}`,
-                ` * @member ${interfaceName}#${memberName}`,
+                ` * @apiInterface ${interfaceName}`,
+                ` * @apiMember ${interfaceName}#${memberName}`,
                 ` * @description Arguments for ${comment} ${argsNames.length ? `(${argsNamesText})` : ''}`,
                 ` * @comment ${comment}`,
                 ` *`,
@@ -339,10 +285,11 @@ function processAPIInterfaceDeclaration(
                 ` */`,
                 `export type ${definitionNameArgs} = readonly [\n${argsTypesText}\n];`,
                 ``,
-                // RESULT
+                // Result ->
                 `/**`,
-                ` * @interface ${interfaceName}`,
-                ` * @member ${interfaceName}#${memberName}`,
+                ` * @apiInterface ${interfaceName}`,
+                ` * @apiMember ${interfaceName}#${memberName}`,
+                ` *`,
                 ` * @description Result type for ${comment}`,
                 ` * @comment ${comment}`,
                 ` */`,
@@ -377,7 +324,7 @@ function processAPIInterfaceDeclaration(
         }
     }
 
-    // inheritance first
+    // Inheritance first
     if (statement.heritageClauses) {
         for (const clause of statement.heritageClauses) {
             for (const type of clause.types) {
@@ -407,8 +354,9 @@ function processAPIInterfaceDeclaration(
             membersText.push(
                 [
                     `/**`,
-                    ` * @interface ${interfaceName}`,
-                    ` * @${isMethod ? 'method' : 'property'} ${member.name}`,
+                    ` * @apiInterface ${interfaceName}`,
+                    ` *`,
+                    ` * @${isMethod ? 'apiMethod' : 'apiProperty'} ${member.name}`,
                     member.description && ` * @description ${member.description}`,
                     member.deprecated && ` * @deprecated ${member.deprecated}`,
                     ` * @comment ${isMethod ? 'Method' : 'Property'}:${interfaceName}#${
@@ -425,19 +373,23 @@ function processAPIInterfaceDeclaration(
 
         const interfaceText = new TextBuilder([
             `/**`,
-            ` * @interface ${interfaceName}`,
+            ` * @apiInterface ${interfaceName}`,
+            ` *`,
             interfaceDesc && ` * @description ${interfaceDesc}`,
             interfaceDeprecated && ` * @deprecated ${interfaceDeprecated}`,
             ` * @comment Interface:${interfaceName}`,
             ` */`,
-            `export interface ${buildAPIInterfaceSchemaSignature(interfaceName)}${interfaceGenericText} {`,
+            `export interface ${buildAPIInterfaceSDS(interfaceName)}${interfaceGenericText} {`,
             membersText.stringify('\n'),
             `}`,
             ``,
         ]);
 
-        context.registerDefinition(buildAPIInterfaceSchemaSignature(interfaceName));
-        context.fileContent.push(interfaceText.stringify('\n'));
+        context.registerDefinition(
+            context.currentSourceFileName,
+            buildAPIInterfaceSDS(interfaceName),
+        );
+        context.currentFileContent.push(interfaceText.stringify('\n'));
     }
 }
 
@@ -450,3 +402,55 @@ function countRequiredParams(params: NodeArray<ParameterDeclaration>) {
     }
     return result;
 }
+
+function createContext(options: SFDTGOptions, sourcesTypesGeneratorConfig: CompletedConfig) {
+    const program: Program = createProgram(sourcesTypesGeneratorConfig);
+    const checker = program.getTypeChecker();
+    const compilerOptions = program.getCompilerOptions();
+    const compilerHost = createCompilerHost(compilerOptions);
+    const fileNames = program.getRootFileNames();
+    const namesBySourceFile = new Map<string, Set<string>>();
+    const definitions: string[] = [];
+    const files: string[] = [];
+    const currentFileContent: string[] = [];
+
+    return {
+        currentFileContent,
+        currentSourceFileName: '',
+        namesBySourceFile,
+        fileNames,
+        definitions,
+        program,
+        compilerOptions,
+        compilerHost,
+        typeChecker: checker,
+        options,
+        files,
+        registerDefinition(sourceFilename: string, ...names: string[]) {
+            let set = namesBySourceFile.get(sourceFilename);
+            if (!set) namesBySourceFile.set(sourceFilename, (set = new Set()));
+            for (const name of names) {
+                definitions.push(name);
+                set.add(name);
+            }
+        },
+    };
+}
+
+const S = ' '.repeat(4);
+
+interface DefinitionMetadata {
+    name: string;
+    description?: string;
+    deprecated?: string;
+    desc:
+        | [argsText: string, resultTypeName: string] // <- Method signature
+        | string; // <- Property type
+}
+
+interface SFDTGOptions extends ForgeSchemaOptions {
+    tsconfig: string;
+    sourcesPattern: string[];
+}
+
+type SFDTGContext = ReturnType<typeof createContext>;

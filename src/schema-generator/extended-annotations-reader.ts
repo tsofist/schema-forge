@@ -8,10 +8,10 @@ import {
     isTypeReferenceNode,
     isUnionTypeNode,
     Node,
-    SymbolFlags,
     TypeChecker,
+    SymbolFlags,
 } from 'typescript';
-import { hasJSDocTag } from './tsc';
+import { hasJSDocTag } from './helpers-tsc';
 
 {
     // Support for @inheritDoc tag to enforce inheritance of annotations
