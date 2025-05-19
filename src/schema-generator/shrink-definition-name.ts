@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { NonEmptyString } from '@tsofist/stem';
+import type { NonEmptyString } from '@tsofist/stem';
 
 /**
  * Shrink definition name by removing generic type parameters
@@ -9,12 +9,12 @@ export function shrinkDefinitionName(
     definitionName: string,
     suffixLength = 8,
 ): NonEmptyString | undefined {
-    const gPos = definitionName.indexOf('<');
+    const startPos = definitionName.indexOf('<');
 
-    if (gPos >= 0) {
-        const prefix = definitionName.substring(0, gPos);
-        const hashSource = definitionName.substring(gPos);
-        const digest = createHash('sha512')
+    if (startPos >= 0) {
+        const hashSource = definitionName.substring(startPos);
+        const prefix = definitionName.substring(0, startPos);
+        const digest = createHash('sha256')
             .update(hashSource)
             .digest('hex')
             .substring(0, suffixLength);

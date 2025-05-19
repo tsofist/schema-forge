@@ -3,20 +3,19 @@ import { readErrorCode, readErrorContext } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
 import { pickProps } from '@tsofist/stem/lib/object/pick';
 import { SchemaObject } from 'ajv';
-import { forgeSchema, loadJSONSchema } from './generator';
+import { KEEP_SPEC_ARTEFACTS } from '../artefacts-policy';
+import { SchemaDefinitionInfo, SchemaDefinitionInfoKind } from '../definition-info/types';
 import {
-    SchemaDefinitionInfo,
-    SchemaDefinitionKind,
-    SchemaForgeOptions,
-    SchemaForgeResult,
-    SchemaForgeValidationErrorCode,
+    SchemaForgeErrorCode,
+    SchemaForgeErrors,
+    SchemaForgeSchemaNotFoundErrorContext,
     SchemaForgeValidationErrorContext,
-    SchemaNotFoundErrorCode,
-    SchemaNotFoundErrorContext,
-} from './types';
-import { createSchemaForgeValidator, SchemaForgeValidator } from './validator';
-
-const KEEP_ARTEFACTS = false;
+} from '../efc';
+import { loadJSONSchema } from '../schema-registry/loader';
+import { createSchemaForgeRegistry } from '../schema-registry/registry';
+import { SchemaForgeRegistry } from '../schema-registry/types';
+import { ForgeSchemaResult, ForgeSchemaOptions } from '../types';
+import { forgeSchema } from './forge';
 
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -25,14 +24,14 @@ describe('generator for a8', () => {
     const outputSchemaFile = './a8.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a8.generated.definitions.tmp.json';
 
-    const schemaMetadata: SchemaForgeOptions['schemaMetadata'] = {
+    const schemaMetadata: ForgeSchemaOptions['schemaMetadata'] = {
         title: 'Generator TEST',
         version: '1.0.0',
         $comment: 'WARN: This is a test schema.',
     };
 
-    let forgeSchemaResult: SchemaForgeResult | undefined;
-    let validator: SchemaForgeValidator;
+    let forgeSchemaResult: ForgeSchemaResult | undefined;
+    let validator: ReturnType<typeof createSchemaForgeRegistry>;
     let loadedSchema: SchemaObject[];
 
     beforeAll(async () => {
@@ -48,12 +47,12 @@ describe('generator for a8', () => {
             explicitPublic: true,
             schemaMetadata,
         });
-        validator = createSchemaForgeValidator({}, true);
+        validator = createSchemaForgeRegistry();
         loadedSchema = await loadJSONSchema([outputSchemaFile]);
         validator.addSchema(loadedSchema);
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -76,14 +75,14 @@ describe('generator for a7', () => {
     const outputSchemaFile = './a7.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a7.generated.definitions.tmp.json';
 
-    const schemaMetadata: SchemaForgeOptions['schemaMetadata'] = {
+    const schemaMetadata: ForgeSchemaOptions['schemaMetadata'] = {
         title: 'Generator TEST',
         version: '1.0.0',
         $comment: 'WARN: This is a test schema.',
     };
 
-    let forgeSchemaResult: SchemaForgeResult | undefined;
-    let validator: SchemaForgeValidator;
+    let forgeSchemaResult: ForgeSchemaResult | undefined;
+    let registry: SchemaForgeRegistry;
     let loadedSchema: SchemaObject[];
 
     beforeAll(async () => {
@@ -99,12 +98,12 @@ describe('generator for a7', () => {
             explicitPublic: true,
             schemaMetadata,
         });
-        validator = createSchemaForgeValidator({}, true);
+        registry = createSchemaForgeRegistry();
         loadedSchema = await loadJSONSchema([outputSchemaFile]);
-        validator.addSchema(loadedSchema);
+        registry.addSchema(loadedSchema);
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -118,7 +117,9 @@ describe('generator for a7', () => {
 
     it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
-        const schema = validator.getSchema('test#/definitions/SomeAPI_doSomeWithUser_Args') as any;
+        const schema = registry.getSchema(
+            'test#/definitions/SomeAPI_doSomeWithUser__APIMethodArgs',
+        ) as any;
         expect(schema).toBeTruthy();
         expect(schema.items).toStrictEqual([
             { $ref: '#/definitions/User', title: 'user', description: 'Target user' },
@@ -137,7 +138,7 @@ describe('validator for a7', () => {
     const outputSchemaFile = './a7.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a7.generated.definitions.tmp.json';
 
-    let validator: SchemaForgeValidator;
+    let registry: SchemaForgeRegistry;
     let loadedSchema: SchemaObject[];
 
     beforeAll(async () => {
@@ -152,34 +153,34 @@ describe('validator for a7', () => {
             expose: 'all',
             explicitPublic: true,
         });
-        validator = createSchemaForgeValidator({}, true);
+        registry = createSchemaForgeRegistry();
         loadedSchema = await loadJSONSchema([outputSchemaFile]);
-        validator.addSchema(loadedSchema);
+        registry.addSchema(loadedSchema);
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
     });
 
     it('should be able to warm-up cache', async () => {
-        const initial = validator.compilationArtifactCount;
+        const initial = registry.compilationArtifactCount;
         expect(initial).toStrictEqual(2);
 
-        validator.warmupCacheSync();
-        const warmed = validator.compilationArtifactCount;
+        registry.warmupCacheSync();
+        const warmed = registry.compilationArtifactCount;
         expect(warmed).toStrictEqual(9);
 
-        validator.clear();
-        const cleared = validator.compilationArtifactCount;
+        registry.clear();
+        const cleared = registry.compilationArtifactCount;
         expect(cleared).toStrictEqual(1);
 
-        validator.addSchema(loadedSchema);
-        expect(validator.compilationArtifactCount).toStrictEqual(initial);
+        registry.addSchema(loadedSchema);
+        expect(registry.compilationArtifactCount).toStrictEqual(initial);
 
-        await validator.warmupCache();
-        expect(validator.compilationArtifactCount).toStrictEqual(warmed);
+        await registry.warmupCache();
+        expect(registry.compilationArtifactCount).toStrictEqual(warmed);
     });
 });
 
@@ -187,8 +188,8 @@ describe('generator for a6', () => {
     const outputSchemaFile = './a6.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a6.generated.definitions.tmp.json';
 
-    let forgeSchemaResult: SchemaForgeResult | undefined;
-    let validator: SchemaForgeValidator;
+    let forgeSchemaResult: ForgeSchemaResult | undefined;
+    let registry: SchemaForgeRegistry;
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
@@ -201,12 +202,12 @@ describe('generator for a6', () => {
             expose: 'all',
             explicitPublic: true,
         });
-        validator = createSchemaForgeValidator({}, true);
+        registry = createSchemaForgeRegistry();
         const schema = await loadJSONSchema([outputSchemaFile]);
-        validator.addSchema(schema);
+        registry.addSchema(schema);
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -217,23 +218,19 @@ describe('generator for a6', () => {
         const defs = forgeSchemaResult?.schema?.definitions;
         expect(defs).toBeTruthy();
 
-        expect(validator.getValidator('test#/definitions/CollectionItemID1')!.schema).toStrictEqual(
-            {
-                $ref: '#/definitions/UUID',
-                format: 'uuid',
-                description: 'This is Collection item ID (inherits from UUID)',
-            },
-        );
+        expect(registry.getValidator('test#/definitions/CollectionItemID1')!.schema).toStrictEqual({
+            $ref: '#/definitions/UUID',
+            format: 'uuid',
+            description: 'This is Collection item ID (inherits from UUID)',
+        });
 
-        expect(validator.getValidator('test#/definitions/CollectionItemID2')!.schema).toStrictEqual(
-            {
-                format: 'uuid',
-                type: 'string',
-            },
-        );
+        expect(registry.getValidator('test#/definitions/CollectionItemID2')!.schema).toStrictEqual({
+            format: 'uuid',
+            type: 'string',
+        });
 
         {
-            const rec = validator.getValidator(
+            const rec = registry.getValidator(
                 'test#/definitions/PRec<CollectionItem,UUID>',
             )!.schema;
             expect(rec).toBeTruthy();
@@ -242,7 +239,7 @@ describe('generator for a6', () => {
             });
         }
         {
-            const rec = validator.getValidator(
+            const rec = registry.getValidator(
                 'test#/definitions/PRec<CollectionItem,CollectionItemID1>',
             )!.schema;
             expect(rec).toBeTruthy();
@@ -258,8 +255,8 @@ describe('generator for a5', () => {
     const outputSchemaFile = './a5.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a5.generated.definitions.tmp.json';
 
-    let forgeSchemaResult: SchemaForgeResult | undefined;
-    let validator: SchemaForgeValidator;
+    let forgeSchemaResult: ForgeSchemaResult | undefined;
+    let registry: SchemaForgeRegistry;
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
@@ -276,12 +273,12 @@ describe('generator for a5', () => {
                 return undefined;
             },
         });
-        validator = createSchemaForgeValidator({}, true);
+        registry = createSchemaForgeRegistry();
         const schema = await loadJSONSchema([outputSchemaFile]);
-        validator.addSchema(schema);
+        registry.addSchema(schema);
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -305,14 +302,14 @@ describe('generator for a5', () => {
             'VariadicList',
             'VariadicList1',
         ]);
-        expect(validator.getValidator('test#/definitions/NT')!.schema).toStrictEqual({
+        expect(registry.getValidator('test#/definitions/NT')!.schema).toStrictEqual({
             type: 'string',
             enum: ['v:name1', 'v:name2'],
         });
-        expect(validator.getValidator('test#/definitions/NamesTypeAbnormal')!.schema).toStrictEqual(
-            { type: 'string' },
-        );
-        expect(validator.getValidator('test#/definitions/Some')!.schema).toStrictEqual({
+        expect(registry.getValidator('test#/definitions/NamesTypeAbnormal')!.schema).toStrictEqual({
+            type: 'string',
+        });
+        expect(registry.getValidator('test#/definitions/Some')!.schema).toStrictEqual({
             type: 'object',
             properties: {
                 vals: {
@@ -405,7 +402,7 @@ describe('generator for a4', () => {
     const outputSchemaFile = './a4.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a4.generated.definitions.tmp.json';
 
-    let forgeSchemaResult: SchemaForgeResult | undefined;
+    let forgeSchemaResult: ForgeSchemaResult | undefined;
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
@@ -419,7 +416,7 @@ describe('generator for a4', () => {
         });
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -437,7 +434,7 @@ describe('generator for a3', () => {
     const outputSchemaFile = './a3.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a3.generated.definitions.tmp.json';
 
-    let forgeSchemaResult: SchemaForgeResult | undefined;
+    let forgeSchemaResult: ForgeSchemaResult | undefined;
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
@@ -450,7 +447,7 @@ describe('generator for a3', () => {
         });
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -461,45 +458,46 @@ describe('generator for a3', () => {
     });
 
     it('should generate root schema normally', () => {
-        const registry = createSchemaForgeValidator({ schemas: [forgeSchemaResult!.schema] });
+        const registry = createSchemaForgeRegistry({
+            engine: { schemas: [forgeSchemaResult!.schema] },
+        });
         expect(registry.getRootSchema('')).toBeTruthy();
     });
 
     it('interface generics should works', () => {
         const props =
-            forgeSchemaResult!.schema.definitions?.InterfaceWithGeneric_InterfaceDeclaration
-                .properties;
+            forgeSchemaResult!.schema.definitions?.InterfaceWithGeneric__APIInterface.properties;
         expect(props).toBeTruthy();
         expect(props.propWithGeneric).toBeTruthy();
         expect(props.propWithGeneric.$ref).toStrictEqual('#/definitions/NonEmptyString');
     });
     it('optional args in API methods should works', () => {
         {
-            const props = forgeSchemaResult!.schema.definitions?.API_methodG0_Args;
+            const props = forgeSchemaResult!.schema.definitions?.API_methodG0__APIMethodArgs;
             expect(props).toBeTruthy();
             expect(props.minItems).toStrictEqual(0);
             expect(props.maxItems).toStrictEqual(1);
         }
         {
-            const props = forgeSchemaResult!.schema.definitions?.API_methodG1_Args;
+            const props = forgeSchemaResult!.schema.definitions?.API_methodG1__APIMethodArgs;
             expect(props).toBeTruthy();
             expect(props.minItems).toStrictEqual(0);
             expect(props.maxItems).toStrictEqual(2);
         }
         {
-            const props = forgeSchemaResult!.schema.definitions?.API_methodG2_Args;
+            const props = forgeSchemaResult!.schema.definitions?.API_methodG2__APIMethodArgs;
             expect(props).toBeTruthy();
             expect(props.minItems).toStrictEqual(1);
             expect(props.maxItems).toStrictEqual(2);
         }
         // {
-        //     const props = forgeSchemaResult!.schema.definitions?.API_methodG3_Args;
+        //     const props = forgeSchemaResult!.schema.definitions?.API_methodG3__APIMethodArgs;
         //     expect(props).toBeTruthy();
         //     expect(props.minItems).toStrictEqual(0);
         //     expect(props.maxItems).toBeUndefined();
         // }
         // {
-        //     const props = forgeSchemaResult!.schema.definitions?.API_methodG4_Args;
+        //     const props = forgeSchemaResult!.schema.definitions?.API_methodG4__APIMethodArgs;
         //     expect(props).toBeTruthy();
         //     expect(props.minItems).toStrictEqual(1);
         //     expect(props.maxItems).toBeUndefined();
@@ -507,7 +505,7 @@ describe('generator for a3', () => {
     });
 
     it('extends should works', () => {
-        const props = forgeSchemaResult!.schema.definitions?.BAPI_InterfaceDeclaration.properties;
+        const props = forgeSchemaResult!.schema.definitions?.BAPI__APIInterface.properties;
         expect(props).toBeTruthy();
         expect(Object.keys(props)).toStrictEqual([
             'propertyA',
@@ -532,7 +530,7 @@ describe('generator for a2', () => {
     const outputSchemaFile = './a2.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a2.generated.definitions.tmp.json';
 
-    let forgeSchemaResult: SchemaForgeResult | undefined;
+    let forgeSchemaResult: ForgeSchemaResult | undefined;
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
@@ -544,7 +542,7 @@ describe('generator for a2', () => {
         });
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -560,8 +558,8 @@ describe('generator for a1', () => {
     const outputSchemaMetadataFile = './a1.generated.definitions.tmp.json';
     const schemaId = 'test';
 
-    let forgeSchemaResult: SchemaForgeResult | undefined;
-    let validator: ReturnType<typeof createSchemaForgeValidator>;
+    let forgeSchemaResult: ForgeSchemaResult | undefined;
+    let validator: ReturnType<typeof createSchemaForgeRegistry>;
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
@@ -575,13 +573,13 @@ describe('generator for a1', () => {
             outputSchemaFile,
             outputSchemaMetadataFile,
         });
-        validator = createSchemaForgeValidator({}, true);
+        validator = createSchemaForgeRegistry();
         const schema = await loadJSONSchema([outputSchemaFile]);
         validator.addSchema(schema);
     }, 10_000);
 
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -613,24 +611,21 @@ describe('generator for a1', () => {
         });
     });
     it('hasSchema', () => {
-        expect(validator.hasValidator('test#/definitions/SomeType1')).toStrictEqual(true);
-        expect(validator.hasValidator('test#/definitions/PositiveInt')).toStrictEqual(true);
-        expect(validator.hasValidator('test#/definitions/Int')).toStrictEqual(false);
-        expect(validator.hasValidator('test#/definitions/!Int')).toStrictEqual(false);
+        expect(validator.hasSchema('test#/definitions/SomeType1')).toStrictEqual(true);
+        expect(validator.hasSchema('test#/definitions/PositiveInt')).toStrictEqual(true);
+        expect(validator.hasSchema('test#/definitions/Int')).toStrictEqual(false);
+        expect(validator.hasSchema('test#/definitions/!Int')).toStrictEqual(false);
     });
     it('checkBySchema', () => {
         expect(() =>
-            validator.checkBySchema(
-                'test#/definitions/ExportedInterfaceB_InterfaceDeclaration',
-                {},
-            ),
-        ).toThrow(SchemaForgeValidationErrorCode);
+            validator.checkBySchema('test#/definitions/ExportedInterfaceB__APIInterface', {}),
+        ).toThrow(SchemaForgeErrors.msg('EC_SF_VALIDATION_FAILED' satisfies SchemaForgeErrorCode));
         expect(validator.checkBySchema('test#/definitions/PositiveInt', 1)).toStrictEqual(true);
         expect(() => validator.checkBySchema('test#/definitions/PositiveInt', 1.1)).toThrow(
-            SchemaForgeValidationErrorCode,
+            SchemaForgeErrors.msg('EC_SF_VALIDATION_FAILED' satisfies SchemaForgeErrorCode),
         );
         expect(() => validator.checkBySchema('!test#/definitions/PositiveInt', 1)).toThrow(
-            SchemaNotFoundErrorCode,
+            SchemaForgeErrors.msg('EC_SF_SCHEMA_NOT_FOUND' satisfies SchemaForgeErrorCode),
         );
 
         {
@@ -638,11 +633,13 @@ describe('generator for a1', () => {
             try {
                 validator.checkBySchema(schema, 1.1);
             } catch (e: any) {
-                const context = readErrorContext<SchemaNotFoundErrorContext>(e);
+                const context = readErrorContext<SchemaForgeSchemaNotFoundErrorContext>(e);
                 const code = readErrorCode(e);
 
-                expect(e.message).toStrictEqual(SchemaNotFoundErrorCode);
-                expect(code).toStrictEqual(SchemaNotFoundErrorCode);
+                expect(e.message).toStrictEqual(
+                    SchemaForgeErrors.msg('EC_SF_SCHEMA_NOT_FOUND' satisfies SchemaForgeErrorCode),
+                );
+                expect(code).toStrictEqual('EC_SF_SCHEMA_NOT_FOUND' satisfies SchemaForgeErrorCode);
                 expect(context).toBeTruthy();
                 expect(context!.schema).toStrictEqual(schema);
                 expect(context!.errorMessage).toStrictEqual(undefined);
@@ -658,8 +655,12 @@ describe('generator for a1', () => {
                 const context = readErrorContext<SchemaForgeValidationErrorContext>(e);
                 const code = readErrorCode(e);
 
-                expect(e.message).toStrictEqual(message);
-                expect(code).toStrictEqual(SchemaForgeValidationErrorCode);
+                expect(code).toStrictEqual(
+                    'EC_SF_VALIDATION_FAILED' satisfies SchemaForgeErrorCode,
+                );
+                expect(e.message).toStrictEqual(
+                    SchemaForgeErrors.msg(code as SchemaForgeErrorCode),
+                );
                 expect(context).toBeTruthy();
                 expect(context!.schema).toStrictEqual(schema);
                 expect(context!.errorMessage).toStrictEqual(message);
@@ -670,63 +671,63 @@ describe('generator for a1', () => {
     it('listDefinitions', () => {
         const defs: SchemaDefinitionInfo[] = [
             {
-                ref: 'test#/definitions/ExportedInterfaceB_InterfaceDeclaration',
+                ref: 'test#/definitions/ExportedInterfaceB__APIInterface',
                 kind: 1,
-                name: 'ExportedInterfaceB_InterfaceDeclaration',
+                name: 'ExportedInterfaceB__APIInterface',
                 schemaId: 'test',
                 interface: 'ExportedInterfaceB',
             },
             {
-                ref: 'test#/definitions/ExportedInterfaceB_methodA_Args',
+                ref: 'test#/definitions/ExportedInterfaceB_methodA__APIMethodArgs',
                 kind: 3,
-                name: 'ExportedInterfaceB_methodA_Args',
+                name: 'ExportedInterfaceB_methodA__APIMethodArgs',
                 schemaId: 'test',
                 interface: 'ExportedInterfaceB',
                 method: 'methodA',
             },
             {
-                ref: 'test#/definitions/ExportedInterfaceB_methodA_Result',
+                ref: 'test#/definitions/ExportedInterfaceB_methodA__APIMethodResult',
                 kind: 2,
-                name: 'ExportedInterfaceB_methodA_Result',
+                name: 'ExportedInterfaceB_methodA__APIMethodResult',
                 schemaId: 'test',
                 interface: 'ExportedInterfaceB',
                 method: 'methodA',
             },
             {
-                ref: 'test#/definitions/ExportedInterfaceB_methodB_Args',
+                ref: 'test#/definitions/ExportedInterfaceB_methodB__APIMethodArgs',
                 kind: 3,
-                name: 'ExportedInterfaceB_methodB_Args',
+                name: 'ExportedInterfaceB_methodB__APIMethodArgs',
                 schemaId: 'test',
                 interface: 'ExportedInterfaceB',
                 method: 'methodB',
             },
             {
-                ref: 'test#/definitions/ExportedInterfaceB_methodB_Result',
+                ref: 'test#/definitions/ExportedInterfaceB_methodB__APIMethodResult',
                 kind: 2,
-                name: 'ExportedInterfaceB_methodB_Result',
+                name: 'ExportedInterfaceB_methodB__APIMethodResult',
                 schemaId: 'test',
                 interface: 'ExportedInterfaceB',
                 method: 'methodB',
             },
             {
-                ref: 'test#/definitions/NonExportedInterfaceD_InterfaceDeclaration',
+                ref: 'test#/definitions/NonExportedInterfaceD__APIInterface',
                 kind: 1,
-                name: 'NonExportedInterfaceD_InterfaceDeclaration',
+                name: 'NonExportedInterfaceD__APIInterface',
                 schemaId: 'test',
                 interface: 'NonExportedInterfaceD',
             },
             {
-                ref: 'test#/definitions/NonExportedInterfaceD_methodA_Args',
+                ref: 'test#/definitions/NonExportedInterfaceD_methodA__APIMethodArgs',
                 kind: 3,
-                name: 'NonExportedInterfaceD_methodA_Args',
+                name: 'NonExportedInterfaceD_methodA__APIMethodArgs',
                 schemaId: 'test',
                 interface: 'NonExportedInterfaceD',
                 method: 'methodA',
             },
             {
-                ref: 'test#/definitions/NonExportedInterfaceD_methodA_Result',
+                ref: 'test#/definitions/NonExportedInterfaceD_methodA__APIMethodResult',
                 kind: 2,
-                name: 'NonExportedInterfaceD_methodA_Result',
+                name: 'NonExportedInterfaceD_methodA__APIMethodResult',
                 schemaId: 'test',
                 interface: 'NonExportedInterfaceD',
                 method: 'methodA',
@@ -761,39 +762,42 @@ describe('generator for a1', () => {
 
         expect(
             validator.listDefinitions(
-                (info) => info.kind === SchemaDefinitionKind.Type && !info.name.startsWith('Some'),
+                (info) =>
+                    info.kind === SchemaDefinitionInfoKind.Type && !info.name.startsWith('Some'),
             ),
         ).toStrictEqual([defsByName['PositiveInt']]);
 
         expect(
-            validator.listDefinitions((info) => info.kind === SchemaDefinitionKind.API),
+            validator.listDefinitions((info) => info.kind === SchemaDefinitionInfoKind.API),
         ).toStrictEqual([
-            defsByName['ExportedInterfaceB_InterfaceDeclaration'],
-            defsByName['NonExportedInterfaceD_InterfaceDeclaration'],
-        ]);
-
-        expect(
-            validator.listDefinitions((info) => info.kind === SchemaDefinitionKind.APIMethodResult),
-        ).toStrictEqual([
-            defsByName['ExportedInterfaceB_methodA_Result'],
-            defsByName['ExportedInterfaceB_methodB_Result'],
-            defsByName['NonExportedInterfaceD_methodA_Result'],
+            defsByName['ExportedInterfaceB__APIInterface'],
+            defsByName['NonExportedInterfaceD__APIInterface'],
         ]);
 
         expect(
             validator.listDefinitions(
-                (info) => info.kind === SchemaDefinitionKind.APIMethodArguments,
+                (info) => info.kind === SchemaDefinitionInfoKind.APIMethodResult,
             ),
         ).toStrictEqual([
-            defsByName['ExportedInterfaceB_methodA_Args'],
-            defsByName['ExportedInterfaceB_methodB_Args'],
-            defsByName['NonExportedInterfaceD_methodA_Args'],
+            defsByName['ExportedInterfaceB_methodA__APIMethodResult'],
+            defsByName['ExportedInterfaceB_methodB__APIMethodResult'],
+            defsByName['NonExportedInterfaceD_methodA__APIMethodResult'],
+        ]);
+
+        expect(
+            validator.listDefinitions(
+                (info) => info.kind === SchemaDefinitionInfoKind.APIMethodArguments,
+            ),
+        ).toStrictEqual([
+            defsByName['ExportedInterfaceB_methodA__APIMethodArgs'],
+            defsByName['ExportedInterfaceB_methodB__APIMethodArgs'],
+            defsByName['NonExportedInterfaceD_methodA__APIMethodArgs'],
         ]);
     });
 
     it('should be valid descriptions', () => {
         const schema: any = validator.getSchema(
-            'test#/definitions/ExportedInterfaceB_InterfaceDeclaration',
+            'test#/definitions/ExportedInterfaceB__APIInterface',
         );
         expect(schema).toBeTruthy();
         expect(schema.description).toStrictEqual('TAG: Description for ExportedInterfaceB');

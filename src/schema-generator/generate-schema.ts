@@ -1,4 +1,4 @@
-import '../util/patch.extended-annotations-reader';
+import './extended-annotations-reader';
 import { URec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
 import Ajv, { SchemaObject } from 'ajv';
@@ -37,27 +37,16 @@ import {
     TypeFlags,
     TypeQueryNode,
 } from 'typescript';
-import { shrinkDefinitionName } from '../shrink-names';
-import { SchemaForgeOptions } from '../types';
-import { sortProperties } from '../util/sort-properties';
-import { readJSDocDescription } from '../util/tsc';
-import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX, TypeExposeKind } from './types';
+import { ForgeSchemaOptions } from '../types';
+import { readJSDocDescription } from './helpers-tsc';
+import { shrinkDefinitionName } from './shrink-definition-name';
+import { sortSchemaProperties } from './sort-properties';
+import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY, TMP_FILES_SUFFIX } from './types';
 
-interface Options {
-    tsconfig: string;
-    sourcesDirectoryPattern: string;
-    sourcesTypesGeneratorConfig: CompletedConfig;
-    outputSchemaFile: string;
-    definitions: string[];
-    schemaId?: string;
-    expose?: TypeExposeKind;
-    openapiCompatible?: boolean;
-    sortObjectProperties?: boolean;
-    allowUseFallbackDescription?: boolean;
-    shrinkDefinitionNames: SchemaForgeOptions['shrinkDefinitionNames'];
-}
-
-export async function generateSchemaByDraftTypes(options: Options): Promise<SchemaObject> {
+/**
+ * @internal
+ */
+export async function generateSchemaByDraftTypes(options: InternalOptions): Promise<SchemaObject> {
     {
         const seen = new Set<string>();
         for (const name of options.definitions) {
@@ -67,19 +56,15 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
     }
 
     const allowUseFallbackDescription = options.allowUseFallbackDescription;
-
     const generatorConfig: CompletedConfig = {
         ...DEFAULT_CONFIG,
-        ...SG_CONFIG_DEFAULTS,
-        expose: options.expose ?? SG_CONFIG_DEFAULTS.expose,
+        ...SFG_CONFIG_DEFAULTS,
+        expose: options.expose ?? SFG_CONFIG_DEFAULTS.expose,
         path: `${options.sourcesDirectoryPattern}/*${TMP_FILES_SUFFIX}.ts`,
         tsconfig: options.tsconfig,
-        discriminatorType: options.openapiCompatible
-            ? 'open-api'
-            : DEFAULT_CONFIG.discriminatorType,
-        ...SG_CONFIG_MANDATORY,
+        discriminatorType: options.discriminatorType ?? DEFAULT_CONFIG.discriminatorType,
+        ...SFG_CONFIG_MANDATORY,
     };
-
     const generatorProgram = createProgram(generatorConfig);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const typeChecker: TypeChecker = generatorProgram.getTypeChecker();
@@ -90,10 +75,8 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         parser.addNodeParser(new ArrayLiteralExpressionIdentifierParser(typeChecker));
         parser.addNodeParser(new TypeofNodeParserEx(typeChecker, parser as unknown as NodeParser));
     });
-
     const formatter = createFormatter(options.sourcesTypesGeneratorConfig);
     const generator = new SchemaGenerator(generatorProgram, parser, formatter, generatorConfig);
-
     const result: SchemaObject = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         $id: options.schemaId,
@@ -120,15 +103,15 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         const replacement = new Set<string>();
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         for (const name of Object.keys(result.definitions)) {
-            const r = shrinkDefinitionNames(name);
-            if (r) {
-                if (replacement.has(r) || r in result.definitions) {
-                    raise(`Duplicate replacement definition name: ${r}`);
+            const shortName = shrinkDefinitionNames(name);
+            if (shortName) {
+                if (replacement.has(shortName) || shortName in result.definitions) {
+                    raise(`Duplicate replacement definition name: ${shortName}`);
                 }
 
                 // rename property
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                result.definitions[r] = result.definitions[name];
+                result.definitions[shortName] = result.definitions[name];
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 delete result.definitions[name];
 
@@ -139,7 +122,10 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
                     eval: 'safe',
                 });
                 targets?.forEach((item) => {
-                    item.$ref = item.$ref.replace(`#/definitions/${name}`, `#/definitions/${r}`);
+                    item.$ref = item.$ref.replace(
+                        `#/definitions/${name}`,
+                        `#/definitions/${shortName}`,
+                    );
                 });
             }
         }
@@ -149,14 +135,14 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         Object.entries((result.definitions || {}) as URec).sort(),
     );
 
-    if (options.sortObjectProperties) sortProperties(result.definitions);
+    if (options.sortObjectProperties) sortSchemaProperties(result.definitions);
 
     await new Ajv({
         strict: true,
         allErrors: true,
         strictSchema: true,
         strictTypes: false,
-        strictTuples: false,
+        strictTuples: true,
         allowUnionTypes: true,
     }).validateSchema(result, true);
 
@@ -261,4 +247,10 @@ function getIdentifierLiteralValue(
         return type.value;
     }
     return undefined;
+}
+
+interface InternalOptions extends ForgeSchemaOptions {
+    tsconfig: string;
+    definitions: readonly string[];
+    sourcesTypesGeneratorConfig: CompletedConfig;
 }
