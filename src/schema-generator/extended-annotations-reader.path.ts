@@ -1,17 +1,17 @@
 import { raise } from '@tsofist/stem/lib/error';
 import { isEmptyObject } from '@tsofist/stem/lib/object/is-empty';
-import { Annotations, ExtendedAnnotationsReader } from 'ts-json-schema-generator';
+import { type Annotations, ExtendedAnnotationsReader } from 'ts-json-schema-generator';
 import {
     isIdentifier,
     isIntersectionTypeNode,
     isTypeAliasDeclaration,
     isTypeReferenceNode,
     isUnionTypeNode,
-    Node,
+    type Node,
+    type TypeChecker,
     SymbolFlags,
-    TypeChecker,
 } from 'typescript';
-import { hasJSDocTag } from './tsc';
+import { hasJSDocTag } from './helpers-tsc';
 
 {
     // Support for @inheritDoc tag to enforce inheritance of annotations

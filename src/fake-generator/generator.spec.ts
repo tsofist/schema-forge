@@ -13,8 +13,9 @@ import { isInt } from '@tsofist/stem/lib/number/integer/guards';
 import { entries } from '@tsofist/stem/lib/object/entries';
 import { camelCase } from '@tsofist/stem/lib/string/case/camel';
 import { SchemaObject } from 'ajv';
-import { generateFakeData } from './fake-generator';
-import { createSchemaForgeValidator, SchemaForgeValidator } from './validator';
+import { createSchemaForgeRegistry } from '../schema-registry/registry';
+import { SchemaForgeRegistry } from '../schema-registry/types';
+import { generateFakeData } from './generator';
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-argument */
 
@@ -191,24 +192,23 @@ describe('generateFakeData', () => {
         }
     }
 
-    let validator: SchemaForgeValidator;
+    let registry: SchemaForgeRegistry;
 
     beforeEach(() => {
-        validator = createSchemaForgeValidator(
-            { schemas: [testSchema1, testSchema2, testSchema3, testSchema4] },
-            true,
-        );
+        registry = createSchemaForgeRegistry({
+            engine: { schemas: [testSchema1, testSchema2, testSchema3, testSchema4] },
+        });
     });
 
     it('default behavior', async () => {
         {
-            const data = await generateFakeData(validator, 'test-1#/definitions/Int');
+            const data = await generateFakeData(registry, 'test-1#/definitions/Int');
             expect(data).toBeDefined();
             expect(data).toBeGreaterThanOrEqual(0);
             expect(isInt(data)).toStrictEqual(true);
         }
         {
-            const data = await generateFakeData(validator, 'test-2#/definitions/Url');
+            const data = await generateFakeData(registry, 'test-2#/definitions/Url');
             expect(data).toBeDefined();
             expect(data).toMatch(/^https?:\/\/(.*)/);
         }
@@ -216,41 +216,41 @@ describe('generateFakeData', () => {
 
     it('cross-schema references should be handled correctly', async () => {
         const source = 'test-2#/definitions/ForeignInt';
-        const data = await generateFakeData(validator, source);
+        const data = await generateFakeData(registry, source);
         expect(data).toBeDefined();
         expect(data).toBeGreaterThanOrEqual(0);
         expect(isInt(data)).toStrictEqual(true);
-        expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);
+        expect(registry.validateBySchema(source, data).valid).toStrictEqual(true);
     });
 
     it('complex, nested data should be handled correctly', async () => {
         {
             const source = 'test-2#/definitions/JSFQuirks';
-            const data = await generateFakeData(validator, source, {});
+            const data = await generateFakeData(registry, source, {});
             expect(data).toBeDefined();
-            expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);
+            expect(registry.validateBySchema(source, data).valid).toStrictEqual(true);
         }
         {
             const source = 'test-2#/definitions/List';
-            const data = await generateFakeData(validator, source);
+            const data = await generateFakeData(registry, source);
             expect(data).toBeDefined();
-            expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);
+            expect(registry.validateBySchema(source, data).valid).toStrictEqual(true);
         }
         {
             const source = 'test-2#/definitions/ListOfNames';
             const len = 15;
-            const data = await generateFakeData(validator, source, { minItems: len, locale: 'ru' });
+            const data = await generateFakeData(registry, source, { minItems: len, locale: 'ru' });
             expect(data).toBeDefined();
-            expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);
+            expect(registry.validateBySchema(source, data).valid).toStrictEqual(true);
             expect(Array.isArray(data)).toStrictEqual(true);
             expect((data as string[]).length).toBeGreaterThanOrEqual(len);
             expect((data as string[]).join(' ')).toMatch(/[=^+U+0400–U+04FF\s\S@/_-]+/);
         }
         {
             const source = 'test-2#/definitions/Entity';
-            const data = await generateFakeData<any>(validator, source, { locale: 'ru' });
+            const data = await generateFakeData<any>(registry, source, { locale: 'ru' });
 
-            expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);
+            expect(registry.validateBySchema(source, data).valid).toStrictEqual(true);
 
             expect(typeof data.datetime).toStrictEqual('string');
             expect(data.datetime).toMatch(/.*Z$/);
@@ -265,7 +265,7 @@ describe('generateFakeData', () => {
         const source = 'test-3#/definitions/RecursiveObject';
         const count = 10;
         for (let i = 0; i < count; i++) {
-            const data = await generateFakeData(validator, source, {
+            const data = await generateFakeData(registry, source, {
                 reuseProperties: false,
                 failOnInvalidFormat: true,
                 failOnInvalidTypes: true,
@@ -278,7 +278,7 @@ describe('generateFakeData', () => {
                 refDepthMax: 20,
             });
             expect(data).toBeDefined();
-            expect(validator.validateBySchema(source, data).valid).toStrictEqual(true);
+            expect(registry.validateBySchema(source, data).valid).toStrictEqual(true);
         }
     });
 
@@ -286,7 +286,7 @@ describe('generateFakeData', () => {
         const data: Rec<
             TypedDateTimeString,
             EnumKeys<typeof ISODateTimeType>
-        > = await generateFakeData(validator, 'test-4#/definitions/CLDR');
+        > = await generateFakeData(registry, 'test-4#/definitions/CLDR');
 
         const guards: Rec<(v: unknown) => boolean, ISODateTimeType> = {
             [ISODateTimeType.LocalDate]: isLocalISODateString,

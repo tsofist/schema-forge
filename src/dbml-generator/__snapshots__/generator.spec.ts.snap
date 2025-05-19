@@ -1,0 +1,184 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DBML Generator basic cases 1`] = `
+"// Test comment!
+Project TestProject {
+  database_type: 'PostgreSQL'
+  note:
+    '''
+    Multi-line note
+
+    > Powered by [SchemaForge]
+    '''
+}
+
+// This is a comment
+// Important: This is a multi-line comment
+Table some_schema.some_entity_1 {
+  number number [not null]
+  number_array jsonb [not null]
+  bigint number [not null]
+  bigint_array jsonb [not null]
+  bool boolean [not null]
+  bool_array jsonb [not null]
+  string text [not null]
+  string_array jsonb [not null]
+  date timestamptz [not null]
+  date_array jsonb [not null]
+
+  note:
+    '''
+      Description for Some Database Entity Type
+      **Important**: This is a multi-line description for Some Database Entity Type
+      This description may use **Markdown** syntax
+    '''
+}
+
+// This is a comment
+// Important: This is a multi-line comment
+Table some_schema.some_entity_2 {
+  uuid uuid [not null]
+  int integer [not null]
+  int_array jsonb [not null]
+  float number [not null]
+  float_array jsonb [not null]
+  complex jsonb [not null]
+  complex_array jsonb [not null]
+
+  note:
+    '''
+      Description for Some Database Entity Type
+      **Important**: This is a multi-line description for Some Database Entity Type
+      This description may use **Markdown** syntax
+    '''
+}
+
+Table some_schema.some_entity_3 {
+  int integer [not null]
+  bigint integer [not null]
+  smallint integer [not null]
+  float text [not null]
+  money text [not null]
+}
+
+Table some_schema.some_entity_5 {
+  uid uuid [not null]
+  zdt text [not null]
+  ldt text [not null]
+  ld text [not null]
+  zd text [not null]
+  pi integer [not null]
+  pf number [not null]
+  psf text [not null]
+  ci integer [not null]
+  cnnbi integer [not null]
+  csni integer [not null]
+}
+
+// Test comment for TestScope
+TableGroup TestScope {
+  some_schema.some_entity_1
+  some_schema.some_entity_2
+  some_schema.some_entity_3
+  some_schema.some_entity_5
+}
+"
+`;
+
+exports[`DBML Generator index meta cases 1`] = `
+"Project Scratch {
+  database_type: 'PostgreSQL'
+}
+
+Table some_schema.ix_01 {
+  index00 number [not null]
+  indexed01 number [not null]
+  indexed02 number [not null]
+
+  indexes {
+    (index00) [name: "ix_some_schema_ix_01_index00"]
+    (indexed01) [name: "ix_some_schema_ix_01_indexed01", note: "This is a single-line note for Index"]
+    (indexed02) [name: "ix_some_schema_ix_01_indexed02", note:
+  '''
+  This is a multiline-line note for Index
+  Yep, this is true
+  ''']
+  }
+}
+"
+`;
+
+exports[`DBML Generator table meta cases 1`] = `
+"Project Scratch {
+  database_type: 'PostgreSQL'
+}
+
+// This is a comment
+// Important: This is a ***multi-line comment***
+Table some_schema.some_entity_10 {
+  stub text [not null]
+}
+
+// This is a single-comment
+Table some_schema.some_entity_11 {
+  stub text [not null]
+}
+
+// This is a multi-comment
+// This is a different kind of multi-line comment
+Table some_schema.some_entity_12 {
+  stub text [not null]
+}
+
+// V2
+// This is a comment
+// Important: This is a multi-line comment
+//
+// Outlined description
+Table some_schema.some_entity_13 {
+  stub text [not null]
+
+  note:
+    '''
+    V2
+    Description for Some Database Entity Type
+    **Important**: This is a multi-line description for Some Database Entity Type
+    This description may use **Markdown** syntax
+    '''
+}
+
+Table some_schema.some_entity_6 {
+  stub text [not null]
+
+  note: "Single line description via '@description' tag"
+}
+
+Table some_schema.some_entity_7 {
+  stub text [not null]
+
+  note: "Inline description"
+}
+
+Table some_schema.some_entity_8 {
+  stub text [not null]
+
+  note:
+    '''
+    tag
+    Description for Some Database Entity Type
+    **Important**: This is a multi-line description for Some Database Entity Type
+    This description may use **Markdown** syntax
+    '''
+}
+
+Table some_schema.some_entity_9 {
+  stub text [not null]
+
+  note:
+    '''
+    Inline Multi-line description. Description for Some Database Entity Type
+    **Important**: This is a multi-line description for Some Database Entity Type This description may use **Markdown** syntax
+    '''
+}
+"
+`;

@@ -1,23 +1,23 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { readFile, writeFile, unlink } from 'node:fs/promises';
-import { URec } from '@tsofist/stem';
+import { readFile, unlink, writeFile } from 'node:fs/promises';
+import { env } from 'node:process';
+import type { URec } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
+import { asBool } from '@tsofist/stem/lib/as-bool';
 import { raise } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
 import { randomString } from '@tsofist/stem/lib/string/random';
-import { SchemaObject } from 'ajv';
-import { generateSchemaByDraftTypes } from './generator/schema-generator';
-import { generateDraftTypeFiles } from './generator/types-generator';
-import { SchemaForgeMetadata, SchemaForgeOptions, SchemaForgeResult } from './types';
-import { buildSchemaDefinitionRef } from './index';
+import type { SchemaObject } from 'ajv';
+import { buildSchemaDefinitionRef } from '../definition-info/ref';
+import type { SchemaForgeMetadata, ForgeSchemaResult, ForgeSchemaOptions } from '../types';
+import { generateDraftTypeFiles } from './generate-drafts';
+import { generateSchemaByDraftTypes } from './generate-schema';
 
-const KEEP_ARTEFACTS = false;
+const KEEP_ARTEFACTS = asBool(env['SFG_KEEP_ARTEFACTS'], false);
 
-export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaForgeResult> {
-    const { schemaId, sourcesDirectoryPattern, outputSchemaFile } = options;
+export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSchemaResult> {
     const sourcesPattern = asArray(options.sourcesFilesPattern).map(
-        (filesPattern) => `${sourcesDirectoryPattern}/${filesPattern}`,
+        (filesPattern) => `${options.sourcesDirectoryPattern}/${filesPattern}`,
     );
 
     let tsconfig = options.tsconfig;
@@ -25,7 +25,6 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
 
     try {
         if (options.tsconfigFrom) {
-            tsconfigGenerated = true;
             const source = await readFile(options.tsconfigFrom, { encoding: 'utf8' });
             const config = JSON.parse(source) as object & {
                 include: string[];
@@ -37,6 +36,8 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
 
             tsconfig = `./tsconfig.schema-forge-generated.${randomString(5)}.tmp.json`;
             await writeFile(tsconfig, JSON.stringify(config, null, 2), { encoding: 'utf8' });
+
+            tsconfigGenerated = true;
         }
 
         if (!tsconfig) raise('tsconfig is not specified');
@@ -56,17 +57,10 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
             {
                 schema = {
                     ...(await generateSchemaByDraftTypes({
-                        schemaId,
                         tsconfig,
                         definitions,
-                        sourcesDirectoryPattern,
-                        outputSchemaFile,
                         sourcesTypesGeneratorConfig,
-                        expose: options.expose,
-                        openapiCompatible: options.openapiCompatible,
-                        sortObjectProperties: options.sortObjectProperties,
-                        allowUseFallbackDescription: options.allowUseFallbackDescription,
-                        shrinkDefinitionNames: options.shrinkDefinitionNames,
+                        ...options,
                     })),
                     ...(options.schemaMetadata || {}),
                 };
@@ -106,7 +100,7 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
 
                 const defs = new Set(Object.keys((schema.definitions || {}) as URec));
                 for (const name of definitions) {
-                    const ref = buildSchemaDefinitionRef(name, schemaId);
+                    const ref = buildSchemaDefinitionRef(name, options.schemaId);
                     map.names[name] = ref;
                     map.refs[ref] = name;
                     defs.delete(name);
@@ -139,17 +133,4 @@ export async function forgeSchema(options: SchemaForgeOptions): Promise<SchemaFo
             await unlink(tsconfig).catch(noop);
         }
     }
-}
-
-export async function loadJSONSchema(files: string[]): Promise<SchemaObject[]> {
-    return Promise.all<SchemaObject>(
-        files.map((fn) => readFile(fn, { encoding: 'utf8' }).then(JSON.parse)),
-    );
-}
-
-export function loadJSONSchemaSync(files: string[]): SchemaObject[] {
-    return files.map((fn) => {
-        const content = readFileSync(fn, { encoding: 'utf8' });
-        return JSON.parse(content) as SchemaObject;
-    });
 }

@@ -1,4 +1,4 @@
-import '../util/patch.extended-annotations-reader';
+import './extended-annotations-reader.path';
 import { URec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
 import Ajv, { SchemaObject } from 'ajv';
@@ -30,26 +30,21 @@ import {
     TypeChecker,
     TypeFlags,
 } from 'typescript';
-import { SchemaForgeOptions } from '../types';
-import { sortProperties } from '../util/sort-properties';
-import { readJSDocDescription } from '../util/tsc';
-import { SG_CONFIG_DEFAULTS, SG_CONFIG_MANDATORY, TMP_FILES_SUFFIX, TypeExposeKind } from './types';
+import { ForgeSchemaOptions } from '../types';
+import { readJSDocDescription } from './helpers-tsc';
+import { sortSchemaProperties } from './sort-properties';
+import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY, TMP_FILES_SUFFIX } from './types';
 
-interface Options {
+interface IGOptions extends ForgeSchemaOptions {
     tsconfig: string;
-    sourcesDirectoryPattern: string;
+    definitions: readonly string[];
     sourcesTypesGeneratorConfig: CompletedConfig;
-    outputSchemaFile: string;
-    definitions: string[];
-    schemaId?: string;
-    expose?: TypeExposeKind;
-    openapiCompatible?: boolean;
-    sortObjectProperties?: boolean;
-    allowUseFallbackDescription?: boolean;
-    shrinkDefinitionNames: SchemaForgeOptions['shrinkDefinitionNames'];
 }
 
-export async function generateSchemaByDraftTypes(options: Options): Promise<SchemaObject> {
+/**
+ * @internal
+ */
+export async function generateSchemaByDraftTypes(options: IGOptions): Promise<SchemaObject> {
     {
         const seen = new Set<string>();
         for (const name of options.definitions) {
@@ -62,14 +57,12 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
 
     const generatorConfig: CompletedConfig = {
         ...DEFAULT_CONFIG,
-        ...SG_CONFIG_DEFAULTS,
-        expose: options.expose ?? SG_CONFIG_DEFAULTS.expose,
+        ...SFG_CONFIG_DEFAULTS,
+        expose: options.expose ?? SFG_CONFIG_DEFAULTS.expose,
         path: `${options.sourcesDirectoryPattern}/*${TMP_FILES_SUFFIX}.ts`,
         tsconfig: options.tsconfig,
-        discriminatorType: options.openapiCompatible
-            ? 'open-api'
-            : DEFAULT_CONFIG.discriminatorType,
-        ...SG_CONFIG_MANDATORY,
+        discriminatorType: options.discriminatorType ?? DEFAULT_CONFIG.discriminatorType,
+        ...SFG_CONFIG_MANDATORY,
     };
 
     const generatorProgram = createProgram(generatorConfig);
@@ -81,7 +74,6 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         );
         parser.addNodeParser(new ArrayLiteralExpressionIdentifierParser(typeChecker));
     });
-
     const formatter = createFormatter(options.sourcesTypesGeneratorConfig);
     const generator = new SchemaGenerator(generatorProgram, parser, formatter, generatorConfig);
 
@@ -134,7 +126,7 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         Object.entries((result.definitions || {}) as URec).sort(),
     );
 
-    if (options.sortObjectProperties) sortProperties(result.definitions);
+    if (options.sortObjectProperties) sortSchemaProperties(result.definitions);
 
     await new Ajv({
         strict: true,
