@@ -37,6 +37,7 @@ import {
     TypeFlags,
     TypeQueryNode,
 } from 'typescript';
+import { shrinkDefinitionName } from '../shrink-names';
 import { SchemaForgeOptions } from '../types';
 import { sortProperties } from '../util/sort-properties';
 import { readJSDocDescription } from '../util/tsc';
@@ -109,11 +110,17 @@ export async function generateSchemaByDraftTypes(options: Options): Promise<Sche
         Object.assign(result.definitions, schema.definitions);
     }
 
-    if (options.shrinkDefinitionNames) {
+    const shrinkDefinitionNames = !options.shrinkDefinitionNames
+        ? undefined
+        : options.shrinkDefinitionNames === true
+          ? shrinkDefinitionName
+          : options.shrinkDefinitionNames;
+
+    if (shrinkDefinitionNames) {
         const replacement = new Set<string>();
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         for (const name of Object.keys(result.definitions)) {
-            const r = options.shrinkDefinitionNames(name);
+            const r = shrinkDefinitionNames(name);
             if (r) {
                 if (replacement.has(r) || r in result.definitions) {
                     raise(`Duplicate replacement definition name: ${r}`);

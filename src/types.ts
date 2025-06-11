@@ -77,10 +77,13 @@ export interface SchemaForgeOptions extends SchemaForgeBaseOptions {
     readonly sortObjectProperties?: boolean;
     /**
      * If you want to shrink the schema definition names, you have to provide a replacement function.
-     *
      * WARN: this functionality is not compatible (yet) with `encodeRefs=true` option.
+     *
+     * @see shrinkDefinitionName
      */
-    readonly shrinkDefinitionNames?: (definitionName: string) => undefined | NonEmptyString;
+    readonly shrinkDefinitionNames?:
+        | boolean
+        | ((definitionName: string) => undefined | NonEmptyString);
 }
 
 export interface SchemaForgeMetadata {
