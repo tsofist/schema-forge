@@ -82,8 +82,34 @@ type AdditionalType2 = AdditionalType;
  */
 export interface InterfaceWithGeneric<T extends NonEmptyString = NonEmptyString> {
     propWithGeneric: T;
-    // fn<X>(): X; todo supports for member generics
+    // fn: <X>() => X; // todo supports for member generics
 }
+
+// todo ts-json-schema-generator@v2.4
+//   this.config?.expose === "all" || (this.isExportType(node) && !this.isGenericType(node))  // old
+
+// /**
+//  * @public
+//  * @api
+//  */
+// export interface MyGeneric<T> {
+//     field: T;
+// }
+//
+// /**
+//  * @public
+//  */
+// export interface MyGeneric2<T> {
+//     field: T;
+// }
+//
+// /**
+//  * @public
+//  */
+// export interface MyObject {
+//     // value: MyGeneric<number>;
+//     value2: MyGeneric2<number>;
+// }
 
 /**
  * @public

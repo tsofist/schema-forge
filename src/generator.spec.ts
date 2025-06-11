@@ -460,6 +460,11 @@ describe('generator for a3', () => {
         expect(forgeSchemaResult).toBeTruthy();
     });
 
+    it('should generate root schema normally', () => {
+        const registry = createSchemaForgeValidator({ schemas: [forgeSchemaResult!.schema] });
+        expect(registry.getRootSchema('')).toBeTruthy();
+    });
+
     it('interface generics should works', () => {
         const props =
             forgeSchemaResult!.schema.definitions?.InterfaceWithGeneric_InterfaceDeclaration
