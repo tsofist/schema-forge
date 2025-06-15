@@ -4,6 +4,7 @@ import type { ExportFormatOption } from '@dbml/core/types/export/ModelExporter';
 export function convertDBMLToDatabaseModel(source: string) {
     return Parser.parse(source, 'json');
 }
+
 export function convertDBMLToJSON(source: string) {
     return Parser.parseDBMLToJSONv2(source);
 }

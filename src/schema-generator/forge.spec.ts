@@ -1,10 +1,9 @@
 import { unlink } from 'node:fs/promises';
-import { env } from 'node:process';
-import { asBool } from '@tsofist/stem/lib/as-bool';
 import { readErrorCode, readErrorContext } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
 import { pickProps } from '@tsofist/stem/lib/object/pick';
 import { SchemaObject } from 'ajv';
+import { KEEP_SPEC_ARTEFACTS } from '../artefacts-policy';
 import { SchemaDefinitionInfo, SchemaDefinitionInfoKind } from '../definition-info/types';
 import {
     SchemaForgeErrorCode,
@@ -18,10 +17,59 @@ import { SchemaForgeRegistry } from '../schema-registry/types';
 import { ForgeSchemaResult, ForgeSchemaOptions } from '../types';
 import { forgeSchema } from './forge';
 
-const KEEP_ARTEFACTS = asBool(env['SFG_KEEP_ARTEFACTS'], false);
-
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
+describe('generator for a8', () => {
+    const outputSchemaFile = './a8.generated.schema.tmp.json';
+    const outputSchemaMetadataFile = './a8.generated.definitions.tmp.json';
+
+    const schemaMetadata: ForgeSchemaOptions['schemaMetadata'] = {
+        title: 'Generator TEST',
+        version: '1.0.0',
+        $comment: 'WARN: This is a test schema.',
+    };
+
+    let forgeSchemaResult: ForgeSchemaResult | undefined;
+    let validator: ReturnType<typeof createSchemaForgeRegistry>;
+    let loadedSchema: SchemaObject[];
+
+    beforeAll(async () => {
+        forgeSchemaResult = await forgeSchema({
+            schemaId: 'test',
+            allowUseFallbackDescription: true,
+            tsconfigFrom: './tsconfig.build-test.json',
+            sourcesDirectoryPattern: 'test-sources/a8',
+            sourcesFilesPattern: ['service-api.ts', 'types.ts'],
+            outputSchemaFile,
+            outputSchemaMetadataFile,
+            expose: 'all',
+            explicitPublic: true,
+            schemaMetadata,
+        });
+        validator = createSchemaForgeRegistry();
+        loadedSchema = await loadJSONSchema([outputSchemaFile]);
+        validator.addSchema(loadedSchema);
+    });
+    afterAll(async () => {
+        if (!KEEP_SPEC_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
+    });
+
+    it('generated schema should have correct metadata', () => {
+        expect(forgeSchemaResult).toBeTruthy();
+        const schema = forgeSchemaResult!.schema;
+        expect(pickProps(schema, Object.keys(schemaMetadata))).toStrictEqual(schemaMetadata);
+    });
+
+    it('generated schema should be valid', () => {
+        expect(forgeSchemaResult).toBeTruthy();
+        const schema = validator.getSchema('test#/definitions/TypeFromJSON') as any;
+        expect(schema).toBeTruthy();
+    });
+});
 
 describe('generator for a7', () => {
     const outputSchemaFile = './a7.generated.schema.tmp.json';
@@ -55,7 +103,7 @@ describe('generator for a7', () => {
         registry.addSchema(loadedSchema);
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -110,7 +158,7 @@ describe('validator for a7', () => {
         registry.addSchema(loadedSchema);
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -159,7 +207,7 @@ describe('generator for a6', () => {
         registry.addSchema(schema);
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -230,7 +278,7 @@ describe('generator for a5', () => {
         registry.addSchema(schema);
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -368,7 +416,7 @@ describe('generator for a4', () => {
         });
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -399,7 +447,7 @@ describe('generator for a3', () => {
         });
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -407,6 +455,13 @@ describe('generator for a3', () => {
 
     it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
+    });
+
+    it('should generate root schema normally', () => {
+        const registry = createSchemaForgeRegistry({
+            engine: { schemas: [forgeSchemaResult!.schema] },
+        });
+        expect(registry.getRootSchema('')).toBeTruthy();
     });
 
     it('interface generics should works', () => {
@@ -487,7 +542,7 @@ describe('generator for a2', () => {
         });
     });
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }
@@ -524,7 +579,7 @@ describe('generator for a1', () => {
     }, 10_000);
 
     afterAll(async () => {
-        if (!KEEP_ARTEFACTS) {
+        if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
             await unlink(outputSchemaMetadataFile).catch(noop);
         }

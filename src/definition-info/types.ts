@@ -1,3 +1,5 @@
+import { env } from 'node:process';
+import { asBool } from '@tsofist/stem/lib/as-bool';
 import type { SchemaForgeDefinitionRef } from '../types';
 
 /**
@@ -48,10 +50,12 @@ interface SDIBase {
     kind: SchemaDefinitionInfoKind;
 }
 
-export const SDS_SUFFIX_API = '__APIInterface';
+const LEGACY_DEFINITIONS = asBool(env.SF_LEGACY_DEFINITIONS); // todo
+
+export const SDS_SUFFIX_API = LEGACY_DEFINITIONS ? '_InterfaceDeclaration' : '__APIInterface';
 export const SDS_SUFFIX_MEMBER = '__APIMember';
-export const SDS_SUFFIX_METHOD_ARGS = '__APIMethodArgs';
-export const SDS_SUFFIX_METHOD_RES = '__APIMethodResult';
+export const SDS_SUFFIX_METHOD_ARGS = LEGACY_DEFINITIONS ? '_Args' : '__APIMethodArgs';
+export const SDS_SUFFIX_METHOD_RES = LEGACY_DEFINITIONS ? '_Result' : '__APIMethodResult';
 
 export type APIInterfaceSDS = `${string}${typeof SDS_SUFFIX_API}`;
 export type APIMemberSDS = `${string}_${string}${typeof SDS_SUFFIX_MEMBER}`;

@@ -1,14 +1,14 @@
 import { raise } from '@tsofist/stem/lib/error';
 import { isEmptyObject } from '@tsofist/stem/lib/object/is-empty';
-import { type Annotations, ExtendedAnnotationsReader } from 'ts-json-schema-generator';
+import { Annotations, ExtendedAnnotationsReader } from 'ts-json-schema-generator';
 import {
     isIdentifier,
     isIntersectionTypeNode,
     isTypeAliasDeclaration,
     isTypeReferenceNode,
     isUnionTypeNode,
-    type Node,
-    type TypeChecker,
+    Node,
+    TypeChecker,
     SymbolFlags,
 } from 'typescript';
 import { hasJSDocTag } from './helpers-tsc';

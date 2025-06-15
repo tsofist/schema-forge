@@ -80,8 +80,8 @@ export interface CustomTypes1Basic {
  */
 export interface CustomTypes2Basic {
     int: CInt;
-    bigint: CBigInt; // todo stem
-    smallint: CSInt; // todo stem
+    bigint: CBigInt;
+    smallint: CSInt;
     float: SafeFloat;
     money: SafeMoney;
 }

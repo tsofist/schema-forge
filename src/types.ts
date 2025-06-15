@@ -97,9 +97,11 @@ export interface ForgeSchemaOptions {
      * If you want to shrink the schema definition names,
      *   you have to provide a replacement function.
      *
-     * WARN: this functionality is not compatible (yet) with `encodeRefs=true` option.
+     * @see shrinkDefinitionName
      */
-    readonly shrinkDefinitionNames?: (definitionName: string) => undefined | NonEmptyString;
+    readonly shrinkDefinitionNames?:
+        | boolean
+        | ((definitionName: string) => undefined | NonEmptyString);
 }
 
 export interface SchemaForgeMetadata {
@@ -121,27 +123,6 @@ export interface ForgeSchemaResult {
     generatedTemporaryFiles: readonly string[];
     generatedNamesBySourceFile: ReadonlyMap<string, ReadonlySet<string>>;
 }
-
-// export const SchemaNotFoundErrorCode: ErrorCode = 'EC_SCHEMA_NOT_FOUND';
-// export type SchemaNotFoundErrorContext = SchemaForgeValidationContextBase & {
-//     schema: SchemaForgeDefinitionRef;
-// };
-//
-// export const SchemaForgeValidationErrorCode: ErrorCode = 'EC_SCHEMA_VALIDATION_FAILED';
-// export type SchemaForgeValidationErrorContext = SchemaForgeValidationErrorContextBase & {
-//     schema: SchemaForgeDefinitionRef;
-//     errors: SchemaForgeValidationReport;
-// };
-//
-// export interface SchemaForgeValidationContextBase {
-//     errorMessage?: string;
-//     instancePath?: string;
-// }
-//
-// export interface SchemaForgeValidationErrorContextBase extends SchemaForgeValidationContextBase {
-//     schema: SchemaForgeDefinitionRef;
-//     errors: SchemaForgeValidationReport;
-// }
 
 /**
  * Reference to schema definition

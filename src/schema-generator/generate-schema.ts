@@ -1,4 +1,4 @@
-import './extended-annotations-reader.path';
+import './extended-annotations-reader';
 import { URec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
 import Ajv, { SchemaObject } from 'ajv';
@@ -14,37 +14,39 @@ import {
     DEFAULT_CONFIG,
     LiteralType,
     LiteralValue,
+    NodeParser,
     NumberType,
+    ReferenceType,
     SchemaGenerator,
     StringType,
     SubNodeParser,
     TupleType,
+    TypeofNodeParser,
 } from 'ts-json-schema-generator';
 import {
     Identifier,
+    isExpressionStatement,
     isNamedTupleMember,
+    isSourceFile,
     isTupleTypeNode,
     Node,
+    SymbolFlags,
     SyntaxKind,
     TupleTypeNode,
     TypeChecker,
     TypeFlags,
+    TypeQueryNode,
 } from 'typescript';
 import { ForgeSchemaOptions } from '../types';
 import { readJSDocDescription } from './helpers-tsc';
+import { shrinkDefinitionName } from './shrink-definition-name';
 import { sortSchemaProperties } from './sort-properties';
 import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY, TMP_FILES_SUFFIX } from './types';
-
-interface IGOptions extends ForgeSchemaOptions {
-    tsconfig: string;
-    definitions: readonly string[];
-    sourcesTypesGeneratorConfig: CompletedConfig;
-}
 
 /**
  * @internal
  */
-export async function generateSchemaByDraftTypes(options: IGOptions): Promise<SchemaObject> {
+export async function generateSchemaByDraftTypes(options: InternalOptions): Promise<SchemaObject> {
     {
         const seen = new Set<string>();
         for (const name of options.definitions) {
@@ -54,7 +56,6 @@ export async function generateSchemaByDraftTypes(options: IGOptions): Promise<Sc
     }
 
     const allowUseFallbackDescription = options.allowUseFallbackDescription;
-
     const generatorConfig: CompletedConfig = {
         ...DEFAULT_CONFIG,
         ...SFG_CONFIG_DEFAULTS,
@@ -64,7 +65,6 @@ export async function generateSchemaByDraftTypes(options: IGOptions): Promise<Sc
         discriminatorType: options.discriminatorType ?? DEFAULT_CONFIG.discriminatorType,
         ...SFG_CONFIG_MANDATORY,
     };
-
     const generatorProgram = createProgram(generatorConfig);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const typeChecker: TypeChecker = generatorProgram.getTypeChecker();
@@ -73,10 +73,10 @@ export async function generateSchemaByDraftTypes(options: IGOptions): Promise<Sc
             new TupleTypeParser(parser as ChainNodeParser, allowUseFallbackDescription),
         );
         parser.addNodeParser(new ArrayLiteralExpressionIdentifierParser(typeChecker));
+        parser.addNodeParser(new TypeofNodeParserEx(typeChecker, parser as unknown as NodeParser));
     });
     const formatter = createFormatter(options.sourcesTypesGeneratorConfig);
     const generator = new SchemaGenerator(generatorProgram, parser, formatter, generatorConfig);
-
     const result: SchemaObject = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         $id: options.schemaId,
@@ -93,19 +93,25 @@ export async function generateSchemaByDraftTypes(options: IGOptions): Promise<Sc
         Object.assign(result.definitions, schema.definitions);
     }
 
-    if (options.shrinkDefinitionNames) {
+    const shrinkDefinitionNames = !options.shrinkDefinitionNames
+        ? undefined
+        : options.shrinkDefinitionNames === true
+          ? shrinkDefinitionName
+          : options.shrinkDefinitionNames;
+
+    if (shrinkDefinitionNames) {
         const replacement = new Set<string>();
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         for (const name of Object.keys(result.definitions)) {
-            const r = options.shrinkDefinitionNames(name);
-            if (r) {
-                if (replacement.has(r) || r in result.definitions) {
-                    raise(`Duplicate replacement definition name: ${r}`);
+            const shortName = shrinkDefinitionNames(name);
+            if (shortName) {
+                if (replacement.has(shortName) || shortName in result.definitions) {
+                    raise(`Duplicate replacement definition name: ${shortName}`);
                 }
 
                 // rename property
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                result.definitions[r] = result.definitions[name];
+                result.definitions[shortName] = result.definitions[name];
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 delete result.definitions[name];
 
@@ -116,7 +122,10 @@ export async function generateSchemaByDraftTypes(options: IGOptions): Promise<Sc
                     eval: 'safe',
                 });
                 targets?.forEach((item) => {
-                    item.$ref = item.$ref.replace(`#/definitions/${name}`, `#/definitions/${r}`);
+                    item.$ref = item.$ref.replace(
+                        `#/definitions/${name}`,
+                        `#/definitions/${shortName}`,
+                    );
                 });
             }
         }
@@ -133,7 +142,7 @@ export async function generateSchemaByDraftTypes(options: IGOptions): Promise<Sc
         allErrors: true,
         strictSchema: true,
         strictTypes: false,
-        strictTuples: false,
+        strictTuples: true,
         allowUnionTypes: true,
     }).validateSchema(result, true);
 
@@ -142,6 +151,34 @@ export async function generateSchemaByDraftTypes(options: IGOptions): Promise<Sc
 
 function escapeDefinitionNameForJSONPath(value: string): string {
     return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+class TypeofNodeParserEx extends TypeofNodeParser {
+    override createType(node: TypeQueryNode, context: Context, reference?: ReferenceType) {
+        const tc: TypeChecker = this.typeChecker;
+
+        let symbol = tc.getSymbolAtLocation(node.exprName);
+        if (symbol && symbol.flags & SymbolFlags.Alias) {
+            symbol = tc.getAliasedSymbol(symbol);
+            const declaration = symbol.valueDeclaration;
+            if (
+                declaration &&
+                isSourceFile(declaration) &&
+                declaration.fileName.endsWith('.json')
+            ) {
+                const statement = declaration.statements.at(0);
+                if (statement && isExpressionStatement(statement)) {
+                    return this.childNodeParser.createType(
+                        statement.expression,
+                        context,
+                        reference,
+                    );
+                }
+            }
+        }
+
+        return super.createType(node, context, reference);
+    }
 }
 
 class TupleTypeParser implements SubNodeParser {
@@ -210,4 +247,10 @@ function getIdentifierLiteralValue(
         return type.value;
     }
     return undefined;
+}
+
+interface InternalOptions extends ForgeSchemaOptions {
+    tsconfig: string;
+    definitions: readonly string[];
+    sourcesTypesGeneratorConfig: CompletedConfig;
 }

@@ -1,19 +1,16 @@
 import { createHash } from 'node:crypto';
 import { readFile, unlink, writeFile } from 'node:fs/promises';
-import { env } from 'node:process';
 import type { URec } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
-import { asBool } from '@tsofist/stem/lib/as-bool';
 import { raise } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
 import { randomString } from '@tsofist/stem/lib/string/random';
 import type { SchemaObject } from 'ajv';
+import { KEEP_GEN_ARTEFACTS } from '../artefacts-policy';
 import { buildSchemaDefinitionRef } from '../definition-info/ref';
 import type { SchemaForgeMetadata, ForgeSchemaResult, ForgeSchemaOptions } from '../types';
 import { generateDraftTypeFiles } from './generate-drafts';
 import { generateSchemaByDraftTypes } from './generate-schema';
-
-const KEEP_ARTEFACTS = asBool(env['SFG_KEEP_ARTEFACTS'], false);
 
 export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSchemaResult> {
     const sourcesPattern = asArray(options.sourcesFilesPattern).map(
@@ -117,7 +114,7 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
                 });
             }
         } finally {
-            if (!KEEP_ARTEFACTS) {
+            if (!KEEP_GEN_ARTEFACTS) {
                 await Promise.all(files.map((fileName) => unlink(fileName).catch(noop)));
             }
         }
