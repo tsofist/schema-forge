@@ -30,7 +30,7 @@ describe('DBML Generator', () => {
         registry = createSchemaForgeRegistry();
         const schema = await loadJSONSchema([outputSchemaFile]);
         registry.addSchema(schema);
-    }, 10_000);
+    });
 
     afterAll(async () => {
         if (!KEEP_SPEC_ARTEFACTS) {

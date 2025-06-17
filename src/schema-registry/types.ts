@@ -2,7 +2,7 @@ import type { ArrayMay, Nullable } from '@tsofist/stem';
 import type { NonNegativeInt } from '@tsofist/stem/lib/number/integer/types';
 import type { ErrorsTextOptions, Options } from 'ajv';
 import type { Options as AjvOptions } from 'ajv/dist/core';
-import type { JSONSchema7, JSONSchema7Object } from 'json-schema';
+import type { JSONSchema7 } from 'json-schema';
 import type { SchemaDefinitionInfo } from '../definition-info/types';
 import type { SchemaForgeValidationContextBase } from '../efc';
 import type {
@@ -34,7 +34,7 @@ export interface SchemaForgeRegistry {
      */
     clone: (
         options?: Omit<Options, 'schemas'>,
-        onSchema?: (schema: JSONSchema7Object) => JSONSchema7Object,
+        onSchema?: (schema: JSONSchema7) => JSONSchema7,
     ) => SchemaForgeRegistry;
 
     /**
@@ -45,7 +45,7 @@ export interface SchemaForgeRegistry {
     /**
      * Add root schema's to registry
      */
-    addSchema: (schema: JSONSchema7Object[]) => void;
+    addSchema: (schema: JSONSchema7[]) => void;
 
     /**
      * Check if schema (or definition) is already registered

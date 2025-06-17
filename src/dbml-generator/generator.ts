@@ -36,7 +36,7 @@ export function generateDBMLSpec(
         string[] // table names
     >();
     const sources = new Map<
-        string, // scope name,
+        string, // scope name
         DBMLProjectScope
     >();
 

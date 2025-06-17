@@ -12,7 +12,7 @@ import Ajv, {
     type ValidateFunction,
 } from 'ajv';
 import addFormats from 'ajv-formats';
-import type { JSONSchema7, JSONSchema7Object } from 'json-schema';
+import type { JSONSchema7 } from 'json-schema';
 import { parseSchemaDefinitionInfo } from '../definition-info/parser';
 import { buildSchemaDefinitionRef } from '../definition-info/ref';
 import type { SchemaDefinitionInfo } from '../definition-info/types';
@@ -78,14 +78,14 @@ export function createSchemaForgeRegistry(
 
     function clone(
         options?: Omit<AjvOptions, 'schemas'>,
-        onSchema?: (value: JSONSchema7Object) => JSONSchema7Object,
+        onSchema?: (value: JSONSchema7) => JSONSchema7,
     ) {
-        const schemas: JSONSchema7Object[] = [];
+        const schemas: JSONSchema7[] = [];
         for (const env of nonNullableValues(engine.schemas)) {
             if (env.meta) continue;
             const schema = onSchema
-                ? onSchema(env.schema as JSONSchema7Object)
-                : (env.schema as JSONSchema7Object);
+                ? onSchema(env.schema as JSONSchema7)
+                : (env.schema as JSONSchema7);
             schemas.push(schema);
         }
 
@@ -114,7 +114,7 @@ export function createSchemaForgeRegistry(
         return ref in engine.schemas || ref in engine.refs || engine.getSchema(ref) != null;
     }
 
-    function addSchema(schema: JSONSchema7Object[]) {
+    function addSchema(schema: JSONSchema7[]) {
         engine.addSchema(schema);
         rev++;
     }
