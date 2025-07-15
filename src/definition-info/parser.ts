@@ -1,22 +1,27 @@
 import { substr } from '@tsofist/stem/lib/string/substr';
+import {
+    isAPIDefinitionName,
+    isAPIMethodArgsDefinitionName,
+    isAPIMethodResultDefinitionName,
+} from './guards';
 import { buildSchemaDefinitionRef } from './ref';
 import {
+    _SDS_SUFFIX_API,
     type SchemaDefinitionInfo,
     SchemaDefinitionInfoKind,
     SDS_SUFFIX_API,
-    SDS_SUFFIX_METHOD_ARGS,
-    SDS_SUFFIX_METHOD_RES,
 } from './types';
 
 export function parseSchemaDefinitionInfo(
     definitionName: string,
     schemaId: string,
+    legacy = false,
 ): SchemaDefinitionInfo {
-    const kind: SchemaDefinitionInfoKind = definitionName.endsWith(SDS_SUFFIX_API)
+    const kind: SchemaDefinitionInfoKind = isAPIDefinitionName(definitionName)
         ? SchemaDefinitionInfoKind.API
-        : definitionName.endsWith(SDS_SUFFIX_METHOD_ARGS)
+        : isAPIMethodArgsDefinitionName(definitionName)
           ? SchemaDefinitionInfoKind.APIMethodArguments
-          : definitionName.endsWith(SDS_SUFFIX_METHOD_RES)
+          : isAPIMethodResultDefinitionName(definitionName)
             ? SchemaDefinitionInfoKind.APIMethodResult
             : SchemaDefinitionInfoKind.Type;
     const ref = buildSchemaDefinitionRef(definitionName, schemaId);
@@ -28,7 +33,7 @@ export function parseSchemaDefinitionInfo(
                 kind,
                 name: definitionName,
                 schemaId,
-                interface: substr(definitionName, 0, SDS_SUFFIX_API)!,
+                interface: substr(definitionName, 0, legacy ? _SDS_SUFFIX_API : SDS_SUFFIX_API)!,
             };
         case SchemaDefinitionInfoKind.APIMethodArguments:
         case SchemaDefinitionInfoKind.APIMethodResult:

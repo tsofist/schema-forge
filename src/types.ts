@@ -102,6 +102,11 @@ export interface ForgeSchemaOptions {
     readonly shrinkDefinitionNames?:
         | boolean
         | ((definitionName: string) => undefined | NonEmptyString);
+    /**
+     * @deprecated
+     * @default false
+     */
+    readonly legacyDefinitions?: boolean;
 }
 
 export interface SchemaForgeMetadata {

@@ -135,6 +135,12 @@ export interface SchemaForgeRegistryOptions {
      * Use additional formats via ajv-formats
      *
      * @see https://ajv.js.org/packages/ajv-formats.html ajv-formats
+     * @default true
      */
     extendedVocabulary?: boolean;
+    /**
+     * @deprecated
+     * @default false
+     */
+    legacyDefinitions?: boolean;
 }

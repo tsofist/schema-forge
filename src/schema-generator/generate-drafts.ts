@@ -219,6 +219,8 @@ function processExportDeclaration(
 }
 
 function processAPIInterfaceDeclaration(statement: InterfaceDeclaration, context: SFDTGContext) {
+    /** @deprecated */
+    const legacy = context.options.legacyDefinitions ?? false;
     const allowUseFallbackDescription = context.options.allowUseFallbackDescription;
     const definitionsMetaList: DefinitionMetadata[] = [];
 
@@ -254,8 +256,8 @@ function processAPIInterfaceDeclaration(statement: InterfaceDeclaration, context
 
         const resultTypeName = readMemberTypeName(method);
 
-        const definitionNameArgs = buildAPIMethodArgsSDS(interfaceName, memberName);
-        const definitionNameResult = buildAPIMethodResultSDS(interfaceName, memberName);
+        const definitionNameArgs = buildAPIMethodArgsSDS(interfaceName, memberName, legacy);
+        const definitionNameResult = buildAPIMethodResultSDS(interfaceName, memberName, legacy);
 
         const comment = `Method:${interfaceName}#${memberName}`;
 
@@ -379,7 +381,7 @@ function processAPIInterfaceDeclaration(statement: InterfaceDeclaration, context
             interfaceDeprecated && ` * @deprecated ${interfaceDeprecated}`,
             ` * @comment Interface:${interfaceName}`,
             ` */`,
-            `export interface ${buildAPIInterfaceSDS(interfaceName)}${interfaceGenericText} {`,
+            `export interface ${buildAPIInterfaceSDS(interfaceName, legacy)}${interfaceGenericText} {`,
             membersText.stringify('\n'),
             `}`,
             ``,
@@ -387,7 +389,7 @@ function processAPIInterfaceDeclaration(statement: InterfaceDeclaration, context
 
         context.registerDefinition(
             context.currentSourceFileName,
-            buildAPIInterfaceSDS(interfaceName),
+            buildAPIInterfaceSDS(interfaceName, legacy),
         );
         context.currentFileContent.push(interfaceText.stringify('\n'));
     }

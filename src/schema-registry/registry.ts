@@ -61,6 +61,8 @@ const SFR_DEFAULT_OPTIONS = {
 export function createSchemaForgeRegistry(
     options?: SchemaForgeRegistryOptions,
 ): SchemaForgeRegistry {
+    /** @deprecated */
+    const legacy = options?.legacyDefinitions ?? false;
     const engineOptions = { ...SFR_DEFAULT_OPTIONS, ...options?.engine };
     const useAdditionalFormats = options?.extendedVocabulary ?? true;
 
@@ -217,7 +219,7 @@ export function createSchemaForgeRegistry(
     ): SchemaDefinitionInfo[] {
         const result: SchemaDefinitionInfo[] = [];
         mapDefinitions((name, schemaId, schema) => {
-            const info = parseSchemaDefinitionInfo(name, schemaId);
+            const info = parseSchemaDefinitionInfo(name, schemaId, legacy);
             if (predicate === undefined || predicate(info, readSchemaKeywords(schema))) {
                 result.push(info);
             }

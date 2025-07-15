@@ -1,4 +1,7 @@
 import {
+    _SDS_SUFFIX_API,
+    _SDS_SUFFIX_METHOD_ARGS,
+    _SDS_SUFFIX_METHOD_RES,
     type APIInterfaceSDS,
     type APIMemberSDS,
     type APIMethodArgsSDS,
@@ -12,8 +15,8 @@ import {
 /**
  * Builds the type signature for the API Interface
  */
-export function buildAPIInterfaceSDS(interfaceName: string): APIInterfaceSDS {
-    return `${interfaceName}${SDS_SUFFIX_API}`;
+export function buildAPIInterfaceSDS(interfaceName: string, legacy = false): APIInterfaceSDS {
+    return `${interfaceName}${legacy ? _SDS_SUFFIX_API : SDS_SUFFIX_API}` as APIInterfaceSDS;
 }
 
 /**
@@ -26,8 +29,12 @@ export function buildAPIMemberSDS(interfaceName: string, memberName: string): AP
 /**
  * Builds the type signature for the API Interface method arguments
  */
-export function buildAPIMethodArgsSDS(interfaceName: string, methodName: string): APIMethodArgsSDS {
-    return `${interfaceName}_${methodName}${SDS_SUFFIX_METHOD_ARGS}`;
+export function buildAPIMethodArgsSDS(
+    interfaceName: string,
+    methodName: string,
+    legacy = false,
+): APIMethodArgsSDS {
+    return `${interfaceName}_${methodName}${legacy ? _SDS_SUFFIX_METHOD_ARGS : SDS_SUFFIX_METHOD_ARGS}` as APIMethodArgsSDS;
 }
 
 /**
@@ -36,6 +43,7 @@ export function buildAPIMethodArgsSDS(interfaceName: string, methodName: string)
 export function buildAPIMethodResultSDS(
     interfaceName: string,
     methodName: string,
+    legacy = false,
 ): APIMethodResultSDS {
-    return `${interfaceName}_${methodName}${SDS_SUFFIX_METHOD_RES}`;
+    return `${interfaceName}_${methodName}${legacy ? _SDS_SUFFIX_METHOD_RES : SDS_SUFFIX_METHOD_RES}` as APIMethodResultSDS;
 }
