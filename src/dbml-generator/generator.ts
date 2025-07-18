@@ -9,8 +9,12 @@ import { substr } from '@tsofist/stem/lib/string/substr';
 import { TextBuilder } from '@tsofist/stem/lib/string/text-builder';
 import type { JSONSchema7 as Schema } from 'json-schema';
 import type { SchemaDefinitionInfoForType } from '../definition-info/types';
+import {
+    createSchemaDereferenceSharedCache,
+    SchemaDereferenceSharedCache,
+} from '../schema-dereference/cache';
+import { dereferenceSchema } from '../schema-dereference/dereference';
 import type { SchemaForgeRegistry } from '../schema-registry/types';
-import type { SchemaForgeDefinitionRef } from '../types';
 import {
     DBMLColumnOptions,
     DBMLEntityOptions,
@@ -39,6 +43,7 @@ export function generateDBMLSpec(
         string, // scope name
         DBMLProjectScope
     >();
+    const dereferencedRootSchemas: Map<string, Schema> = new Map();
 
     if (options.meta?.comment) {
         text.push(`// ${options.meta?.comment}`);
@@ -46,6 +51,7 @@ export function generateDBMLSpec(
     text.push(`Project ${options.meta?.name ?? 'Scratch'} {`);
     text.push(`database_type: 'PostgreSQL'`, 1);
     if (options.meta?.note) {
+        text.push('');
         text.push(buildNote(options.meta.note), 1);
     }
     text.push('}');
@@ -61,9 +67,24 @@ export function generateDBMLSpec(
         }
     }
 
-    for (const { definitions, scopeName = DefaultScopeName } of sources.values()) {
+    for (const { definitions, scopeName = DefaultScopeName, schemaId } of sources.values()) {
+        let dereferencedRootSchema: Schema = dereferencedRootSchemas.get(schemaId)!;
+        if (!dereferencedRootSchemas.has(schemaId)) {
+            const root =
+                schemaRegistry.getRootSchema(schemaId) ||
+                raise(`Root schema ${schemaId} not found`);
+            dereferencedRootSchema =
+                dereferenceSchema(root, {
+                    throwOnDereferenceFailure: true,
+                    sharedCacheStorage:
+                        DereferenceSchemaCache ||
+                        (DereferenceSchemaCache = createSchemaDereferenceSharedCache()),
+                }) || raise(`Failed to dereference root schema for ${schemaId}`);
+            dereferencedRootSchemas.set(schemaId, dereferencedRootSchema);
+        }
+
         for (const definition of definitions) {
-            const tableSpec = generateTable(definition, schemaRegistry, options);
+            const tableSpec = generateTable(definition, options, dereferencedRootSchema);
             if (tableSpec) {
                 if (tables.has(tableSpec.name)) {
                     raise(`Definitions contain duplicate table name: ${tableSpec.name}`);
@@ -113,25 +134,28 @@ export function generateDBMLSpec(
 
 function generateTable(
     info: SchemaDefinitionInfoForType,
-    registry: SchemaForgeRegistry,
-    options?: DBMLGeneratorOptions,
+    options: DBMLGeneratorOptions,
+    dereferencedRootSchema: Schema,
 ): TableSpec | undefined {
-    const includeNotes = options?.includeNotes ?? false;
+    const includeNotes = options.includeNotes ?? false;
     const entityTypeName = info.type;
-    const entitySchema = registry.getSchema(`${info.schemaId}#/definitions/${entityTypeName}`);
+    const entitySchema = (dereferencedRootSchema.definitions || dereferencedRootSchema.$defs)?.[
+        entityTypeName
+    ];
     if (!entitySchema) return;
+    if (typeof entitySchema !== 'object')
+        raise(`Invalid definition type for table: ${typeof entitySchema} (expected object)`);
 
     const tableName = readDBEntityName(entitySchema);
     if (!tableName) return;
 
     const { properties, required } = listProperties(entitySchema);
-    const columns = generateColumns(properties, required, includeNotes, registry, info.schemaId);
+    const columns = generateColumns(properties, required, includeNotes, info.schemaId, tableName);
     const indexes = generateIndexes(
         tableName,
         properties,
         readDBEntityIndexes(entitySchema),
         includeNotes,
-        registry,
         info.schemaId,
     );
 
@@ -168,8 +192,8 @@ function generateColumns(
     properties: PRec<PropertySchema>,
     requiredFields: string[],
     notes: boolean,
-    registry: SchemaForgeRegistry,
     schemaId: string,
+    tableName: string,
 ): TextBuilder {
     const text = new TextBuilder();
     let count = 0;
@@ -187,7 +211,7 @@ function generateColumns(
 
         const isRequired = requiredFields.includes(key);
         const isColumnNullable = isNullable(property);
-        const columnType = getType(property, schemaId, registry);
+        const columnType = getDBType(property, schemaId);
         const attributes = generateColumnAttributes(
             key,
             property,
@@ -197,13 +221,16 @@ function generateColumns(
         );
 
         if (property.$comment) text.push(stringifyComment(property.$comment));
-        text.push(`${snakeCase(key)} ${columnType} [${attributes.stringify(', ')}]`);
+        const attributesText = attributes.stringify(', ');
+        const hasLineBreak = attributesText.includes('\n');
+
+        text.push(`${snakeCase(key)} ${columnType} [${attributesText}${hasLineBreak ? '\n' : ']'}`);
+        hasLineBreak && text.push(']');
         count++;
     }
 
     if (count === 0) {
-        // todo!
-        // raise(`Table ${schemaId} has no columns`);
+        raise(`Table ${tableName} (${schemaId}) does not have any columns defined`);
     }
 
     return text;
@@ -247,7 +274,7 @@ function generateColumnAttributes(
     }
 
     if (notes && property.description) {
-        result.push(buildNote(property.description).stringify());
+        result.push(buildNote(property.description, 2).stringify());
     }
     return result;
 }
@@ -257,7 +284,6 @@ function generateIndexes(
     schemaProperties: PRec<PropertySchema>,
     entityIndexes: DBMLEntityOptions['indexes'],
     includeNotes: boolean,
-    registry: SchemaForgeRegistry,
     schemaId: string,
 ): TextBuilder {
     const text = new TextBuilder();
@@ -306,7 +332,7 @@ function generateIndexes(
                     const field = substr(rawKey, '.');
                     const index = (idx[indexName] ||= {
                         ...(typeof item === 'object' ? item : {}),
-                        columnType: getType(schemaProperties[column], schemaId, registry),
+                        columnType: getDBType(schemaProperties[column], schemaId),
                         columns: [],
                         fields: [],
                     });
@@ -342,10 +368,10 @@ function generateIndexes(
         const { columns, unique, pk, comment, note } = index;
 
         if (columns.length !== new Set(columns).size) {
-            console.error(`Duplicate columns in index ${indexName} for table ${tableName}`);
+            console.warn(`Duplicate columns in index ${indexName} for table ${tableName}`);
         }
 
-        const options = [`name: "${indexName}"`];
+        const options = new TextBuilder(`name: "${indexName}"`);
 
         const type =
             index.type || index.columnType === 'jsonb' || index.columnType.endsWith('[]')
@@ -354,14 +380,14 @@ function generateIndexes(
         if (type) options.push(`type: ${type}`);
         if (pk) options.push(`pk`);
         if (!pk && unique) options.push('unique');
-        // todo
+        // todo?
         // if (includeNotes && fields.length) {
         //     options.push(`note: 'Fields: ${fields.join(', ')};'`);
         // }
-        if (includeNotes && note) options.push(buildNote(note).stringify());
+        if (includeNotes && note) options.push(buildNote(note, 3).stringify());
         if (comment) text.push(`// ${comment}`);
 
-        text.push(`(${columns.map(snakeCase).join(', ')}) [${options.join(', ')}]`);
+        text.push(`(${columns.map(snakeCase).join(', ')}) [${options.stringify(', ')}]`);
     }
 
     return text;
@@ -387,12 +413,12 @@ function stringifyComment(value: string | undefined): string[] | undefined {
     return value.split('\n').map((item) => `// ${item.trim()}`);
 }
 
-function buildNote(value: string | undefined): TextBuilder {
+function buildNote(value: string | undefined, mlLevel = 1): TextBuilder {
     const result = new TextBuilder();
     if (value) {
         if (value.includes('\n')) {
             result.push(`note:`);
-            result.push([`'''`, ...value.split('\n'), `'''`], 1);
+            result.push([`'''`, ...value.split('\n'), `'''`], mlLevel);
         } else {
             result.push(`note: "${value}"`);
         }
@@ -406,38 +432,21 @@ function isNullable(property: Schema): boolean {
     );
 }
 
-function getType(
-    property: PropertySchema,
-    schemaId: string,
-    registry: SchemaForgeRegistry,
-): string {
+let DereferenceSchemaCache: SchemaDereferenceSharedCache | undefined;
+
+function getDBType(property: PropertySchema, schemaId: string): string {
     if (property.dbColumn?.type) return property.dbColumn.type;
 
     let type = property.type as string | undefined;
-
-    if (property.$ref) {
-        const schema = registry.getSchema(
-            `${schemaId}${property.$ref}` as SchemaForgeDefinitionRef,
-        );
-
-        if (schema && schema.type) type = schema.type as string | undefined;
-
-        const ref = schema?.$ref || property.$ref;
-        if (typeof ref !== 'string')
-            raise(`Invalid schema reference type ${typeof ref} (expected string)`);
-
-        const refType = ref.split('/').pop();
-
-        if (refType && refType in {}) {
-            // @1ts-expect-error It's OK
-            // return TypeMappings[refType];
-            return '-'; // TODO!
-        } else if (schema) {
-            property = schema;
-        }
+    if (!type && property.$ref) {
+        raise(`Type ${JSON.stringify(property)} (${schemaId}) was not dereferenced`);
     }
-
-    if (typeof type !== 'string') raise(`Invalid schema type ${typeof type} (expected string)`);
+    if (type && Array.isArray(type)) {
+        type = type.filter((item) => item !== 'null')[0] as string | undefined;
+    }
+    if (type && typeof type !== 'string') {
+        raise(`Invalid SchemaTypeName value type (${typeof type}) (expected string)`);
+    }
 
     const variants = property.anyOf || property.oneOf;
 
@@ -447,7 +456,7 @@ function getType(
         );
         if (nonNullType) {
             return typeof nonNullType === 'object'
-                ? getType(nonNullType, schemaId, registry)
+                ? getDBType(nonNullType, schemaId)
                 : nonNullType.toString();
         }
     }
@@ -480,7 +489,11 @@ function listProperties(schema: Schema): {
         };
     }
 
-    // todo oneOf
+    if (schema.oneOf) {
+        // todo oneOf
+        raise(`Schema ${JSON.stringify(schema)} has oneOf, but not implemented yet`);
+    }
+
     if (!schema.anyOf) {
         return {
             type: 'object',
@@ -507,11 +520,11 @@ function listProperties(schema: Schema): {
             }
         } else {
             if (!isEqualKeys(propertiesMap, item.properties)) {
-                console.error('Properties are not identical across all members of anyOf');
+                console.warn('Properties are not identical across all members of anyOf');
             }
             for (const name of item.required || []) {
                 if (!requiredSet.has(name)) {
-                    console.error('Required fields are not identical across all members of anyOf');
+                    console.warn('Required fields are not identical across all members of anyOf');
                 }
             }
         }
@@ -553,8 +566,6 @@ const SortableFields = [
 type TableSpec = {
     name: string;
     value: string;
-    // description?: string;
-    // comment?: string;
 };
 
 type PropertySchema = Schema & {

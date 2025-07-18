@@ -4,6 +4,7 @@ exports[`DBML Generator basic cases 1`] = `
 "// Test comment!
 Project TestProject {
   database_type: 'PostgreSQL'
+
   note:
     '''
     Multi-line note
@@ -38,11 +39,17 @@ Table some_schema.some_entity_1 {
 // Important: This is a multi-line comment
 Table some_schema.some_entity_2 {
   uuid uuid [not null]
-  int integer [not null]
+  int integer [not null, note:
+    '''
+    Integer value.
+
+    References:   - PostgreSQL: less than bigint and greater than integer (without NaN and +/- Infinity)
+    '''
+  ]
   int_array jsonb [not null]
-  float number [not null]
+  float number [not null, note: "Floating-point number."]
   float_array jsonb [not null]
-  complex jsonb [not null]
+  complex jsonb [not null, note: "Easy version of Record type"]
   complex_array jsonb [not null]
 
   note:
@@ -54,25 +61,115 @@ Table some_schema.some_entity_2 {
 }
 
 Table some_schema.some_entity_3 {
-  int integer [not null]
-  bigint integer [not null]
-  smallint integer [not null]
-  float text [not null]
-  money text [not null]
+  int integer [not null, note:
+    '''
+    Integer compatibility type.
+
+    References:   - PostgreSQL: integer
+    '''
+  ]
+  bigint integer [not null, note:
+    '''
+    Big integer compatibility type.
+
+    References:   - PostgreSQL: bigint
+    '''
+  ]
+  smallint integer [not null, note:
+    '''
+    Small integer compatibility type.
+
+    References:   - PostgreSQL: smallint
+    '''
+  ]
+  float text [not null, note:
+    '''
+    Safe exact floating-point number.
+
+    References:   - PostgreSQL: float8, double precision, numeric(30,18)
+    '''
+  ]
+  money text [not null, note:
+    '''
+    String representation of a floating point number with up to 2 decimal places.
+
+    References:   - PostgreSQL: usual numeric(12,2) or up to numeric(15,2)
+    '''
+  ]
 }
 
 Table some_schema.some_entity_5 {
   uid uuid [not null]
-  zdt text [not null]
-  ldt text [not null]
-  ld text [not null]
-  zd text [not null]
-  pi integer [not null]
-  pf number [not null]
-  psf text [not null]
-  ci integer [not null]
-  cnnbi integer [not null]
-  csni integer [not null]
+  zdt text [not null, note:
+    '''
+    ISO zulu date-time string (GMT time zone).
+
+    Rules:
+    * Date: YES
+    * Time: YES
+    * UTC offset: NO
+    * Milliseconds: Optional
+    '''
+  ]
+  ldt text [not null, note:
+    '''
+    ISO local date-time string.
+
+    Rules:
+    * Date: YES
+    * Time: YES
+    * UTC offset: Optional
+    * Milliseconds: Optional
+    '''
+  ]
+  ld text [not null, note:
+    '''
+    ISO local date string.
+
+    Rules:  * Date: YES  * Time: NO  * UTC offset: NO  * Milliseconds: NO
+    '''
+  ]
+  zd text [not null, note:
+    '''
+    ISO zulu date-time string (GMT time zone).
+
+    Rules:
+    * Date: YES
+    * Time: YES
+    * UTC offset: NO
+    * Milliseconds: Optional
+    '''
+  ]
+  pi integer [not null, note: "Positive integer value."]
+  pf number [not null, note: "Positive floating-point number."]
+  psf text [not null, note:
+    '''
+    Safe positive floating-point number.
+
+    References:   - PostgreSQL: float8, double precision, numeric(30,18)
+    '''
+  ]
+  ci integer [not null, note:
+    '''
+    Integer compatibility type.
+
+    References:   - PostgreSQL: integer
+    '''
+  ]
+  cnnbi integer [not null, note:
+    '''
+    Non-negative big integer compatibility type.
+
+    References:   - PostgreSQL: bigint
+    '''
+  ]
+  csni integer [not null, note:
+    '''
+    Negative small integer compatibility type.
+
+    References:   - PostgreSQL: smallint
+    '''
+  ]
 }
 
 // Test comment for TestScope
@@ -99,10 +196,10 @@ Table some_schema.ix_01 {
     (index00) [name: "ix_some_schema_ix_01_index00"]
     (indexed01) [name: "ix_some_schema_ix_01_indexed01", note: "This is a single-line note for Index"]
     (indexed02) [name: "ix_some_schema_ix_01_indexed02", note:
-  '''
-  This is a multiline-line note for Index
-  Yep, this is true
-  ''']
+      '''
+      This is a multiline-line note for Index
+      Yep, this is true
+      ''']
   }
 }
 "
