@@ -28,7 +28,7 @@ export function dereferenceSchema(
     function resolve(current: OperationalValueA, path: string): OperationalValueA;
     function resolve(current: OperationalValue, path: string): OperationalValue;
     function resolve(current: OperationalValueAA, path: string): OperationalValueAA {
-        if (current === undefined || typeof current !== 'object') return current;
+        if (current == undefined || typeof current !== 'object') return current;
 
         // Circular
         if (seen.has(current)) return seen.get(current);
