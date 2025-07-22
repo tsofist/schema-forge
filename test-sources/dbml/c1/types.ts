@@ -63,7 +63,8 @@ export interface Primitive1Basic {
  *
  * @public
  */
-export interface CustomTypes1Basic {
+export interface CustomTypes1Basic extends RefField {
+    extraRef: RefCol;
     uuid: UUID;
     int: Int;
     intArray: Int[];
@@ -71,6 +72,26 @@ export interface CustomTypes1Basic {
     floatArray: Float[];
     complex: ComplexType;
     complexArray: ComplexType[];
+}
+
+/**
+ * Some reference.
+ *
+ * @dbColumn { type: 'uuid', pk: true }
+ * @dbIndex { unique: true }
+ */
+type RefCol = RefId;
+
+/**
+ * Some Reference Field Container
+ */
+type RefField = {
+    ref: RefCol;
+};
+
+enum RefId {
+    One = '00000000-0000-0000-0000-100000000001',
+    Two = '00000000-0000-0000-0000-100000000002',
 }
 
 /**

@@ -42,9 +42,9 @@ export function dereferenceSchema(
 
         // $ref
         if ('$ref' in current && typeof current.$ref === 'string') {
-            const ref = resolveRef(cache, schema, current.$ref);
+            const resolvedSchema = resolveRef(cache, schema, current.$ref);
 
-            if (ref == null) {
+            if (resolvedSchema == null) {
                 const replacement =
                     onDereferenceFailure && !throwOnDereferenceFailure
                         ? onDereferenceFailure(current.$ref, current, schema)
@@ -63,21 +63,26 @@ export function dereferenceSchema(
                 return replacement;
             }
 
-            if (seen.has(ref)) return seen.get(ref);
+            if (seen.has(resolvedSchema)) return seen.get(resolvedSchema);
 
-            if (Array.isArray(ref)) {
-                const resolvedArray = resolve(ref, current.$ref);
-                seen.set(ref, resolvedArray);
+            if (Array.isArray(resolvedSchema)) {
+                const resolvedArray = resolve(resolvedSchema, current.$ref);
+                seen.set(resolvedSchema, resolvedArray);
                 return resolvedArray;
             }
 
             const placeholder = {};
             seen.set(current, placeholder);
 
-            const resolved = resolve(ref, current.$ref);
-            Object.assign(placeholder, resolved);
+            const result = {
+                ...resolvedSchema,
+                ...resolve(resolvedSchema, current.$ref),
+            };
 
-            return resolved;
+            Object.assign(placeholder, result);
+            seen.set(resolvedSchema, result);
+
+            return result;
         }
 
         // Objects

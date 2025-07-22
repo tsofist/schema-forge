@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`DBML Generator basic cases 1`] = `
 "// Test comment!
@@ -38,6 +38,8 @@ Table some_schema.some_entity_1 {
 // This is a comment
 // Important: This is a multi-line comment
 Table some_schema.some_entity_2 {
+  ref uuid [pk, not null, note: "Some reference."]
+  extra_ref uuid [pk, not null, note: "Some reference."]
   uuid uuid [not null]
   int integer [not null, note:
     '''
@@ -51,6 +53,11 @@ Table some_schema.some_entity_2 {
   float_array jsonb [not null]
   complex jsonb [not null, note: "Easy version of Record type"]
   complex_array jsonb [not null]
+
+  indexes {
+    (ref) [name: "ix_some_schema_some_entity_2_ref", unique]
+    (extra_ref) [name: "ix_some_schema_some_entity_2_extraRef", unique]
+  }
 
   note:
     '''
