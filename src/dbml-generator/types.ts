@@ -63,6 +63,7 @@ export const DBMLIndexTypeList = [
  * Database column type list.
  */
 export const DBMLColumnTypeList = [
+    'uuid',
     'integer',
     'bigint',
     'smallint',
@@ -79,6 +80,7 @@ export const DBMLColumnTypeList = [
     'timestamp',
     'timestamptz',
     //
+    'uuid[]',
     'integer[]',
     'bigint[]',
     'smallint[]',
