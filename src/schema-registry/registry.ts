@@ -17,7 +17,7 @@ import { parseSchemaDefinitionInfo } from '../definition-info/parser';
 import { buildSchemaDefinitionRef } from '../definition-info/ref';
 import type { SchemaDefinitionInfo } from '../definition-info/types';
 import { SchemaForgeErrors, type SchemaForgeValidationContextBase } from '../efc';
-import { SFG_CONFIG_DEFAULTS } from '../schema-generator/types';
+import { SF_EXTRA_JSS_TAG_NAME, SFG_CONFIG_DEFAULTS } from '../schema-generator/types';
 import type {
     SchemaForgeDefinitionRef,
     SchemaForgeValidationFunction,
@@ -207,9 +207,15 @@ export function createSchemaForgeRegistry(
     }
 
     function readSchemaKeywords(schema: JSONSchema7) {
-        const result = new Set<string>();
+        const result = new Map<SF_EXTRA_JSS_TAG_NAME>();
         for (const tag of SFG_CONFIG_DEFAULTS.extraTags) {
-            if (tag in schema) result.add(tag);
+            if (tag in schema) {
+                result.set(
+                    tag,
+                    // @ts-expect-error It's OK
+                    schema[tag],
+                );
+            }
         }
         return result;
     }

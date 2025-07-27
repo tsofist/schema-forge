@@ -5,6 +5,7 @@ import type { Options as AjvOptions } from 'ajv/dist/core';
 import type { JSONSchema7 } from 'json-schema';
 import type { SchemaDefinitionInfo } from '../definition-info/types';
 import type { SchemaForgeValidationContextBase } from '../efc';
+import type { SF_EXTRA_JSS_TAG_NAME } from '../schema-generator/types';
 import type {
     SchemaForgeDefinitionRef,
     SchemaForgeValidationFunction,
@@ -14,7 +15,7 @@ import type {
 
 export type SchemaForgeRegistryListDefinitionsPredicate = (
     info: SchemaDefinitionInfo,
-    keywords: Set<string>,
+    keywords: ReadonlyMap<SF_EXTRA_JSS_TAG_NAME, unknown>,
 ) => boolean;
 
 export interface SchemaForgeRegistry {

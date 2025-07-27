@@ -27,6 +27,8 @@ export const SFG_CONFIG_DEFAULTS = {
     functions: 'hide',
 } as const satisfies Config;
 
+export type SF_EXTRA_JSS_TAG_NAME = (typeof SFG_CONFIG_DEFAULTS)['extraTags'][number];
+
 export const SFG_CONFIG_MANDATORY = {
     jsDoc: 'extended',
     topRef: true,
