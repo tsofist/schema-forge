@@ -1,14 +1,17 @@
 import { createHash } from 'node:crypto';
 import { readFile, unlink, writeFile } from 'node:fs/promises';
-import type { URec } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
 import { raise } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
 import { randomString } from '@tsofist/stem/lib/string/random';
-import type { SchemaObject } from 'ajv';
 import { KEEP_GEN_ARTEFACTS } from '../artefacts-policy';
 import { buildSchemaDefinitionRef } from '../definition-info/ref';
-import type { SchemaForgeMetadata, ForgeSchemaResult, ForgeSchemaOptions } from '../types';
+import type {
+    ForgedSchema,
+    ForgeSchemaOptions,
+    ForgeSchemaResult,
+    SchemaForgeMetadata,
+} from '../types';
 import { generateDraftTypeFiles } from './generate-drafts';
 import { generateSchemaByDraftTypes } from './generate-schema';
 
@@ -48,7 +51,7 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
 
         const refs = definitions.map((item) => buildSchemaDefinitionRef(item, options.schemaId));
 
-        let schema: SchemaObject | undefined;
+        let schema: ForgedSchema | undefined;
 
         try {
             {
@@ -60,6 +63,7 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
                         ...options,
                     })),
                     ...(options.schemaMetadata || {}),
+                    hash: undefined,
                 };
 
                 {
@@ -95,7 +99,7 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
                     serviceNames: {},
                 };
 
-                const defs = new Set(Object.keys((schema.definitions || {}) as URec));
+                const defs = new Set(Object.keys(schema.definitions || {}));
                 for (const name of definitions) {
                     const ref = buildSchemaDefinitionRef(name, options.schemaId);
                     map.names[name] = ref;

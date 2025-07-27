@@ -38,7 +38,7 @@ export function createFakeGeneratorHost(
         generator.option({
             alwaysFakeOptionals: true,
             refDepthMax: 1_000,
-            pruneProperties: ['dbEntity', 'dbIndex', 'dbColumn'],
+            pruneProperties: ['dbEntity', 'dbIndex', 'dbColumn', 'dbFK'],
             ...options,
             resolveJsonPath: false,
         });

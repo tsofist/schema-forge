@@ -29,6 +29,7 @@ export interface DBMLGeneratorOptions {
     //  * @deprecated use notes
     //  */
     includeNotes?: boolean;
+    columnsOrder?: string[];
     // todo implement
     // notes?:
     //     | boolean
@@ -152,6 +153,9 @@ export type DBMLIndexOptions = {
 export type DBMLIndexOptionsDef<B extends boolean = boolean> = ArrayMay<
     DBMLIndexOptions | string | B
 >;
+
+export type DBMLForeignKeyOptionsDef = boolean;
+export type DBMLForeignKeyOptions = DBMLForeignKeyOptionsDef;
 
 /**
  * Database entity options.

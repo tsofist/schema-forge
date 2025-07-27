@@ -1,7 +1,7 @@
 import './extended-annotations-reader';
-import { URec } from '@tsofist/stem';
+import type { ARec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
-import Ajv, { SchemaObject } from 'ajv';
+import Ajv from 'ajv';
 import { JSONPath } from 'jsonpath-plus';
 import {
     AnnotatedType,
@@ -37,7 +37,7 @@ import {
     TypeFlags,
     TypeQueryNode,
 } from 'typescript';
-import { ForgeSchemaOptions } from '../types';
+import type { ForgedSchema, ForgeSchemaOptions } from '../types';
 import { readJSDocDescription } from './helpers-tsc';
 import { shrinkDefinitionName } from './shrink-definition-name';
 import { sortSchemaProperties } from './sort-properties';
@@ -46,7 +46,7 @@ import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY, TMP_FILES_SUFFIX } from './t
 /**
  * @internal
  */
-export async function generateSchemaByDraftTypes(options: InternalOptions): Promise<SchemaObject> {
+export async function generateSchemaByDraftTypes(options: InternalOptions): Promise<ForgedSchema> {
     {
         const seen = new Set<string>();
         for (const name of options.definitions) {
@@ -77,7 +77,7 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
     });
     const formatter = createFormatter(options.sourcesTypesGeneratorConfig);
     const generator = new SchemaGenerator(generatorProgram, parser, formatter, generatorConfig);
-    const result: SchemaObject = {
+    const result: ForgedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         $id: options.schemaId,
         hash: '',
@@ -85,12 +85,12 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
         description: undefined,
         version: undefined,
         $comment: undefined,
-        definitions: {},
     } as const;
+    const defs = (result.definitions ??= {});
 
     for (const definitionName of options.definitions) {
         const schema = generator.createSchema(definitionName);
-        Object.assign(result.definitions, schema.definitions);
+        Object.assign(defs, schema.definitions);
     }
 
     const shrinkDefinitionNames = !options.shrinkDefinitionNames
@@ -101,19 +101,16 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
 
     if (shrinkDefinitionNames) {
         const replacement = new Set<string>();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        for (const name of Object.keys(result.definitions)) {
+        for (const name of Object.keys(defs)) {
             const shortName = shrinkDefinitionNames(name);
             if (shortName) {
-                if (replacement.has(shortName) || shortName in result.definitions) {
+                if (replacement.has(shortName) || shortName in defs) {
                     raise(`Duplicate replacement definition name: ${shortName}`);
                 }
 
                 // rename property
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                result.definitions[shortName] = result.definitions[name];
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                delete result.definitions[name];
+                defs[shortName] = defs[name];
+                delete defs[name];
 
                 // rename references
                 const targets: { $ref: string }[] = JSONPath({
@@ -131,9 +128,7 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
         }
     }
 
-    result.definitions = Object.fromEntries(
-        Object.entries((result.definitions || {}) as URec).sort(),
-    );
+    result.definitions = Object.fromEntries(Object.entries((defs || {}) as ARec).sort());
 
     if (options.sortObjectProperties) sortSchemaProperties(result.definitions);
 

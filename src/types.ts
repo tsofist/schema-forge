@@ -1,6 +1,13 @@
-import type { NonEmptyString, Nullable, PRec } from '@tsofist/stem';
-import type { ErrorObject, ErrorsTextOptions, SchemaObject, ValidateFunction } from 'ajv';
+import type { NonEmptyString, Nullable, PRec, Reintroduce } from '@tsofist/stem';
+import type { ErrorObject, ErrorsTextOptions, ValidateFunction } from 'ajv';
+import type { JSONSchema7 as Schema } from 'json-schema';
 import type { Config } from 'ts-json-schema-generator';
+import type {
+    DBMLColumnOptions,
+    DBMLEntityOptionsDef,
+    DBMLForeignKeyOptions,
+    DBMLIndexOptionsDef,
+} from './dbml-generator/types';
 
 export interface ForgeSchemaOptions {
     /**
@@ -122,8 +129,36 @@ export interface SchemaForgeMetadata {
     serviceNames: PRec<SchemaForgeDefinitionRef>;
 }
 
+const ForgedSchemaDraft7Id = 'http://json-schema.org/draft-07/schema#';
+
+export type ForgedSchema = Reintroduce<
+    Schema,
+    {
+        $schema: typeof ForgedSchemaDraft7Id;
+        $id?: string;
+        $comment?: string;
+        hash?: string;
+        title?: string;
+        description?: string;
+        version?: string;
+        $defs?: PRec<Schema>;
+        definitions?: PRec<Schema>;
+    }
+>;
+
+export type ForgedEntitySchema = Schema & {
+    dbEntity?: DBMLEntityOptionsDef;
+    properties?: PRec<ForgedEntitySchema>;
+};
+
+export type ForgedPropertySchema = Schema & {
+    dbFK?: DBMLForeignKeyOptions;
+    dbIndex?: DBMLIndexOptionsDef;
+    dbColumn?: DBMLColumnOptions;
+};
+
 export interface ForgeSchemaResult {
-    schema: SchemaObject;
+    schema: ForgedSchema;
     refs: readonly SchemaForgeDefinitionRef[];
     generatedTemporaryFiles: readonly string[];
     generatedNamesBySourceFile: ReadonlyMap<string, ReadonlySet<string>>;

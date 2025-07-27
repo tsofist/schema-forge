@@ -1,6 +1,7 @@
 import { unlink } from 'node:fs/promises';
 import { readErrorCode, readErrorContext } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
+import { keysOf } from '@tsofist/stem/lib/object/keys';
 import { pickProps } from '@tsofist/stem/lib/object/pick';
 import { SchemaObject } from 'ajv';
 import { KEEP_SPEC_ARTEFACTS } from '../artefacts-policy';
@@ -13,8 +14,8 @@ import {
 } from '../efc';
 import { loadJSONSchema } from '../schema-registry/loader';
 import { createSchemaForgeRegistry } from '../schema-registry/registry';
-import { SchemaForgeRegistry } from '../schema-registry/types';
-import { ForgeSchemaResult, ForgeSchemaOptions } from '../types';
+import type { SchemaForgeRegistry } from '../schema-registry/types';
+import type { ForgeSchemaOptions, ForgeSchemaResult } from '../types';
 import { forgeSchema } from './forge';
 
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
@@ -61,7 +62,7 @@ describe('generator for a8', () => {
     it('generated schema should have correct metadata', () => {
         expect(forgeSchemaResult).toBeTruthy();
         const schema = forgeSchemaResult!.schema;
-        expect(pickProps(schema, Object.keys(schemaMetadata))).toStrictEqual(schemaMetadata);
+        expect(pickProps(schema, keysOf(schemaMetadata))).toStrictEqual(schemaMetadata);
     });
 
     it('generated schema should be valid', () => {
@@ -112,7 +113,7 @@ describe('generator for a7', () => {
     it('generated schema should have correct metadata', () => {
         expect(forgeSchemaResult).toBeTruthy();
         const schema = forgeSchemaResult!.schema;
-        expect(pickProps(schema, Object.keys(schemaMetadata))).toStrictEqual(schemaMetadata);
+        expect(pickProps(schema, keysOf(schemaMetadata))).toStrictEqual(schemaMetadata);
     });
 
     it('generated schema should be valid', () => {
@@ -288,7 +289,7 @@ describe('generator for a5', () => {
         expect(forgeSchemaResult).toBeTruthy();
         const defs = forgeSchemaResult?.schema?.definitions;
         expect(defs).toBeTruthy();
-        expect(Object.keys(defs)).toStrictEqual([
+        expect(keysOf(defs)).toStrictEqual([
             'DomainNum',
             'DomainValue',
             'DomainValuesType',
@@ -346,10 +347,12 @@ describe('generator for a5', () => {
                 },
                 indexedField1: {
                     dbIndex: 'ix_some_indexed_field',
+                    dbFK: true,
                     type: 'number',
                 },
                 indexedField2: {
                     dbIndex: true,
+                    dbFK: false,
                     type: 'number',
                 },
                 indexedField3: {
@@ -426,7 +429,7 @@ describe('generator for a4', () => {
         expect(forgeSchemaResult).toBeTruthy();
         const defs = forgeSchemaResult?.schema?.definitions;
         expect(defs).toBeTruthy();
-        expect(Object.keys(defs)).toStrictEqual(['API', 'Enum', 'FormatMode', 'Some', 'Some2']);
+        expect(keysOf(defs)).toStrictEqual(['API', 'Enum', 'FormatMode', 'Some', 'Some2']);
     });
 });
 
@@ -466,29 +469,30 @@ describe('generator for a3', () => {
 
     it('interface generics should works', () => {
         const props =
-            forgeSchemaResult!.schema.definitions?.InterfaceWithGeneric__APIInterface.properties;
+            forgeSchemaResult!.schema.definitions?.InterfaceWithGeneric__APIInterface?.properties;
         expect(props).toBeTruthy();
-        expect(props.propWithGeneric).toBeTruthy();
-        expect(props.propWithGeneric.$ref).toStrictEqual('#/definitions/NonEmptyString');
+        expect(props!.propWithGeneric).toBeTruthy();
+        // @ts-expect-error It's a test
+        expect(props!.propWithGeneric.$ref).toStrictEqual('#/definitions/NonEmptyString');
     });
     it('optional args in API methods should works', () => {
         {
             const props = forgeSchemaResult!.schema.definitions?.API_methodG0__APIMethodArgs;
             expect(props).toBeTruthy();
-            expect(props.minItems).toStrictEqual(0);
-            expect(props.maxItems).toStrictEqual(1);
+            expect(props!.minItems).toStrictEqual(0);
+            expect(props!.maxItems).toStrictEqual(1);
         }
         {
             const props = forgeSchemaResult!.schema.definitions?.API_methodG1__APIMethodArgs;
             expect(props).toBeTruthy();
-            expect(props.minItems).toStrictEqual(0);
-            expect(props.maxItems).toStrictEqual(2);
+            expect(props!.minItems).toStrictEqual(0);
+            expect(props!.maxItems).toStrictEqual(2);
         }
         {
             const props = forgeSchemaResult!.schema.definitions?.API_methodG2__APIMethodArgs;
             expect(props).toBeTruthy();
-            expect(props.minItems).toStrictEqual(1);
-            expect(props.maxItems).toStrictEqual(2);
+            expect(props!.minItems).toStrictEqual(1);
+            expect(props!.maxItems).toStrictEqual(2);
         }
         // {
         //     const props = forgeSchemaResult!.schema.definitions?.API_methodG3__APIMethodArgs;
@@ -505,9 +509,9 @@ describe('generator for a3', () => {
     });
 
     it('extends should works', () => {
-        const props = forgeSchemaResult!.schema.definitions?.BAPI__APIInterface.properties;
+        const props = forgeSchemaResult!.schema.definitions?.BAPI__APIInterface?.properties;
         expect(props).toBeTruthy();
-        expect(Object.keys(props)).toStrictEqual([
+        expect(keysOf(props)).toStrictEqual([
             'propertyA',
             'propertyB',
             'propertyC',

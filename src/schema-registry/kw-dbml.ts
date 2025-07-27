@@ -24,6 +24,10 @@ const DBMLIndexOptionsProperties: Rec<JSONSchema7, keyof DBMLIndexOptions> = {
     comment: { type: 'string' },
 } as const;
 
+const DBMLForeignKeySchema = {
+    type: ['boolean'],
+};
+
 const DBMLIndexSchema = {
     type: ['string', 'boolean', 'object', 'array'],
     pattern: NP_IX,
@@ -45,6 +49,10 @@ DBMLIndexSchema.items = {
 } as const satisfies JSONSchema7;
 
 export const SFRDBMLKeywords: readonly KeywordDefinition[] = [
+    {
+        keyword: 'dbFK',
+        metaSchema: DBMLForeignKeySchema,
+    },
     {
         keyword: 'dbIndex',
         metaSchema: DBMLIndexSchema,

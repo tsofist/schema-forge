@@ -17,6 +17,7 @@ export const SFG_CONFIG_DEFAULTS = {
         'dbColumn',
         'dbIndex',
         'dbEntity',
+        'dbFK',
         //
         'faker',
     ],

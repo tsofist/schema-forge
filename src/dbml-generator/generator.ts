@@ -15,10 +15,9 @@ import {
 } from '../schema-dereference/cache';
 import { dereferenceSchema } from '../schema-dereference/dereference';
 import type { SchemaForgeRegistry } from '../schema-registry/types';
-import {
-    DBMLColumnOptions,
+import type { ForgedEntitySchema, ForgedPropertySchema } from '../types';
+import type {
     DBMLEntityOptions,
-    DBMLEntityOptionsDef,
     DBMLGeneratorOptions,
     DBMLIndexOptions,
     DBMLIndexOptionsDef,
@@ -139,6 +138,7 @@ function generateTable(
 ): TableSpec | undefined {
     const includeNotes = options.includeNotes ?? false;
     const entityTypeName = info.type;
+    const columnsOrder = options.columnsOrder || DefaultColumnsOrder;
     const entitySchema = (dereferencedRootSchema.definitions || dereferencedRootSchema.$defs)?.[
         entityTypeName
     ];
@@ -150,7 +150,14 @@ function generateTable(
     if (!tableName) return;
 
     const { properties, required } = listProperties(entitySchema);
-    const columns = generateColumns(properties, required, includeNotes, info.schemaId, tableName);
+    const columns = generateColumns(
+        properties,
+        required,
+        includeNotes,
+        info.schemaId,
+        tableName,
+        columnsOrder,
+    );
     const indexes = generateIndexes(
         tableName,
         properties,
@@ -189,18 +196,19 @@ function generateTable(
 }
 
 function generateColumns(
-    properties: PRec<PropertySchema>,
+    properties: PRec<ForgedPropertySchema>,
     requiredFields: string[],
     notes: boolean,
     schemaId: string,
     tableName: string,
+    columnsOrder: string[],
 ): TextBuilder {
     const text = new TextBuilder();
     let count = 0;
 
     for (const [key, property] of entries(properties).sort(([keyA], [keyB]) => {
-        const indexA = SortableFields.indexOf(keyA);
-        const indexB = SortableFields.indexOf(keyB);
+        const indexA = columnsOrder.indexOf(keyA);
+        const indexB = columnsOrder.indexOf(keyB);
         if (indexA === -1 && indexB === -1) return 0;
         else if (indexA === -1) return 1;
         else if (indexB === -1) return -1;
@@ -238,7 +246,7 @@ function generateColumns(
 
 function generateColumnAttributes(
     _key: string,
-    property: PropertySchema,
+    property: ForgedPropertySchema,
     isRequired: boolean,
     isColumnNullable: boolean,
     notes: boolean,
@@ -281,7 +289,7 @@ function generateColumnAttributes(
 
 function generateIndexes(
     tableName: string,
-    schemaProperties: PRec<PropertySchema>,
+    schemaProperties: PRec<ForgedPropertySchema>,
     entityIndexes: DBMLEntityOptions['indexes'],
     includeNotes: boolean,
     schemaId: string,
@@ -393,7 +401,7 @@ function generateIndexes(
     return text;
 }
 
-function readDBEntityName({ dbEntity }: DBEntitySchema): string | undefined {
+function readDBEntityName({ dbEntity }: ForgedEntitySchema): string | undefined {
     if (dbEntity) {
         if (typeof dbEntity === 'string') return dbEntity;
         if (dbEntity.name) return dbEntity.name;
@@ -401,7 +409,7 @@ function readDBEntityName({ dbEntity }: DBEntitySchema): string | undefined {
     return undefined;
 }
 
-function readDBEntityIndexes({ dbEntity }: DBEntitySchema): DBMLEntityOptions['indexes'] {
+function readDBEntityIndexes({ dbEntity }: ForgedEntitySchema): DBMLEntityOptions['indexes'] {
     if (dbEntity != null && typeof dbEntity === 'object') {
         return dbEntity.indexes;
     }
@@ -434,7 +442,7 @@ function isNullable(property: Schema): boolean {
 
 let DereferenceSchemaCache: SchemaDereferenceSharedCache | undefined;
 
-function getDBType(property: PropertySchema, schemaId: string): string {
+function getDBType(property: ForgedPropertySchema, schemaId: string): string {
     if (property.dbColumn?.type) return property.dbColumn.type;
 
     let type = property.type as string | undefined;
@@ -478,13 +486,13 @@ function getDBType(property: PropertySchema, schemaId: string): string {
 
 function listProperties(schema: Schema): {
     type: 'object';
-    properties: PRec<PropertySchema>;
+    properties: PRec<ForgedPropertySchema>;
     required: string[];
 } {
     if (schema.properties) {
         return {
             type: 'object',
-            properties: schema.properties as PRec<PropertySchema>,
+            properties: schema.properties as PRec<ForgedPropertySchema>,
             required: schema.required || [],
         };
     }
@@ -502,7 +510,7 @@ function listProperties(schema: Schema): {
         };
     }
 
-    const propertiesMap: PRec<PropertySchema> = {};
+    const propertiesMap: PRec<ForgedPropertySchema> = {};
     const requiredSet = new Set<string>();
     const initialized = false;
 
@@ -513,7 +521,7 @@ function listProperties(schema: Schema): {
 
         if (!initialized) {
             for (const name of Object.keys(item.properties)) {
-                propertiesMap[name] = item.properties[name] as PropertySchema;
+                propertiesMap[name] = item.properties[name] as ForgedPropertySchema;
             }
             for (const name of item.required || []) {
                 requiredSet.add(name);
@@ -538,46 +546,11 @@ function listProperties(schema: Schema): {
 }
 
 const DefaultScopeName = 'Default';
-
-// todo REMOVE THIS
-const SortableFields = [
-    'uid',
-    'slug',
-    'system',
-    'created',
-    'updated',
-    'deleted',
-    'position',
-    'priority',
-    'creator',
-    'active',
-    'name',
-    'kind',
-    'validity',
-    'location',
-    'visual',
-    'integration',
-    'refs',
-    'seo',
-    'contacts',
-    'content',
-] as const;
+const DefaultColumnsOrder = ['id', 'uid', 'slug', 'name'];
 
 type TableSpec = {
     name: string;
     value: string;
-};
-
-type PropertySchema = Schema & {
-    dbIndex?: DBMLIndexOptionsDef;
-    dbColumn?: DBMLColumnOptions;
-};
-
-type DBEntitySchema = Schema & {
-    dbEntity?: DBMLEntityOptionsDef;
-    properties?: PRec<PropertySchema>;
-    anyOf?: Schema[];
-    oneOf?: Schema[];
 };
 
 // todo escape notes!

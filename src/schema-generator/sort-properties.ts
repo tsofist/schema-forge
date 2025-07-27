@@ -1,9 +1,9 @@
 import type { URec } from '@tsofist/stem';
 import { isEmptyObject } from '@tsofist/stem/lib/object/is-empty';
 import { compareStringsAsc } from '@tsofist/stem/lib/string/compare';
-import type { JSONSchema7Object } from 'json-schema';
+import type { JSONSchema7, JSONSchema7Object } from 'json-schema';
 
-export function sortSchemaProperties<T extends JSONSchema7Object>(schema: T): T {
+export function sortSchemaProperties<T extends JSONSchema7Object | JSONSchema7>(schema: T): T {
     const stack: T[] = [];
 
     const isTarget = (

@@ -56,10 +56,12 @@ export interface Some {
     //
     abnormalNames: NamesTypeAbnormal;
     /**
+     * @dbFK
      * @dbIndex ix_some_indexed_field
      */
     indexedField1: number;
     /**
+     * @dbFK false
      * @dbIndex
      */
     indexedField2: number;
