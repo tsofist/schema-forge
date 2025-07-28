@@ -12,6 +12,7 @@ import {
     SchemaForgeSchemaNotFoundErrorContext,
     SchemaForgeValidationErrorContext,
 } from '../efc';
+import { dereferenceSchema } from '../schema-dereference/dereference';
 import { loadJSONSchema } from '../schema-registry/loader';
 import { createSchemaForgeRegistry } from '../schema-registry/registry';
 import type { SchemaForgeRegistry } from '../schema-registry/types';
@@ -226,8 +227,9 @@ describe('generator for a6', () => {
         });
 
         expect(registry.getValidator('test#/definitions/CollectionItemID2')!.schema).toStrictEqual({
+            $ref: '#/definitions/UUID',
             format: 'uuid',
-            type: 'string',
+            description: 'This is Collection item ID (non-inherits from UUID)',
         });
 
         {
@@ -293,11 +295,13 @@ describe('generator for a5', () => {
             'DomainNum',
             'DomainValue',
             'DomainValuesType',
+            'FKColumn',
             'NT', // 'NamesType',
             'NamesTypeAbnormal',
             'NumN',
             'Nums',
             'Some',
+            'UUID',
             'Variadic',
             'Variadic1',
             'VariadicList',
@@ -309,6 +313,12 @@ describe('generator for a5', () => {
         });
         expect(registry.getValidator('test#/definitions/NamesTypeAbnormal')!.schema).toStrictEqual({
             type: 'string',
+        });
+        expect(registry.getValidator('test#/definitions/FKColumn')!.schema).toStrictEqual({
+            $ref: '#/definitions/UUID',
+            dbFK: true,
+            description: 'Foreign Key Column Type.',
+            format: 'uuid',
         });
         expect(registry.getValidator('test#/definitions/Some')!.schema).toStrictEqual({
             type: 'object',
@@ -378,6 +388,18 @@ describe('generator for a5', () => {
                     ],
                     type: 'number',
                 },
+                ref0: {
+                    $ref: '#/definitions/UUID',
+                    dbFK: true,
+                    description: 'Inline Foreign Key',
+                },
+                ref1: {
+                    $ref: '#/definitions/FKColumn',
+                },
+                ref2: {
+                    $ref: '#/definitions/FKColumn',
+                    description: 'Inline Foreign Key (2)',
+                },
             },
             required: [
                 'vals',
@@ -394,9 +416,34 @@ describe('generator for a5', () => {
                 'indexedField2',
                 'indexedField3',
                 'indexedField4',
+                'ref0',
+                'ref1',
+                'ref2',
             ],
             additionalProperties: false,
             dbEntity: 'cmn.some',
+        });
+    });
+
+    it('should works with dereferenced schema', () => {
+        const v = dereferenceSchema(registry.getRootSchema('test')!)!.definitions!['Some'] as any;
+        expect(v.properties.ref0).toStrictEqual({
+            type: 'string',
+            format: 'uuid',
+            description: 'Inline Foreign Key',
+            dbFK: true,
+        });
+        expect(v.properties.ref1).toStrictEqual({
+            type: 'string',
+            format: 'uuid',
+            description: 'Foreign Key Column Type.',
+            dbFK: true,
+        });
+        expect(v.properties.ref2).toStrictEqual({
+            type: 'string',
+            format: 'uuid',
+            description: 'Inline Foreign Key (2)',
+            dbFK: true,
         });
     });
 });

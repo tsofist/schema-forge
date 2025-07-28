@@ -63,21 +63,25 @@ export function dereferenceSchema(
                 return replacement;
             }
 
-            if (seen.has(resolvedSchema)) return seen.get(resolvedSchema);
+            // if (seen.has(resolvedSchema)) return seen.get(resolvedSchema); // todo?
 
             if (Array.isArray(resolvedSchema)) {
+                if (seen.has(resolvedSchema)) return seen.get(resolvedSchema);
                 const resolvedArray = resolve(resolvedSchema, current.$ref);
                 seen.set(resolvedSchema, resolvedArray);
                 return resolvedArray;
             }
 
+            const { $ref, ...additionalProps } = current;
             const placeholder = {};
             seen.set(current, placeholder);
 
             const result = {
                 ...resolvedSchema,
                 ...resolve(resolvedSchema, current.$ref),
+                ...additionalProps,
             };
+            delete result.$ref; // !
 
             Object.assign(placeholder, result);
             seen.set(resolvedSchema, result);

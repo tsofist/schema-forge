@@ -8,13 +8,13 @@ import {
     isTypeReferenceNode,
     isUnionTypeNode,
     Node,
-    TypeChecker,
     SymbolFlags,
+    TypeChecker,
 } from 'typescript';
-import { hasJSDocTag } from './helpers-tsc';
 
 {
     // Support for @inheritDoc tag to enforce inheritance of annotations
+    // todo rework
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const getAnnotations = ExtendedAnnotationsReader.prototype.getAnnotations;
@@ -22,7 +22,7 @@ import { hasJSDocTag } from './helpers-tsc';
     ExtendedAnnotationsReader.prototype.getAnnotations = function getAnnotationsWithInheritance(
         node: Node,
     ): Annotations | undefined {
-        if (!hasJSDocTag(node, 'inheritDoc')) return getAnnotations.call(this, node);
+        // if (!hasJSDocTag(node, 'inheritDoc')) return getAnnotations.call(this, node);
 
         // @ts-expect-error access to private property
         const checker = (this.typeChecker as TypeChecker) || raise('TypeChecker is not available');

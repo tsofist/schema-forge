@@ -1,3 +1,4 @@
+import { UUID } from '@tsofist/stem/lib/crypto/uuid/types';
 import { NumN } from './types';
 
 /**
@@ -78,4 +79,20 @@ export interface Some {
      * ]
      */
     indexedField4: number;
+    /**
+     * Inline Foreign Key
+     * @dbFK
+     */
+    ref0: UUID;
+    ref1: FKColumn;
+    /**
+     * Inline Foreign Key (2)
+     */
+    ref2: FKColumn;
 }
+
+/**
+ * Foreign Key Column Type.
+ * @dbFK
+ */
+export type FKColumn = UUID;
