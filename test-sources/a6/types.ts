@@ -8,6 +8,9 @@ export type CollectionItem = {
     f3: CollectionItemID1[];
     f4: UUID[];
     f5: Rec<number, CollectionItemID1>;
+    f6: Rec<number, CollectionItemID4>;
+    f7: Rec<number, CollectionItemID6>;
+    f8: Rec<number, CollectionItemID7>;
 };
 
 /**
@@ -18,9 +21,36 @@ export type CollectionItem = {
 export type CollectionItemID1 = UUID;
 /**
  * This is Collection item ID (non-inherits from UUID)
+ * @comment This is a comment for CollectionItemID2
  * @public
  */
 export type CollectionItemID2 = UUID;
+/** @public */
+export type CollectionItemID3 = UUID;
+/**
+ * This is Collection item ID (non-inherits from UUID)
+ * @dbFK
+ * @format uuid
+ * @public
+ */
+export type CollectionItemID7 = UUID;
+/**
+ * This is Collection item ID (non-inherits from UUID)
+ * @dbFK
+ * @public
+ */
+export type CollectionItemID6 = UUID;
+/**
+ * This is Collection item ID (non-inherits from UUID)
+ * @format uuid
+ * @public
+ */
+export type CollectionItemID4 = UUID;
+/**
+ * This is Collection item ID (non-inherits from UUID)
+ * @public
+ */
+export type CollectionItemID5 = UUID;
 
 /**
  * Col #2

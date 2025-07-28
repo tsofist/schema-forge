@@ -226,10 +226,39 @@ describe('generator for a6', () => {
             description: 'This is Collection item ID (inherits from UUID)',
         });
 
-        expect(registry.getValidator('test#/definitions/CollectionItemID2')!.schema).toStrictEqual({
+        expect(registry.getSchema('test#/definitions/CollectionItemID2')).toStrictEqual({
             $ref: '#/definitions/UUID',
-            format: 'uuid',
             description: 'This is Collection item ID (non-inherits from UUID)',
+            $comment: 'This is a comment for CollectionItemID2',
+        });
+
+        expect(registry.getSchema('test#/definitions/CollectionItemID3')).toStrictEqual({
+            format: 'uuid',
+            type: 'string',
+        });
+
+        expect(registry.getSchema('test#/definitions/CollectionItemID4')).toStrictEqual({
+            $ref: '#/definitions/UUID',
+            description: 'This is Collection item ID (non-inherits from UUID)',
+            format: 'uuid',
+        });
+
+        expect(registry.getSchema('test#/definitions/CollectionItemID6')).toStrictEqual({
+            $ref: '#/definitions/UUID',
+            description: 'This is Collection item ID (non-inherits from UUID)',
+            dbFK: true,
+        });
+
+        expect(registry.getSchema('test#/definitions/CollectionItemID7')).toStrictEqual({
+            $ref: '#/definitions/UUID',
+            description: 'This is Collection item ID (non-inherits from UUID)',
+            dbFK: true,
+            format: 'uuid',
+        });
+
+        expect(registry.getSchema('test#/definitions/CollectionItemID5')).toStrictEqual({
+            format: 'uuid',
+            type: 'string',
         });
 
         {
@@ -249,6 +278,37 @@ describe('generator for a6', () => {
             expect((rec as any).propertyNames).toStrictEqual({
                 format: 'uuid',
                 description: 'This is Collection item ID (inherits from UUID)',
+            });
+        }
+        {
+            const rec = registry.getValidator(
+                'test#/definitions/Rec<number,CollectionItemID4>',
+            )!.schema;
+            expect(rec).toBeTruthy();
+            expect((rec as any).propertyNames).toStrictEqual({
+                format: 'uuid',
+                description: 'This is Collection item ID (non-inherits from UUID)',
+            });
+        }
+        {
+            const rec = registry.getValidator(
+                'test#/definitions/Rec<number,CollectionItemID6>',
+            )!.schema;
+            expect(rec).toBeTruthy();
+            expect((rec as any).propertyNames).toStrictEqual({
+                dbFK: true,
+                description: 'This is Collection item ID (non-inherits from UUID)',
+            });
+        }
+        {
+            const rec = registry.getValidator(
+                'test#/definitions/Rec<number,CollectionItemID7>',
+            )!.schema;
+            expect(rec).toBeTruthy();
+            expect((rec as any).propertyNames).toStrictEqual({
+                dbFK: true,
+                format: 'uuid',
+                description: 'This is Collection item ID (non-inherits from UUID)',
             });
         }
     });
@@ -318,7 +378,7 @@ describe('generator for a5', () => {
             $ref: '#/definitions/UUID',
             dbFK: true,
             description: 'Foreign Key Column Type.',
-            format: 'uuid',
+            // format: 'uuid',
         });
         expect(registry.getValidator('test#/definitions/Some')!.schema).toStrictEqual({
             type: 'object',
