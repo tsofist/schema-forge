@@ -56,14 +56,6 @@ import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY, TMP_FILES_SUFFIX } from './t
  * @internal
  */
 export async function generateSchemaByDraftTypes(options: InternalOptions): Promise<ForgedSchema> {
-    {
-        const seen = new Set<string>();
-        for (const name of options.definitions) {
-            if (seen.has(name)) raise(`Definition ${name} is duplicated`);
-            seen.add(name);
-        }
-    }
-
     const allowUseFallbackDescription = options.allowUseFallbackDescription;
     const generatorConfig: CompletedConfig = {
         ...DEFAULT_CONFIG,
