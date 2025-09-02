@@ -123,6 +123,14 @@ export interface ForgeSchemaOptions {
      * @default false
      */
     readonly skipTypeCheck?: boolean;
+    /**
+     * Suppress errors about multiple definitions with the same name.
+     * By default, an error is thrown if multiple definitions with the same name are found.
+     * This option can be useful in monorepo setups where multiple packages may have types with the same name.
+     *
+     * @default false
+     */
+    readonly suppressMultipleDefinitionsErrors?: boolean;
 }
 
 export type ForgedSchemaDefinitionShortName = `DSN${string}_H${string}`;

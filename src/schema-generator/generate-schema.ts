@@ -90,10 +90,6 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
 
     patchEnumNodeParser(parser, typeChecker, enumMetadataMap, allowUseFallbackDescription);
 
-    const formatter = createFormatter(options.sourcesTypesGeneratorConfig, (formatter) => {
-        formatter.addTypeFormatter(new EnumTypeFormatterEx(enumMetadataMap));
-    });
-    const generator = new SchemaGeneratorEx(generatorProgram, parser, formatter, generatorConfig);
     const result: ForgedSchema = {
         $schema: 'http://json-schema.org/draft-07/schema#',
         $id: options.schemaId,
@@ -104,6 +100,14 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
         $comment: undefined,
     } as const;
     const defs = (result.definitions ??= {});
+    const formatter = createFormatter(options.sourcesTypesGeneratorConfig, (formatter) => {
+        formatter.addTypeFormatter(new EnumTypeFormatterEx(enumMetadataMap));
+    });
+    const generator = new SchemaGeneratorEx(generatorProgram, parser, formatter, generatorConfig);
+
+    if (options.suppressMultipleDefinitionsErrors) {
+        generator.setMultipleDefinitionsErrorSuppression(true);
+    }
 
     for (const definitionName of options.definitions) {
         const schema = generator.createSchema(definitionName);
@@ -284,6 +288,12 @@ class ArrayLiteralExpressionIdentifierParser implements SubNodeParser {
 }
 
 class SchemaGeneratorEx extends SchemaGenerator {
+    #multipleDefinitionsErrorSuppression = false;
+
+    setMultipleDefinitionsErrorSuppression(value: boolean) {
+        this.#multipleDefinitionsErrorSuppression = value;
+    }
+
     protected override appendRootChildDefinitions(
         rootType: BaseType,
         childDefinitions: StringMap<Definition>,
@@ -292,8 +302,9 @@ class SchemaGeneratorEx extends SchemaGenerator {
             super.appendRootChildDefinitions(rootType, childDefinitions);
         } catch (e) {
             if (e instanceof MultipleDefinitionsError) {
-                // console.log('DUPL:', e.defA.getName()); // todo
+                if (this.#multipleDefinitionsErrorSuppression) return;
             }
+            throw e;
         }
     }
 }
