@@ -5,7 +5,6 @@ import type { SF_EXTRA_JSS_TAG_NAME } from '../schema-generator/types';
 
 const FakerModulePattern = '^[a-zA-Z.]+$';
 const NP_ENUM_KEY = '^[a-zA-Z0-9-\\._]+$';
-const NP_ENUM_VALUE = '^[a-zA-Z0-9-\\._:]+$';
 
 export const SFRCommonKeywords: readonly KeywordDefinition[] = [
     {
@@ -58,7 +57,7 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
                 minItems: 1,
                 maxItems: 3,
                 items: [
-                    { title: 'value', type: ['string', 'number'], pattern: NP_ENUM_VALUE },
+                    { title: 'value', type: ['string', 'number'] },
                     { title: 'note', type: 'string' },
                     { title: 'comment', type: 'string' },
                 ],
