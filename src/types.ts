@@ -156,6 +156,7 @@ export type ForgedSchema = Reintroduce<
         $schema: typeof ForgedSchemaDraft7Id;
         hash?: string;
         version?: string;
+        repository?: string;
         //
         $defs?: Rec<ForgedSchemaDefinition>;
         definitions?: Rec<ForgedSchemaDefinition>;

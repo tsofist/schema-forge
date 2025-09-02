@@ -24,6 +24,7 @@ export const SFG_EXTRA_TAGS = [
     //
     'version',
     'hash',
+    'repository',
 ] as const;
 
 export const SFG_CONFIG_DEFAULTS = {

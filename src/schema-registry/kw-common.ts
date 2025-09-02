@@ -18,6 +18,11 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
         dependencies: ['$id', '$schema'],
         metaSchema: { type: 'string' },
     },
+    {
+        keyword: 'repository',
+        dependencies: ['$id', '$schema'],
+        metaSchema: { type: 'string', format: 'uri' },
+    },
     // {
     //     keyword: 'see',
     //     metaSchema: {
