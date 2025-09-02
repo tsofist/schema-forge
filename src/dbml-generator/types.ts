@@ -1,4 +1,4 @@
-import type { ArrayMay, HexString } from '@tsofist/stem';
+import type { ArrayMay, HexString, PRec } from '@tsofist/stem';
 import type { SchemaDefinitionInfoForType } from '../definition-info/types';
 
 /**
@@ -215,3 +215,14 @@ export type DBMLColumnOptions = {
      */
     type?: DBMLColumnType;
 };
+
+export type DBMLEnumOptionsDef = boolean | string;
+
+export type DBMLEnumAnnotationOptions = PRec<
+    [
+        //
+        /** 0 */ value: string | number,
+        /** 1 */ note?: string,
+        /** 2 */ comment?: string,
+    ]
+>;

@@ -36,6 +36,22 @@ export function readMemberTypeName(
     return type?.getText();
 }
 
+export function readJSDocTagValue(node: Node, tagName: string): string | undefined {
+    let value: string | undefined = undefined;
+
+    {
+        const isTag = (tag: JSDocTag): tag is JSDocTag => {
+            if (tag.tagName.escapedText === tagName) {
+                value = getTextOfJSDocComment(tag.comment);
+            }
+            return value !== undefined;
+        };
+        getAllJSDocTags(node, isTag);
+    }
+
+    return value;
+}
+
 export function readJSDocDescription(
     node: Node,
     allowUseFallbackDescription: boolean | undefined,
@@ -80,8 +96,13 @@ export function readJSDocDescription(
     return value;
 }
 
-export function readNodeName(node: NamedDeclaration): string {
-    return (node.name as Identifier).escapedText + '';
+export function readNodeName(node: NamedDeclaration): string;
+export function readNodeName(node: Node): string | undefined;
+export function readNodeName(node: NamedDeclaration | Node): string | undefined {
+    if ('name' in node && !!node.name) {
+        return (node.name as Identifier).escapedText + '';
+    }
+    return undefined;
 }
 
 export function readInterfaceGenericText(node: NamedDeclaration): string {

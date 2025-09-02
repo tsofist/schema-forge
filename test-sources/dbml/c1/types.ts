@@ -259,6 +259,62 @@ export interface Case0IndexMeta {
     indexed02: number;
 }
 
+/**
+ * @dbEnum
+ * @public
+ */
+export enum SimpleEnum {
+    /**
+     * First value
+     * @comment This is a comment for First value
+     */
+    One = 1,
+    Two = 2,
+    Three = 3,
+}
+
+/**
+ * @dbEnum
+ * @public
+ */
+export enum SimpleStringEnum {
+    AAA = 'a-a-a',
+    BBB = 'b_b_b',
+    CCC = 'C_c_90',
+    DDD = 'C_c_9:0.0',
+}
+
+/**
+ * @dbEnum
+ * @public
+ */
+export enum MixedEnum {
+    Symbol = '0',
+    // eslint-disable-next-line
+    Number = 1,
+}
+
+/**
+ * Halo
+ * @public
+ */
+export enum NonDBEnum {
+    /**
+     * Primary value!
+     * @comment Comment for Primary value!
+     */
+    Primary = 'primary',
+    Secondary = 'secondary',
+}
+
+/**
+ * @public
+ */
+export type ImportantType = {
+    importantString: string;
+    importantEnum: NonDBEnum.Primary;
+};
+
 ///
 // /**
 //  * @description

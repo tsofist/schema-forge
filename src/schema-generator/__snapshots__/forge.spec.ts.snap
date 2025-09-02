@@ -1,0 +1,116 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`validator for a9 schema should be generated correctly with enums 1`] = `
+{
+  "$id": "test",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "EnumA": {
+      "description": "Desc: EnumA",
+      "enum": [
+        "A",
+        "B",
+      ],
+      "enumAnnotation": {
+        "A": [
+          "A",
+        ],
+        "B": [
+          "B",
+        ],
+      },
+      "type": "string",
+    },
+    "EnumB": {
+      "description": "Desc: EnumB",
+      "enum": [
+        99,
+        66,
+      ],
+      "enumAnnotation": {
+        "C": [
+          99,
+        ],
+        "D": [
+          66,
+        ],
+      },
+      "type": "number",
+    },
+    "EnumC": {
+      "description": "Desc: EnumC",
+      "enum": [
+        0,
+        1,
+      ],
+      "enumAnnotation": {
+        "E": [
+          0,
+        ],
+        "F": [
+          1,
+        ],
+      },
+      "type": "number",
+    },
+    "EnumD": {
+      "description": "Description for EnumD",
+      "enum": [
+        "g-001",
+        123,
+        0,
+      ],
+      "enumAnnotation": {
+        "G": [
+          "g-001",
+          "Description for EnumD.G",
+        ],
+        "H": [
+          123,
+          "Description for EnumD.H",
+        ],
+        "Y": [
+          0,
+          "Description for EnumD.Y",
+        ],
+      },
+      "type": [
+        "string",
+        "number",
+      ],
+    },
+    "LiteralEnumA": {
+      "description": "Desc: LiteralEnumA",
+      "enum": [
+        "A",
+        "B",
+        "C",
+      ],
+      "type": "string",
+    },
+    "LiteralEnumB": {
+      "description": "Desc: LiteralEnumB",
+      "enum": [
+        99,
+        66,
+        77,
+      ],
+      "type": "number",
+    },
+    "LiteralEnumC": {
+      "description": "Desc: LiteralEnumC",
+      "enum": [
+        "D",
+        "E",
+        11,
+        22,
+      ],
+      "type": [
+        "string",
+        "number",
+      ],
+    },
+  },
+  "hash": "e278d0f8b239dd13bef943f042a2d077",
+}
+`;

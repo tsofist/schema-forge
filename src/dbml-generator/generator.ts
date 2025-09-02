@@ -7,7 +7,7 @@ import { snakeCase } from '@tsofist/stem/lib/string/case/snake';
 import { compareStringsAsc } from '@tsofist/stem/lib/string/compare';
 import { substr } from '@tsofist/stem/lib/string/substr';
 import { TextBuilder } from '@tsofist/stem/lib/string/text-builder';
-import type { JSONSchema7 as Schema } from 'json-schema';
+import type { JSONSchema7 } from 'json-schema';
 import type { SchemaDefinitionInfoForType } from '../definition-info/types';
 import {
     createSchemaDereferenceSharedCache,
@@ -15,7 +15,7 @@ import {
 } from '../schema-dereference/cache';
 import { dereferenceSchema } from '../schema-dereference/dereference';
 import type { SchemaForgeRegistry } from '../schema-registry/types';
-import type { ForgedEntitySchema, ForgedPropertySchema } from '../types';
+import type { ForgedEntitySchema, ForgedPropertySchema, ForgedSchemaDefinition } from '../types';
 import type {
     DBMLEntityOptions,
     DBMLGeneratorOptions,
@@ -42,7 +42,7 @@ export function generateDBMLSpec(
         string, // scope name
         DBMLProjectScope
     >();
-    const dereferencedRootSchemas: Map<string, Schema> = new Map();
+    const dereferencedRootSchemas: Map<string, JSONSchema7> = new Map();
 
     if (options.meta?.comment) {
         text.push(`// ${options.meta?.comment}`);
@@ -67,7 +67,7 @@ export function generateDBMLSpec(
     }
 
     for (const { definitions, scopeName = DefaultScopeName, schemaId } of sources.values()) {
-        let dereferencedRootSchema: Schema = dereferencedRootSchemas.get(schemaId)!;
+        let dereferencedRootSchema = dereferencedRootSchemas.get(schemaId)!;
         if (!dereferencedRootSchemas.has(schemaId)) {
             const root =
                 schemaRegistry.getRootSchema(schemaId) ||
@@ -134,7 +134,7 @@ export function generateDBMLSpec(
 function generateTable(
     info: SchemaDefinitionInfoForType,
     options: DBMLGeneratorOptions,
-    dereferencedRootSchema: Schema,
+    dereferencedRootSchema: JSONSchema7,
 ): TableSpec | undefined {
     const includeNotes = options.includeNotes ?? false;
     const entityTypeName = info.type;
@@ -196,7 +196,7 @@ function generateTable(
 }
 
 function generateColumns(
-    properties: PRec<ForgedPropertySchema>,
+    properties: PRec<JSONSchema7>,
     requiredFields: string[],
     notes: boolean,
     schemaId: string,
@@ -434,7 +434,7 @@ function buildNote(value: string | undefined, mlLevel = 1): TextBuilder {
     return result;
 }
 
-function isNullable(property: Schema): boolean {
+function isNullable(property: JSONSchema7): boolean {
     return (
         property.anyOf?.some((item) => typeof item !== 'boolean' && item?.type !== 'null') ?? false
     );
@@ -484,7 +484,7 @@ function getDBType(property: ForgedPropertySchema, schemaId: string): string {
     return type ?? 'jsonb';
 }
 
-function listProperties(schema: Schema): {
+function listProperties(schema: JSONSchema7): {
     type: 'object';
     properties: PRec<ForgedPropertySchema>;
     required: string[];
@@ -492,7 +492,7 @@ function listProperties(schema: Schema): {
     if (schema.properties) {
         return {
             type: 'object',
-            properties: schema.properties as PRec<ForgedPropertySchema>,
+            properties: schema.properties as PRec<ForgedSchemaDefinition>,
             required: schema.required || [],
         };
     }

@@ -1,6 +1,11 @@
+import type { Rec } from '@tsofist/stem';
 import type { KeywordDefinition } from 'ajv';
+import type { JSONSchema7 } from 'json-schema';
+import type { SF_EXTRA_JSS_TAG_NAME } from '../schema-generator/types';
 
 const FakerModulePattern = '^[a-zA-Z.]+$';
+const NP_ENUM_KEY = '^[a-zA-Z0-9-\\._]+$';
+const NP_ENUM_VALUE = '^[a-zA-Z0-9-\\._:]+$';
 
 export const SFRCommonKeywords: readonly KeywordDefinition[] = [
     {
@@ -12,6 +17,48 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
         keyword: 'hash',
         dependencies: ['$id', '$schema'],
         metaSchema: { type: 'string' },
+    },
+    // {
+    //     keyword: 'see',
+    //     metaSchema: {
+    //         additionalProperties: false,
+    //         type: ['string', 'array'],
+    //         items: {
+    //             anyOf: [
+    //                 { type: 'string', format: 'uri' },
+    //                 {
+    //                     type: 'array',
+    //                     items: [{ type: 'string', format: 'uri' }, { type: 'string' }],
+    //                     minItems: 2,
+    //                 },
+    //             ],
+    //         },
+    //     },
+    // },
+    {
+        keyword: 'spec',
+        metaSchema: {
+            type: 'array',
+            items: { type: 'string' },
+        },
+    },
+    {
+        keyword: 'enumAnnotation',
+        dependencies: ['enum'],
+        metaSchema: {
+            type: 'object',
+            propertyNames: { type: 'string', pattern: NP_ENUM_KEY },
+            additionalProperties: {
+                type: 'array',
+                minItems: 1,
+                maxItems: 3,
+                items: [
+                    { title: 'value', type: ['string', 'number'], pattern: NP_ENUM_VALUE },
+                    { title: 'note', type: 'string' },
+                    { title: 'comment', type: 'string' },
+                ],
+            },
+        } satisfies JSONSchema7,
     },
     {
         keyword: 'faker',
@@ -44,4 +91,6 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
             ],
         },
     },
-] as const;
+] as const satisfies (KeywordDefinition & {
+    keyword: keyof Rec<unknown, SF_EXTRA_JSS_TAG_NAME>;
+})[];

@@ -3,7 +3,7 @@ import type { NonNegativeInt } from '@tsofist/stem/lib/number/integer/types';
 import type { ErrorsTextOptions, Options } from 'ajv';
 import type { Options as AjvOptions } from 'ajv/dist/core';
 import type { JSONSchema7 } from 'json-schema';
-import type { SchemaDefinitionInfo } from '../definition-info/types';
+import type { SchemaDefinitionInfo, SchemaDefinitionInfoKind } from '../definition-info/types';
 import type { SchemaForgeValidationContextBase } from '../efc';
 import type { SF_EXTRA_JSS_TAG_NAME } from '../schema-generator/types';
 import type {
@@ -105,12 +105,11 @@ export interface SchemaForgeRegistry {
     ) => string;
 
     /**
-     * List schema definitions
+     * List definitions of all schemas in registry.
      */
-    listDefinitions: (
-        predicate?: SchemaForgeRegistryListDefinitionsPredicate,
-    ) => SchemaDefinitionInfo[];
-
+    listDefinitions: <T extends SchemaDefinitionInfo>(
+        predicate?: SchemaForgeRegistryListDefinitionsPredicate | SchemaDefinitionInfoKind,
+    ) => T[];
     /**
      * Asynchronously warm up schemaRegistry cache.
      * This action is useful to pre-compile all schemas and their definitions

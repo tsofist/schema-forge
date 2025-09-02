@@ -1,7 +1,16 @@
+import type { DeepReadonly } from '@tsofist/stem';
 import type { JSONSchema7 } from 'json-schema';
+import type { ForgedSchema, SchemaForgeDefinitionRef } from '../types';
 import type { SchemaDereferenceSharedCache } from './cache';
 
 export interface SchemaForgeDereferenceOptions {
+    /**
+     * Handler called when a reference is successfully dereferenced.
+     */
+    onDereferenceSuccess?: (
+        resolvedRef: SchemaForgeDefinitionRef,
+        resolvedNode: DeepReadonly<JSONSchema7>,
+    ) => void;
     /**
      * Handler called when dereferencing fails.
      *
@@ -30,6 +39,13 @@ export interface SchemaForgeDereferenceOptions {
      * @default DefaultSchemaDereferenceSharedCache
      */
     sharedCacheStorage?: SchemaDereferenceSharedCache;
+    /**
+     * Source of definitions for resolving $ref references.
+     * If not provided, the definitions from the root schema will be used.
+     *
+     * @see ForgedSchema
+     */
+    definitionsSource?: ForgedSchema | JSONSchema7;
 }
 
 export type SchemaForgeDereferenceFailureHandler = (

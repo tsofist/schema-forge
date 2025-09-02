@@ -2,6 +2,7 @@ import type { ARec, ArrayMay } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
 import * as structuredCloneModule from '@ungap/structured-clone';
 import type { JSONSchema7 } from 'json-schema';
+import type { SchemaForgeDefinitionRef } from '../types';
 import { DefaultSchemaDereferenceSharedCache, SchemaDereferenceSharedCache } from './cache';
 import type { SchemaForgeDereferenceOptions } from './types';
 
@@ -21,9 +22,15 @@ export function dereferenceSchema(
     const cache = options.sharedCacheStorage || DefaultSchemaDereferenceSharedCache;
     if (cache.main.has(raw)) return cache.main.get(raw)!;
 
-    const schema: JSONSchema7 = structuredClone(raw);
+    const schema = structuredClone<JSONSchema7>(raw);
     const seen = new WeakMap<JSONSchema7 | OperationalValue[], OperationalValueAA>();
-    const { throwOnDereferenceFailure = true, onDereferenceFailure } = options;
+    const seenRefs = new Set<SchemaForgeDefinitionRef>();
+    const {
+        throwOnDereferenceFailure = true,
+        onDereferenceFailure,
+        onDereferenceSuccess,
+        definitionsSource = schema,
+    } = options;
 
     function resolve(current: OperationalValueA, path: string): OperationalValueA;
     function resolve(current: OperationalValue, path: string): OperationalValue;
@@ -42,7 +49,7 @@ export function dereferenceSchema(
 
         // $ref
         if ('$ref' in current && typeof current.$ref === 'string') {
-            const resolvedSchema = resolveRef(cache, schema, current.$ref);
+            const resolvedSchema = resolveRef(cache, definitionsSource, current.$ref);
 
             if (resolvedSchema == null) {
                 const replacement =
@@ -76,7 +83,7 @@ export function dereferenceSchema(
             const placeholder = {};
             seen.set(current, placeholder);
 
-            const result = {
+            const result: JSONSchema7 = {
                 ...resolvedSchema,
                 ...resolve(resolvedSchema, current.$ref),
                 ...additionalProps,
@@ -85,6 +92,11 @@ export function dereferenceSchema(
 
             Object.assign(placeholder, result);
             seen.set(resolvedSchema, result);
+
+            if (onDereferenceSuccess != null && !seenRefs.has($ref)) {
+                seenRefs.add($ref as SchemaForgeDefinitionRef);
+                onDereferenceSuccess($ref as SchemaForgeDefinitionRef, result);
+            }
 
             return result;
         }

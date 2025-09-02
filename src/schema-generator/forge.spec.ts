@@ -22,6 +22,42 @@ import { forgeSchema } from './forge';
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
+describe('validator for a9', () => {
+    const outputSchemaFile = './a9.generated.schema.tmp.json';
+    const outputSchemaMetadataFile = './a9.generated.definitions.tmp.json';
+
+    let registry: SchemaForgeRegistry;
+    let loadedSchema: SchemaObject[];
+
+    beforeAll(async () => {
+        await forgeSchema({
+            schemaId: 'test',
+            allowUseFallbackDescription: true,
+            tsconfigFrom: './tsconfig.build-test.json',
+            sourcesDirectoryPattern: 'test-sources/a9',
+            sourcesFilesPattern: ['service-api.ts', 'types.ts'],
+            outputSchemaFile,
+            outputSchemaMetadataFile,
+            expose: 'export',
+            explicitPublic: true,
+        });
+        registry = createSchemaForgeRegistry();
+        loadedSchema = await loadJSONSchema([outputSchemaFile]);
+        registry.addSchema(loadedSchema);
+    });
+    afterAll(async () => {
+        if (!KEEP_SPEC_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
+    });
+
+    it('schema should be generated correctly with enums', () => {
+        const schema = registry.getRootSchema('test');
+        expect(schema).toMatchSnapshot();
+    });
+});
+
 describe('generator for a8', () => {
     const outputSchemaFile = './a8.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a8.generated.definitions.tmp.json';
@@ -224,6 +260,7 @@ describe('generator for a6', () => {
             $ref: '#/definitions/UUID',
             format: 'uuid',
             description: 'This is Collection item ID (inherits from UUID)',
+            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
         });
 
         expect(registry.getSchema('test#/definitions/CollectionItemID2')).toStrictEqual({
@@ -235,6 +272,7 @@ describe('generator for a6', () => {
         expect(registry.getSchema('test#/definitions/CollectionItemID3')).toStrictEqual({
             format: 'uuid',
             type: 'string',
+            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
         });
 
         expect(registry.getSchema('test#/definitions/CollectionItemID4')).toStrictEqual({
@@ -259,6 +297,7 @@ describe('generator for a6', () => {
         expect(registry.getSchema('test#/definitions/CollectionItemID5')).toStrictEqual({
             format: 'uuid',
             type: 'string',
+            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
         });
 
         {
@@ -268,6 +307,7 @@ describe('generator for a6', () => {
             expect(rec).toBeTruthy();
             expect((rec as any).propertyNames).toStrictEqual({
                 format: 'uuid',
+                // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
             });
         }
         {
@@ -278,6 +318,7 @@ describe('generator for a6', () => {
             expect((rec as any).propertyNames).toStrictEqual({
                 format: 'uuid',
                 description: 'This is Collection item ID (inherits from UUID)',
+                // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
             });
         }
         {
@@ -332,7 +373,7 @@ describe('generator for a5', () => {
             expose: 'all',
             explicitPublic: true,
             shrinkDefinitionNames: (definitionName) => {
-                if (definitionName === 'NamesType') return 'NT';
+                if (definitionName === 'NamesType') return 'DSN_H';
                 return undefined;
             },
         });
@@ -352,11 +393,11 @@ describe('generator for a5', () => {
         const defs = forgeSchemaResult?.schema?.definitions;
         expect(defs).toBeTruthy();
         expect(keysOf(defs)).toStrictEqual([
+            'DSN_H', // 'NamesType',
             'DomainNum',
             'DomainValue',
             'DomainValuesType',
             'FKColumn',
-            'NT', // 'NamesType',
             'NamesTypeAbnormal',
             'NumN',
             'Nums',
@@ -367,7 +408,7 @@ describe('generator for a5', () => {
             'VariadicList',
             'VariadicList1',
         ]);
-        expect(registry.getValidator('test#/definitions/NT')!.schema).toStrictEqual({
+        expect(registry.getValidator('test#/definitions/DSN_H')!.schema).toStrictEqual({
             type: 'string',
             enum: ['v:name1', 'v:name2'],
         });
@@ -387,7 +428,7 @@ describe('generator for a5', () => {
                     $ref: '#/definitions/DomainValuesType',
                 },
                 name0: {
-                    $ref: '#/definitions/NT',
+                    $ref: '#/definitions/DSN_H',
                 },
                 name1: {
                     type: 'string',
@@ -490,6 +531,7 @@ describe('generator for a5', () => {
         expect(v.properties.ref0).toStrictEqual({
             type: 'string',
             format: 'uuid',
+            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
             description: 'Inline Foreign Key',
             dbFK: true,
         });
@@ -497,6 +539,7 @@ describe('generator for a5', () => {
             type: 'string',
             format: 'uuid',
             description: 'Foreign Key Column Type.',
+            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
             dbFK: true,
         });
         expect(v.properties.ref2).toStrictEqual({
@@ -504,6 +547,7 @@ describe('generator for a5', () => {
             format: 'uuid',
             description: 'Inline Foreign Key (2)',
             dbFK: true,
+            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
         });
     });
 });
@@ -579,7 +623,6 @@ describe('generator for a3', () => {
             forgeSchemaResult!.schema.definitions?.InterfaceWithGeneric__APIInterface?.properties;
         expect(props).toBeTruthy();
         expect(props!.propWithGeneric).toBeTruthy();
-        // @ts-expect-error It's a test
         expect(props!.propWithGeneric.$ref).toStrictEqual('#/definitions/NonEmptyString');
     });
     it('optional args in API methods should works', () => {
@@ -705,6 +748,7 @@ describe('generator for a1', () => {
     it('getSchema', () => {
         expect(validator.getValidator('test#/definitions/PositiveInt')!.schema).toStrictEqual({
             type: 'integer',
+            // see: 'Int',
             minimum: 1,
             maximum: 9007199254740991,
             description: 'Positive integer value.',

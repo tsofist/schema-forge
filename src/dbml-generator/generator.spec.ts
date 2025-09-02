@@ -18,7 +18,7 @@ describe('DBML Generator', () => {
 
     beforeAll(async () => {
         forgeSchemaResult = await forgeSchema({
-            allowUseFallbackDescription: false,
+            allowUseFallbackDescription: true,
             explicitPublic: true,
             schemaId,
             tsconfigFrom: './tsconfig.build-test.json',
@@ -43,17 +43,31 @@ describe('DBML Generator', () => {
         expect(forgeSchemaResult).toBeTruthy();
         expect(forgeSchemaResult!.schema.$id).toStrictEqual(schemaId);
         expect(forgeSchemaResult!.generatedTemporaryFiles.length).toStrictEqual(1);
-        expect(forgeSchemaResult!.refs.length).toStrictEqual(13);
+        expect(forgeSchemaResult!.refs.length).toStrictEqual(18);
+    });
+
+    describe('enums', () => {
+        it('should generate dbEnum definitions', () => {
+            const definitions = registry.listDefinitions((_info, keywords) => {
+                return keywords.has('dbEnum');
+            });
+            const list = definitions.map((def) => {
+                return registry.getSchema(def.ref);
+            });
+            expect(list).toMatchSnapshot();
+        });
     });
 
     it('basic cases', () => {
-        const definitions = registry.listDefinitions((info, keywords) => {
-            return (
-                info.name.endsWith('Basic') &&
-                info.kind === SchemaDefinitionInfoKind.Type &&
-                keywords.has('dbEntity')
-            );
-        }) as SchemaDefinitionInfoForType[];
+        const definitions = registry.listDefinitions<SchemaDefinitionInfoForType>(
+            (info, keywords) => {
+                return (
+                    info.name.endsWith('Basic') &&
+                    info.kind === SchemaDefinitionInfoKind.Type &&
+                    keywords.has('dbEntity')
+                );
+            },
+        );
 
         const dbml = generateDBMLSpec(
             registry,
@@ -84,13 +98,15 @@ describe('DBML Generator', () => {
     });
 
     it('table meta cases', () => {
-        const definitions = registry.listDefinitions((info, keywords) => {
-            return (
-                info.name.endsWith('TableMeta') &&
-                info.kind === SchemaDefinitionInfoKind.Type &&
-                keywords.has('dbEntity')
-            );
-        }) as SchemaDefinitionInfoForType[];
+        const definitions = registry.listDefinitions<SchemaDefinitionInfoForType>(
+            (info, keywords) => {
+                return (
+                    info.name.endsWith('TableMeta') &&
+                    info.kind === SchemaDefinitionInfoKind.Type &&
+                    keywords.has('dbEntity')
+                );
+            },
+        );
 
         const dbml = generateDBMLSpec(
             //
@@ -103,13 +119,15 @@ describe('DBML Generator', () => {
     });
 
     it('index meta cases', () => {
-        const definitions = registry.listDefinitions((info, keywords) => {
-            return (
-                info.name.endsWith('IndexMeta') &&
-                info.kind === SchemaDefinitionInfoKind.Type &&
-                keywords.has('dbEntity')
-            );
-        }) as SchemaDefinitionInfoForType[];
+        const definitions = registry.listDefinitions<SchemaDefinitionInfoForType>(
+            (info, keywords) => {
+                return (
+                    info.name.endsWith('IndexMeta') &&
+                    info.kind === SchemaDefinitionInfoKind.Type &&
+                    keywords.has('dbEntity')
+                );
+            },
+        );
 
         const dbml = generateDBMLSpec(
             //

@@ -15,10 +15,11 @@ import addFormats from 'ajv-formats';
 import type { JSONSchema7 } from 'json-schema';
 import { parseSchemaDefinitionInfo } from '../definition-info/parser';
 import { buildSchemaDefinitionRef } from '../definition-info/ref';
-import type { SchemaDefinitionInfo } from '../definition-info/types';
+import { SchemaDefinitionInfo, SchemaDefinitionInfoKind } from '../definition-info/types';
 import { SchemaForgeErrors, type SchemaForgeValidationContextBase } from '../efc';
-import { SF_EXTRA_JSS_TAG_NAME, SFG_CONFIG_DEFAULTS } from '../schema-generator/types';
+import { SF_EXTRA_JSS_TAG_NAME, SFG_EXTRA_TAGS } from '../schema-generator/types';
 import type {
+    ForgedSchemaDefinition,
     SchemaForgeDefinitionRef,
     SchemaForgeValidationFunction,
     SchemaForgeValidationReport,
@@ -185,7 +186,7 @@ export function createSchemaForgeRegistry(
     }
 
     function mapDefinitions<R>(
-        callback: (definitionName: string, schemaId: string, schema: JSONSchema7) => R,
+        callback: (definitionName: string, schemaId: string, schema: ForgedSchemaDefinition) => R,
     ): R[] {
         const result = [];
         for (const [schemaId, env] of entries(engine.schemas)) {
@@ -206,9 +207,9 @@ export function createSchemaForgeRegistry(
         return result;
     }
 
-    function readSchemaKeywords(schema: JSONSchema7) {
+    function readSchemaKeywords(schema: ForgedSchemaDefinition) {
         const result = new Map<SF_EXTRA_JSS_TAG_NAME>();
-        for (const tag of SFG_CONFIG_DEFAULTS.extraTags) {
+        for (const tag of SFG_EXTRA_TAGS) {
             if (tag in schema) {
                 result.set(
                     tag,
@@ -220,13 +221,18 @@ export function createSchemaForgeRegistry(
         return result;
     }
 
-    function listDefinitions(
-        predicate?: SchemaForgeRegistryListDefinitionsPredicate,
-    ): SchemaDefinitionInfo[] {
-        const result: SchemaDefinitionInfo[] = [];
+    function listDefinitions<T extends SchemaDefinitionInfo>(
+        predicate?: SchemaForgeRegistryListDefinitionsPredicate | SchemaDefinitionInfoKind,
+    ): T[] {
+        const result: T[] = [];
+        const filter =
+            typeof predicate === 'number'
+                ? (info: SchemaDefinitionInfo) => info.kind === predicate
+                : predicate;
+
         mapDefinitions((name, schemaId, schema) => {
-            const info = parseSchemaDefinitionInfo(name, schemaId, legacy);
-            if (predicate === undefined || predicate(info, readSchemaKeywords(schema))) {
+            const info = parseSchemaDefinitionInfo<T>(name, schemaId, legacy);
+            if (filter === undefined || filter(info, readSchemaKeywords(schema))) {
                 result.push(info);
             }
         });

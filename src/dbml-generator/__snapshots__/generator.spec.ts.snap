@@ -189,6 +189,76 @@ TableGroup TestScope {
 "
 `;
 
+exports[`DBML Generator enums should generate dbEnum definitions 1`] = `
+[
+  {
+    "dbEnum": true,
+    "enum": [
+      "0",
+      1,
+    ],
+    "enumAnnotation": {
+      "Number": [
+        1,
+      ],
+      "Symbol": [
+        "0",
+      ],
+    },
+    "type": [
+      "string",
+      "number",
+    ],
+  },
+  {
+    "dbEnum": true,
+    "enum": [
+      1,
+      2,
+      3,
+    ],
+    "enumAnnotation": {
+      "One": [
+        1,
+        "First value",
+        "This is a comment for First value",
+      ],
+      "Three": [
+        3,
+      ],
+      "Two": [
+        2,
+      ],
+    },
+    "type": "number",
+  },
+  {
+    "dbEnum": true,
+    "enum": [
+      "a-a-a",
+      "b_b_b",
+      "C_c_90",
+      "C_c_9:0.0",
+    ],
+    "enumAnnotation": {
+      "AAA": [
+        "a-a-a",
+      ],
+      "BBB": [
+        "b_b_b",
+      ],
+      "CCC": [
+        "C_c_90",
+      ],
+      "DDD": [
+        "C_c_9:0.0",
+      ],
+    },
+    "type": "string",
+  },
+]
+`;
+
 exports[`DBML Generator index meta cases 1`] = `
 "Project Scratch {
   database_type: 'PostgreSQL'

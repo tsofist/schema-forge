@@ -1,6 +1,7 @@
 import * as fakerModule from '@faker-js/faker';
 import { asArray } from '@tsofist/stem/lib/as-array';
 import { JSONSchemaFaker } from 'json-schema-faker';
+import { SFG_EXTRA_TAGS } from '../schema-generator/types';
 import type { SchemaForgeRegistry } from '../schema-registry/types';
 import { EmbeddedFakerModules } from './modules';
 import type { FakeGeneratorHost, FakeGeneratorLocaleName, FakeGeneratorOptions } from './types';
@@ -38,7 +39,7 @@ export function createFakeGeneratorHost(
         generator.option({
             alwaysFakeOptionals: true,
             refDepthMax: 1_000,
-            pruneProperties: ['dbEntity', 'dbIndex', 'dbColumn', 'dbFK'],
+            pruneProperties: SFG_EXTRA_TAGS.filter((name) => name.startsWith('db')),
             ...options,
             resolveJsonPath: false,
         });

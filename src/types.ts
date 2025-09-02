@@ -1,10 +1,12 @@
-import type { NonEmptyString, Nullable, PRec, Reintroduce } from '@tsofist/stem';
+import type { Nullable, PRec, Rec, Reintroduce } from '@tsofist/stem';
 import type { ErrorObject, ErrorsTextOptions, ValidateFunction } from 'ajv';
 import type { JSONSchema7 as Schema } from 'json-schema';
 import type { Config } from 'ts-json-schema-generator';
-import type {
+import {
     DBMLColumnOptions,
     DBMLEntityOptionsDef,
+    DBMLEnumAnnotationOptions,
+    DBMLEnumOptionsDef,
     DBMLForeignKeyOptions,
     DBMLIndexOptionsDef,
 } from './dbml-generator/types';
@@ -108,13 +110,22 @@ export interface ForgeSchemaOptions {
      */
     readonly shrinkDefinitionNames?:
         | boolean
-        | ((definitionName: string) => undefined | NonEmptyString);
+        | ((definitionName: string) => undefined | ForgedSchemaDefinitionShortName);
     /**
      * @deprecated
      * @default false
      */
     readonly legacyDefinitions?: boolean;
+    /**
+     * Skip type checking.
+     * This may help with some complex projects, but can lead to incorrect schema generation.
+     *
+     * @default false
+     */
+    readonly skipTypeCheck?: boolean;
 }
+
+export type ForgedSchemaDefinitionShortName = `DSN${string}_H${string}`;
 
 export interface SchemaForgeMetadata {
     $id: string;
@@ -133,28 +144,36 @@ const ForgedSchemaDraft7Id = 'http://json-schema.org/draft-07/schema#';
 
 export type ForgedSchema = Reintroduce<
     Schema,
-    {
+    Pick<ForgedSchemaDefinition, 'see' | 'spec'> & {
         $schema: typeof ForgedSchemaDraft7Id;
-        $id?: string;
-        $comment?: string;
         hash?: string;
-        title?: string;
-        description?: string;
         version?: string;
-        $defs?: PRec<Schema>;
-        definitions?: PRec<Schema>;
+        //
+        $defs?: Rec<ForgedSchemaDefinition>;
+        definitions?: Rec<ForgedSchemaDefinition>;
     }
 >;
 
-export type ForgedEntitySchema = Schema & {
+export type ForgedEntitySchema = Schema &
+    Pick<ForgedSchemaDefinition, 'see' | 'spec' | 'dbEntity'> & {
+        properties?: Rec<ForgedEntitySchema>;
+    };
+
+export type ForgedPropertySchema = Schema &
+    Pick<ForgedSchemaDefinition, 'dbFK' | 'dbColumn' | 'dbIndex' | 'dbEnum' | 'enumAnnotation'>;
+
+export type ForgedSchemaDefinition = Schema & {
+    see?: (string | [ref: string, title: string])[];
+    spec?: string;
+    //
+    dbFK?: DBMLForeignKeyOptions;
+    dbColumn?: DBMLColumnOptions;
+    dbIndex?: DBMLIndexOptionsDef;
+    dbEnum?: DBMLEnumOptionsDef;
+    enumAnnotation?: DBMLEnumAnnotationOptions;
+    //
     dbEntity?: DBMLEntityOptionsDef;
     properties?: PRec<ForgedEntitySchema>;
-};
-
-export type ForgedPropertySchema = Schema & {
-    dbFK?: DBMLForeignKeyOptions;
-    dbIndex?: DBMLIndexOptionsDef;
-    dbColumn?: DBMLColumnOptions;
 };
 
 export interface ForgeSchemaResult {

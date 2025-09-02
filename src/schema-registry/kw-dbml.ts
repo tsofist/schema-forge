@@ -1,5 +1,5 @@
-import type { Rec } from '@tsofist/stem';
-import { type KeywordDefinition } from 'ajv';
+import type { PickFieldsWithPrefix, Rec } from '@tsofist/stem';
+import type { KeywordDefinition } from 'ajv';
 import type { JSONSchema7 } from 'json-schema';
 import {
     DBMLColumnTypeList,
@@ -7,10 +7,11 @@ import {
     type DBMLIndexOptions,
     DBMLIndexTypeList,
 } from '../dbml-generator/types';
+import type { SF_EXTRA_JSS_TAG_NAME } from '../schema-generator/types';
 
 const NP_IX = '^ix_[a-z][a-zA-Z0-9_]+$';
 const NP_ENTITY = '^([a-zA-Z_][a-z0-9_]*\\.)?[a-z_][a-z0-9_]*$';
-const NP_NESTED_PROP = '^[a-z][a-zA-Z0-9.-]+$';
+const NP_NESTED_PROP = '^[a-z][a-zA-Z0-9-\\._]+$';
 
 const DBMLIndexOptionsProperties: Rec<JSONSchema7, keyof DBMLIndexOptions> = {
     name: { type: 'string', pattern: NP_IX },
@@ -50,6 +51,10 @@ DBMLIndexSchema.items = {
 
 export const SFRDBMLKeywords: readonly KeywordDefinition[] = [
     {
+        keyword: 'dbEnum',
+        metaSchema: { type: ['boolean', 'string'], pattern: NP_NESTED_PROP },
+    },
+    {
         keyword: 'dbFK',
         metaSchema: DBMLForeignKeySchema,
     },
@@ -80,7 +85,7 @@ export const SFRDBMLKeywords: readonly KeywordDefinition[] = [
                 indexes: {
                     type: 'object',
                     additionalProperties: DBMLIndexSchema,
-                    propertyNames: { pattern: NP_NESTED_PROP },
+                    propertyNames: { type: 'string', pattern: NP_NESTED_PROP },
                 },
                 note: { type: 'string' },
                 comment: { type: 'string' },
@@ -94,4 +99,6 @@ export const SFRDBMLKeywords: readonly KeywordDefinition[] = [
             } satisfies Rec<unknown, keyof DBMLEntityOptions>,
         },
     },
-] as const;
+] as const satisfies (KeywordDefinition & {
+    keyword: keyof PickFieldsWithPrefix<Rec<unknown, SF_EXTRA_JSS_TAG_NAME>, 'db'>;
+})[];

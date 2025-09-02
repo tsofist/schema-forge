@@ -1,4 +1,6 @@
+import type { PickFieldsWithPrefix, Rec } from '@tsofist/stem';
 import type { KeywordDefinition } from 'ajv';
+import type { SF_EXTRA_JSS_TAG_NAME } from '../schema-generator/types';
 
 const NP_API_INTERFACE = '^[A-Z][a-zA-Z0-9]+$';
 const NP_API_PROP = '^[a-z][a-zA-Z0-9]+$';
@@ -7,19 +9,21 @@ const NP_API_MEMBER = `${NP_API_INTERFACE.substring(0, NP_API_INTERFACE.length -
 
 export const SFRAPIDefinitionKeywords: readonly KeywordDefinition[] = [
     {
-        keyword: ['interface', 'apiInterface'],
+        keyword: 'apiInterface',
         metaSchema: { type: 'string', pattern: NP_API_INTERFACE },
     },
     {
-        keyword: ['property', 'apiProperty'],
+        keyword: 'apiProperty',
         metaSchema: { type: 'string', pattern: NP_API_PROP },
     },
     {
-        keyword: ['method', 'apiMethod'],
+        keyword: 'apiMethod',
         metaSchema: { type: 'string', pattern: NP_API_METHOD },
     },
     {
-        keyword: ['member', 'apiMember'],
+        keyword: 'apiMember',
         metaSchema: { type: 'string', pattern: NP_API_MEMBER },
     },
-] as const;
+] as const satisfies (KeywordDefinition & {
+    keyword: keyof PickFieldsWithPrefix<Rec<unknown, SF_EXTRA_JSS_TAG_NAME>, 'api'>;
+})[];

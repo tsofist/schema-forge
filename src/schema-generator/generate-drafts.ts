@@ -59,6 +59,7 @@ export async function generateDraftTypeFiles(options: SFDTGOptions) {
         expose: options.expose ?? SFG_CONFIG_DEFAULTS.expose,
         path: options.sourcesPattern.length > 1 ? undefined : options.sourcesPattern[0],
         tsconfig: options.tsconfig,
+        skipTypeCheck: options.skipTypeCheck ?? SFG_CONFIG_DEFAULTS.skipTypeCheck,
         discriminatorType: DEFAULT_CONFIG.discriminatorType,
         ...SFG_CONFIG_MANDATORY,
     };

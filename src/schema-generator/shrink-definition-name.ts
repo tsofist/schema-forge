@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { NonEmptyString } from '@tsofist/stem';
+import type { ForgedSchemaDefinitionShortName } from '../types';
 
 /**
  * Shrink definition name by removing generic type parameters
@@ -7,8 +7,8 @@ import type { NonEmptyString } from '@tsofist/stem';
  */
 export function shrinkDefinitionName(
     definitionName: string,
-    suffixLength = 8,
-): NonEmptyString | undefined {
+    suffixLength = 6,
+): ForgedSchemaDefinitionShortName | undefined {
     const startPos = definitionName.indexOf('<');
 
     if (startPos >= 0) {
@@ -18,7 +18,7 @@ export function shrinkDefinitionName(
             .update(hashSource)
             .digest('hex')
             .substring(0, suffixLength);
-        return `${prefix}_H${digest}`;
+        return `DSN${prefix}_H${digest}`;
     }
 
     return undefined;
