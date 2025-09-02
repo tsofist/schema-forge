@@ -6,6 +6,7 @@ import { noop } from '@tsofist/stem/lib/noop';
 import { randomString } from '@tsofist/stem/lib/string/random';
 import { KEEP_GEN_ARTEFACTS } from '../artefacts-policy';
 import { buildSchemaDefinitionRef } from '../definition-info/ref';
+import { shallowDereferenceSchema } from '../schema-dereference/dereference-shallow';
 import type {
     ForgedSchema,
     ForgeSchemaOptions,
@@ -81,7 +82,11 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
                     }
                 }
 
-                const content = JSON.stringify(schema, null, 2);
+                const content = JSON.stringify(
+                    options.shallowDeref ? shallowDereferenceSchema(schema) : schema,
+                    null,
+                    2,
+                );
                 await writeFile(options.outputSchemaFile, content, { encoding: 'utf8' });
             }
 

@@ -5,11 +5,11 @@ import type { Config } from 'ts-json-schema-generator';
 import {
     DBMLColumnOptions,
     DBMLEntityOptionsDef,
-    DBMLEnumAnnotationOptions,
     DBMLEnumOptionsDef,
     DBMLForeignKeyOptions,
     DBMLIndexOptionsDef,
 } from './dbml-generator/types';
+import { SGEnumAnnotationOptions, SGEnumMemberOptions } from './schema-generator/kw.types';
 
 export interface ForgeSchemaOptions {
     /**
@@ -92,16 +92,33 @@ export interface ForgeSchemaOptions {
     // todo
     readonly discriminatorType?: DiscriminatorType;
     /**
-     * Determines whether to sort the properties of object schemas in alphabetical order.
-     *   If set to `true`, the tool will sort both the fields in the `properties` section
-     *     and the field names in the `required` array for object-schema definitions.
-     *   Sorting can improve readability and consistency,
-     *     but may affect the order in which properties appear in generated outputs.
-     *   Applicable only to schemas of type `object`.
+     * Determines whether to sort the contents of the schema.
+     * If set to `true`, the tool will sort certain parts of the schema in alphabetical order.
+     * Sorting can significantly improve readability and consistency
+     *   of the data across iterations of updates.
      *
+     * The following are sorted:
+     *   - `properties` (optional)
+     *   - `required`
+     *   - `enum`
+     *   - `anyOf` (type=null is always first)
+     *   - `oneOf` (type=null is always first)
+     *   - `definitions` / `$defs`
+     *
+     * @default true
+     */
+    readonly sortContents?: boolean | SchemaForgeSortableContentSet;
+    /**
+     * If true, the top-level `$ref` pointers for each definition will be resolved.
+     * This improves schema readability by reducing the number of references
+     *   while still keeping the schema relatively compact.
+     * Note: only references used once will be dereferenced.
+     *
+     * @see shallowDereferenceSchema
+     * @see dereferenceSchema
      * @default false
      */
-    readonly sortObjectProperties?: boolean;
+    readonly shallowDeref?: boolean;
     /**
      * If you want to shrink the schema definition names,
      *   you have to provide a replacement function.
@@ -169,7 +186,10 @@ export type ForgedEntitySchema = Schema &
     };
 
 export type ForgedPropertySchema = Schema &
-    Pick<ForgedSchemaDefinition, 'dbFK' | 'dbColumn' | 'dbIndex' | 'dbEnum' | 'enumAnnotation'>;
+    Pick<
+        ForgedSchemaDefinition,
+        'dbFK' | 'dbColumn' | 'dbIndex' | 'dbEnum' | 'enumAnnotation' | 'enumMember'
+    >;
 
 export type ForgedSchemaDefinition = Schema & {
     see?: (string | [ref: string, title: string])[];
@@ -179,7 +199,8 @@ export type ForgedSchemaDefinition = Schema & {
     dbColumn?: DBMLColumnOptions;
     dbIndex?: DBMLIndexOptionsDef;
     dbEnum?: DBMLEnumOptionsDef;
-    enumAnnotation?: DBMLEnumAnnotationOptions;
+    enumAnnotation?: SGEnumAnnotationOptions;
+    enumMember?: SGEnumMemberOptions;
     //
     dbEntity?: DBMLEntityOptionsDef;
     properties?: PRec<ForgedEntitySchema>;
@@ -209,6 +230,15 @@ export interface SchemaForgeValidationResult {
 
 export type SchemaForgeValidationFunction<T = unknown> = ValidateFunction<T>;
 export type SchemaForgeValidationReport = ErrorObject[];
+export type SchemaForgeSortableContents = 'properties' | 'required' | 'enum' | 'anyOf' | 'oneOf';
+export type SchemaForgeSortableContentSet = SchemaForgeSortableContents[];
+
+export const SchemaForgeDefaultSortableContents = [
+    'required',
+    'enum',
+    'anyOf',
+    'oneOf',
+] as const satisfies SchemaForgeSortableContentSet;
 
 type TypeExposeKind = Config['expose'];
 type DiscriminatorType = Config['discriminatorType'];

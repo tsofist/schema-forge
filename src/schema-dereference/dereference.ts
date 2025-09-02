@@ -7,7 +7,7 @@ import { DefaultSchemaDereferenceSharedCache, SchemaDereferenceSharedCache } fro
 import type { SchemaForgeDereferenceOptions } from './types';
 
 /**
- * Dereference a JSON Schema by resolving all (relative) `$ref` pointers.
+ * Recursively dereference a JSON Schema by resolving all relative `$ref` pointers.
  *
  * @returns new schema with no `$ref` pointers
  */

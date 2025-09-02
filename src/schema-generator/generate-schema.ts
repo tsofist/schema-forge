@@ -1,8 +1,10 @@
 import './extended-annotations-reader';
 import type { ARec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
+import { isEmptyObject } from '@tsofist/stem/lib/object/is-empty';
 import { valueIn } from '@tsofist/stem/lib/value-in';
 import Ajv from 'ajv';
+import { JSONSchema7Type } from 'json-schema';
 import { JSONPath } from 'jsonpath-plus';
 import {
     AnnotatedType,
@@ -44,12 +46,12 @@ import {
     TypeFlags,
     TypeQueryNode,
 } from 'typescript';
-import type { DBMLEnumAnnotationOptions } from '../dbml-generator/types';
 import { ForgedPropertySchema, ForgedSchema, ForgeSchemaOptions } from '../types';
 import { readJSDocDescription } from './helpers-tsc';
+import { SGEnumAnnotationOptions, SGEnumMemberOptions } from './kw.types';
 import { patchEnumNodeParser, SFEnumMetadataMap } from './patch-enum-node-parser';
 import { shrinkDefinitionName } from './shrink-definition-name';
-import { sortSchemaProperties } from './sort-properties';
+import { sortSchemaContents } from './sort-contents';
 import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY, TMP_FILES_SUFFIX } from './types';
 
 /**
@@ -143,7 +145,7 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
 
     result.definitions = Object.fromEntries(Object.entries((defs || {}) as ARec).sort());
 
-    if (options.sortObjectProperties) sortSchemaProperties(result.definitions);
+    if (options.sortContents ?? true) sortSchemaContents(result.definitions, options.sortContents);
 
     await new Ajv({
         strict: true,
@@ -165,29 +167,56 @@ class EnumTypeFormatterEx extends EnumTypeFormatter {
     override getDefinition(type: EnumType): ForgedPropertySchema {
         const id = type.getId();
         const inherited = super.getDefinition(type);
-        if (inherited?.enum) {
-            let count = 0;
-            const annotations: DBMLEnumAnnotationOptions = {};
+        const isMember = 'const' in inherited;
 
-            for (const value of inherited.enum) {
+        if (inherited && (inherited.enum || inherited.const)) {
+            let count = 0;
+            const enumAnnotation: SGEnumAnnotationOptions = {};
+            const enumMember = {} as SGEnumMemberOptions;
+            const append = (value: JSONSchema7Type) => {
                 if (valueIn(typeof value, ['string', 'number'])) {
                     const v = value as string | number;
                     const key = `${id}.${v}`;
                     const doc = this.metaMap.get(key);
                     if (doc) {
                         count++;
-                        const ann = (annotations[doc.title] = [doc.value]);
-                        if (doc.description) ann.push(doc.description);
-                        if (doc.comment) ann.push(doc.comment);
+                        if (isMember) {
+                            enumMember.title = doc.title;
+                            if (doc.description) enumMember.note = doc.description;
+                            if (doc.comment) enumMember.comment = doc.comment;
+                            if (doc.typeName) enumMember.enum = doc.typeName;
+                        } else {
+                            const rec = (enumAnnotation[doc.title] = [doc.value]);
+                            if (doc.description) rec.push(doc.description);
+                            if (doc.comment) rec.push(doc.comment);
+                            if (isMember && doc.typeName) {
+                                enumAnnotation[''] = [doc.typeName];
+                            }
+                        }
                     }
+                }
+            };
+
+            if (inherited.const) {
+                append(inherited.const);
+            } else if (inherited.enum) {
+                for (const value of inherited.enum) {
+                    append(value);
                 }
             }
 
             if (count > 0) {
-                return {
-                    ...inherited,
-                    enumAnnotation: annotations,
-                };
+                if (isMember && !isEmptyObject(enumMember)) {
+                    return {
+                        ...inherited,
+                        enumMember,
+                    };
+                } else if (!isMember && !isEmptyObject(enumAnnotation)) {
+                    return {
+                        ...inherited,
+                        enumAnnotation,
+                    };
+                }
             }
         }
         return inherited;

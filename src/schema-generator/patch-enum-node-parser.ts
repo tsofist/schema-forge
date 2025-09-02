@@ -18,9 +18,7 @@ export function patchEnumNodeParser(
 ) {
     const stack = (
         root as unknown as {
-            childNodeParser: {
-                nodeParsers: SubNodeParser[];
-            };
+            childNodeParser: { nodeParsers: SubNodeParser[] };
         }
     ).childNodeParser.nodeParsers;
 
@@ -64,7 +62,20 @@ export function patchEnumNodeParser(
         const resultId = result.getId();
 
         if (isEnumMember(node)) {
-            // todo EnumMember!
+            const memberValue = checker.getConstantValue(node);
+            const memberName = readNodeName(node);
+            const metaKey = `${resultId}.${String(memberValue)}`;
+            const description = readJSDocDescription(node, allowUseFallbackDescription);
+            const comment = readJSDocTagValue(node, 'comment');
+
+            meta.set(metaKey, {
+                typeName: readNodeName(node.parent),
+                title: memberName,
+                value: memberValue!,
+                description,
+                comment,
+            });
+
             return result;
         } else {
             for (const member of node.members) {

@@ -235,10 +235,10 @@ exports[`DBML Generator enums should generate dbEnum definitions 1`] = `
   {
     "dbEnum": true,
     "enum": [
-      "a-a-a",
-      "b_b_b",
       "C_c_90",
       "C_c_9:0.0",
+      "a-a-a",
+      "b_b_b",
     ],
     "enumAnnotation": {
       "AAA": [

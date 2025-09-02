@@ -65,6 +65,21 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
         } satisfies JSONSchema7,
     },
     {
+        keyword: 'enumMember',
+        dependencies: ['const'],
+        metaSchema: {
+            type: 'object',
+            properties: {
+                enum: { type: 'string' },
+                title: { type: 'string', pattern: NP_ENUM_KEY },
+                note: { type: 'string' },
+                comment: { type: 'string' },
+            },
+            required: ['enum', 'title'],
+            additionalProperties: false,
+        } satisfies JSONSchema7,
+    },
+    {
         keyword: 'faker',
         metaSchema: {
             oneOf: [

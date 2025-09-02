@@ -24,8 +24,8 @@ exports[`validator for a9 schema should be generated correctly with enums 1`] = 
     "EnumB": {
       "description": "Desc: EnumB",
       "enum": [
-        99,
         66,
+        99,
       ],
       "enumAnnotation": {
         "C": [
@@ -56,9 +56,9 @@ exports[`validator for a9 schema should be generated correctly with enums 1`] = 
     "EnumD": {
       "description": "Description for EnumD",
       "enum": [
-        "g-001",
-        123,
         0,
+        123,
+        "g-001",
       ],
       "enumAnnotation": {
         "G": [
@@ -91,19 +91,19 @@ exports[`validator for a9 schema should be generated correctly with enums 1`] = 
     "LiteralEnumB": {
       "description": "Desc: LiteralEnumB",
       "enum": [
-        99,
         66,
         77,
+        99,
       ],
       "type": "number",
     },
     "LiteralEnumC": {
       "description": "Desc: LiteralEnumC",
       "enum": [
-        "D",
-        "E",
         11,
         22,
+        "D",
+        "E",
       ],
       "type": [
         "string",
@@ -111,6 +111,6 @@ exports[`validator for a9 schema should be generated correctly with enums 1`] = 
       ],
     },
   },
-  "hash": "e278d0f8b239dd13bef943f042a2d077",
+  "hash": "9268cb4eba354abffcc260702d9ee960",
 }
 `;
