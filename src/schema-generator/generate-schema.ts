@@ -15,11 +15,11 @@ import {
     createProgram,
     DEFAULT_CONFIG,
     Definition,
+    DefinitionType,
     EnumType,
     EnumTypeFormatter,
     LiteralType,
     LiteralValue,
-    MultipleDefinitionsError,
     NodeParser,
     NumberType,
     ReferenceType,
@@ -290,13 +290,28 @@ class SchemaGeneratorEx extends SchemaGenerator {
         rootType: BaseType,
         childDefinitions: StringMap<Definition>,
     ) {
-        try {
+        if (this.#multipleDefinitionsErrorSuppression) {
+            const seen = new Set<string>();
+            const children = this.typeFormatter
+                .getChildren(rootType)
+                .filter((child): child is DefinitionType => child instanceof DefinitionType)
+                .filter((child) => {
+                    if (!seen.has(child.getId())) {
+                        seen.add(child.getId());
+                        return true;
+                    }
+                    return false;
+                });
+
+            children.reduce((definitions, child) => {
+                const name = child.getName();
+                if (!(name in definitions)) {
+                    definitions[name] = this.typeFormatter.getDefinition(child.getType());
+                }
+                return definitions;
+            }, childDefinitions);
+        } else {
             super.appendRootChildDefinitions(rootType, childDefinitions);
-        } catch (e) {
-            if (e instanceof MultipleDefinitionsError) {
-                if (this.#multipleDefinitionsErrorSuppression) return;
-            }
-            throw e;
         }
     }
 }
