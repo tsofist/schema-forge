@@ -4,6 +4,7 @@ import { asArray } from '@tsofist/stem/lib/as-array';
 import { raise } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
 import { randomString } from '@tsofist/stem/lib/string/random';
+import { BuildError } from 'ts-json-schema-generator';
 import { KEEP_GEN_ARTEFACTS } from '../artefacts-policy';
 import { buildSchemaDefinitionRef } from '../definition-info/ref';
 import { shallowDereferenceSchema } from '../schema-dereference/dereference-shallow';
@@ -13,6 +14,7 @@ import type {
     ForgeSchemaResult,
     SchemaForgeMetadata,
 } from '../types';
+import { formatForgeSchemaError } from './format-error';
 import { generateDraftTypeFiles } from './generate-drafts';
 import { generateSchemaByDraftTypes } from './generate-schema';
 
@@ -122,6 +124,11 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
                     encoding: 'utf8',
                 });
             }
+        } catch (e) {
+            if (e instanceof BuildError) {
+                console.error('[forgeSchema: build error]\n', formatForgeSchemaError(e as Error));
+            }
+            throw e;
         } finally {
             if (!KEEP_GEN_ARTEFACTS) {
                 await Promise.all(files.map((fileName) => unlink(fileName).catch(noop)));

@@ -658,7 +658,7 @@ describe('generator for a3', () => {
         // }
     });
 
-    it('extends should works', () => {
+    it('should works with extends: interface', () => {
         const props = forgeSchemaResult!.schema.definitions?.BAPI__APIInterface?.properties;
         expect(props).toBeTruthy();
         expect(keysOf(props)).toStrictEqual([

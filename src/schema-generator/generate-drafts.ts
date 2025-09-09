@@ -1,5 +1,6 @@
 import { writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, isAbsolute, resolve } from 'node:path';
+import type { PRec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
 import { TextBuilder } from '@tsofist/stem/lib/string/text-builder';
 import { createProgram } from 'ts-json-schema-generator';
@@ -7,13 +8,15 @@ import { type CompletedConfig, DEFAULT_CONFIG } from 'ts-json-schema-generator/d
 import {
     type EnumDeclaration,
     type ExportDeclaration,
+    type FunctionTypeNode,
     type InterfaceDeclaration,
+    type MethodSignature,
     type NodeArray,
     type ParameterDeclaration,
     type Program,
-    type SignatureDeclarationBase,
     type SourceFile,
     type Statement,
+    type Symbol as TSSymbol,
     type TypeAliasDeclaration,
     type TypeElement,
     type VariableDeclaration,
@@ -32,13 +35,14 @@ import {
     isPropertySignature,
     isStringLiteral,
     isTypeAliasDeclaration,
+    isTypeLiteralNode,
 } from 'typescript';
 import {
     buildAPIInterfaceSDS,
     buildAPIMethodArgsSDS,
     buildAPIMethodResultSDS,
 } from '../definition-info/api-signature';
-import { ForgeSchemaOptions } from '../types';
+import type { ForgeSchemaOptions } from '../types';
 import {
     hasJSDocTag,
     readInterfaceGenericText,
@@ -230,8 +234,28 @@ function processAPIInterfaceDeclaration(statement: InterfaceDeclaration, context
     const interfaceDesc = readJSDocDescription(statement, allowUseFallbackDescription);
     const interfaceDeprecated = getTextOfJSDocComment(getJSDocDeprecatedTag(statement)?.comment);
 
+    const interfaceSymbol = context.typeChecker.getSymbolAtLocation(statement.name)!;
+    const interfaceType = context.typeChecker.getDeclaredTypeOfSymbol(interfaceSymbol);
+    const properties: PRec<TSSymbol> = {};
+
+    for (const symbol of context.typeChecker.getPropertiesOfType(interfaceType)) {
+        for (const decl of symbol.declarations || []) {
+            if (isMethodSignature(decl) || isPropertySignature(decl) || isFunctionTypeNode(decl)) {
+                const name = readNodeName(decl);
+                if (name) {
+                    if (properties[name]) {
+                        // todo throw?
+                    } else {
+                        properties[name] = symbol;
+                    }
+                }
+            }
+        }
+    }
+
     function onSignature(
-        method: SignatureDeclarationBase,
+        _property: TSSymbol,
+        method: FunctionTypeNode | MethodSignature,
         memberName: string,
         memberDescription: string | undefined,
         deprecated: string | undefined,
@@ -307,15 +331,17 @@ function processAPIInterfaceDeclaration(statement: InterfaceDeclaration, context
         if (isPrivate) return;
 
         const memberName = readNodeName(member);
-        const memberDescription = readJSDocDescription(member, allowUseFallbackDescription);
+        const property = properties[memberName];
+        if (!property) return;
 
+        const memberDescription = readJSDocDescription(member, allowUseFallbackDescription);
         const deprecated = getTextOfJSDocComment(getJSDocDeprecatedTag(member)?.comment);
 
         if (isMethodSignature(member)) {
-            onSignature(member, memberName, memberDescription, deprecated);
+            onSignature(property, member, memberName, memberDescription, deprecated);
         } else if (isPropertySignature(member)) {
             if (member.type && isFunctionTypeNode(member.type)) {
-                onSignature(member.type, memberName, memberDescription, deprecated);
+                onSignature(property, member.type, memberName, memberDescription, deprecated);
             } else {
                 definitionsMetaList.push({
                     name: memberName,
@@ -335,7 +361,7 @@ function processAPIInterfaceDeclaration(statement: InterfaceDeclaration, context
                     context.typeChecker.getTypeAtLocation(type).symbol?.declarations?.[0];
                 if (
                     declaration &&
-                    isInterfaceDeclaration(declaration) &&
+                    (isInterfaceDeclaration(declaration) || isTypeLiteralNode(declaration)) &&
                     declaration.members?.length
                 ) {
                     for (const member of declaration.members) {
