@@ -43,6 +43,8 @@ export interface ForgeSchemaOptions {
      * @see https://ajv.js.org/json-schema.html#metadata-keywords ajv
      */
     readonly schemaMetadata?: {
+        repository?: string;
+        package?: string;
         title?: string;
         description?: string;
         $comment?: string;
@@ -173,6 +175,7 @@ export type ForgedSchema = Reintroduce<
         $schema: typeof ForgedSchemaDraft7Id;
         hash?: string;
         version?: string;
+        package?: string;
         repository?: string;
         //
         $defs?: Rec<ForgedSchemaDefinition>;
