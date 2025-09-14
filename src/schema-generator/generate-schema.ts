@@ -89,9 +89,13 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
         $id: options.schemaId,
         version: undefined,
         hash: '',
-        title: undefined,
+        package: undefined,
+        repository: undefined,
         description: undefined,
+        title: undefined,
         $comment: undefined,
+        definitions: undefined,
+        $defs: undefined,
     } as const;
     const defs = (result.definitions ??= {});
     const formatter = createFormatter(options.sourcesTypesGeneratorConfig, (formatter) => {
