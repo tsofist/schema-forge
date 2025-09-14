@@ -9,21 +9,24 @@ const NP_API_MEMBER = `${NP_API_INTERFACE.substring(0, NP_API_INTERFACE.length -
 
 export const SFRAPIDefinitionKeywords: readonly KeywordDefinition[] = [
     {
-        keyword: 'apiInterface',
+        keyword: ['interface', 'apiInterface'],
         metaSchema: { type: 'string', pattern: NP_API_INTERFACE },
     },
     {
-        keyword: 'apiProperty',
+        keyword: ['property', 'apiProperty'],
         metaSchema: { type: 'string', pattern: NP_API_PROP },
     },
     {
-        keyword: 'apiMethod',
+        keyword: ['method', 'apiMethod'],
         metaSchema: { type: 'string', pattern: NP_API_METHOD },
     },
     {
-        keyword: 'apiMember',
+        keyword: ['member', 'apiMember'],
         metaSchema: { type: 'string', pattern: NP_API_MEMBER },
     },
 ] as const satisfies (KeywordDefinition & {
-    keyword: keyof PickFieldsWithPrefix<Rec<unknown, SF_EXTRA_JSS_TAG_NAME>, 'api'>;
+    keyword: [
+        'api' | 'interface' | 'property' | 'method' | 'member', // <-- legacy names todo
+        keyof PickFieldsWithPrefix<Rec<unknown, SF_EXTRA_JSS_TAG_NAME>, 'api'>,
+    ];
 })[];
