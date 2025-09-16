@@ -26,7 +26,10 @@ export const SFRAPIDefinitionKeywords: readonly KeywordDefinition[] = [
     },
 ] as const satisfies (KeywordDefinition & {
     keyword: [
-        'api' | 'interface' | 'property' | 'method' | 'member', // <-- legacy names todo
+        keyof Pick<
+            Rec<unknown, SF_EXTRA_JSS_TAG_NAME>,
+            'interface' | 'property' | 'method' | 'member' // <-- todo legacy names
+        >,
         keyof PickFieldsWithPrefix<Rec<unknown, SF_EXTRA_JSS_TAG_NAME>, 'api'>,
     ];
 })[];

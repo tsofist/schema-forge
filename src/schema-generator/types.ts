@@ -3,7 +3,12 @@ import type { Config } from 'ts-json-schema-generator';
 export const TMP_FILES_SUFFIX = '.schema-forge.temporary-generated.tmp';
 
 export const SFG_EXTRA_TAGS = [
-    //
+    // todo legacy names -->
+    'interface',
+    'property',
+    'method',
+    'member',
+    // <--
     'apiInterface',
     'apiProperty',
     'apiMethod',
