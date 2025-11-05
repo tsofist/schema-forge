@@ -22,6 +22,72 @@ import { forgeSchema } from './forge';
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
+describe('validator for a10', () => {
+    const outputSchemaFile = './a10.generated.schema.tmp.json';
+    const outputSchemaMetadataFile = './a10.generated.definitions.tmp.json';
+
+    let registry: SchemaForgeRegistry;
+    let loadedSchema: SchemaObject[];
+
+    beforeAll(async () => {
+        await forgeSchema({
+            schemaId: 'test',
+            allowUseFallbackDescription: true,
+            tsconfigFrom: './tsconfig.build-test.json',
+            sourcesDirectoryPattern: 'test-sources/a10',
+            sourcesFilesPattern: ['service-api.ts', 'types.ts'],
+            outputSchemaFile,
+            outputSchemaMetadataFile,
+            expose: 'all',
+            explicitPublic: false,
+        });
+        registry = createSchemaForgeRegistry({
+            engine: { meta: true, verbose: true },
+        });
+        loadedSchema = await loadJSONSchema([outputSchemaFile]);
+        registry.addSchema(loadedSchema);
+    });
+    afterAll(async () => {
+        if (!KEEP_SPEC_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
+    });
+
+    it('basic', () => {
+        const schema = registry.getSchema('test#/definitions/ComplexTypeA');
+        const result = registry.validateBySchema('test#/definitions/ComplexTypeA', {
+            id: '123',
+            name: 'Test',
+            values: [1, 2, 3],
+            isActive: true,
+            details: {
+                status: 'inactive',
+                metadata: {
+                    createdAt: new Date('2025-11-05T00:00:00Z'),
+                    updatedAt: new Date('2025-11-05T00:00:00Z'),
+                    tags: ['tag1', 'tag2'],
+                },
+                payload: {
+                    data: { key: 'example', value: 42 },
+                    checksum: 'abc123',
+                },
+            },
+        });
+
+        expect({
+            schema,
+            result,
+        }).toMatchSnapshot();
+    });
+
+    it('checks', () => {
+        expect(() => {
+            registry.getSchema('test#/definitions/ComplexTypeB');
+        }).toThrow(/Variant schema must require discriminator property/);
+    });
+});
+
 describe('validator for a9', () => {
     const outputSchemaFile = './a9.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a9.generated.definitions.tmp.json';

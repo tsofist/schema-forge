@@ -8,7 +8,7 @@ Project TestProject {
   note:
     '''
     Multi-line note
-
+    
     > Powered by [SchemaForge]
     '''
 }
@@ -44,9 +44,10 @@ Table some_schema.some_entity_2 {
   int integer [not null, note:
     '''
     Integer value.
-
+    
     References:   - PostgreSQL: less than bigint and greater than integer (without NaN and +/- Infinity)
     '''
+
   ]
   int_array jsonb [not null]
   float number [not null, note: "Floating-point number."]
@@ -71,37 +72,42 @@ Table some_schema.some_entity_3 {
   int integer [not null, note:
     '''
     Integer compatibility type.
-
+    
     References:   - PostgreSQL: integer
     '''
+
   ]
   bigint integer [not null, note:
     '''
     Big integer compatibility type.
-
+    
     References:   - PostgreSQL: bigint
     '''
+
   ]
   smallint integer [not null, note:
     '''
     Small integer compatibility type.
-
+    
     References:   - PostgreSQL: smallint
     '''
+
   ]
   float text [not null, note:
     '''
     Safe exact floating-point number.
-
+    
     References:   - PostgreSQL: float8, double precision, numeric(30,18)
     '''
+
   ]
   money text [not null, note:
     '''
     String representation of a floating point number with up to 2 decimal places.
-
+    
     References:   - PostgreSQL: usual numeric(12,2) or up to numeric(15,2)
     '''
+
   ]
 }
 
@@ -110,72 +116,80 @@ Table some_schema.some_entity_5 {
   zdt text [not null, note:
     '''
     ISO zulu date-time string (GMT time zone).
-
+    
     Rules:
     * Date: YES
     * Time: YES
     * UTC offset: NO
     * Milliseconds: Optional
     '''
+
   ]
   ldt text [not null, note:
     '''
     ISO local date-time string.
-
+    
     Rules:
     * Date: YES
     * Time: YES
     * UTC offset: Optional
     * Milliseconds: Optional
     '''
+
   ]
   ld text [not null, note:
     '''
     ISO local date string.
-
+    
     Rules:  * Date: YES  * Time: NO  * UTC offset: NO  * Milliseconds: NO
     '''
+
   ]
   zd text [not null, note:
     '''
     ISO zulu date-time string (GMT time zone).
-
+    
     Rules:
     * Date: YES
     * Time: YES
     * UTC offset: NO
     * Milliseconds: Optional
     '''
+
   ]
   pi integer [not null, note: "Positive integer value."]
   pf number [not null, note: "Positive floating-point number."]
   psf text [not null, note:
     '''
     Safe positive floating-point number.
-
+    
     References:   - PostgreSQL: float8, double precision, numeric(30,18)
     '''
+
   ]
   ci integer [not null, note:
     '''
     Integer compatibility type.
-
+    
     References:   - PostgreSQL: integer
     '''
+
   ]
   cnnbi integer [not null, note:
     '''
     Non-negative big integer compatibility type.
-
+    
     References:   - PostgreSQL: bigint
     '''
+
   ]
   csni integer [not null, note:
     '''
     Negative small integer compatibility type.
-
+    
     References:   - PostgreSQL: smallint
     '''
+
   ]
 }
 
@@ -307,7 +321,7 @@ Table some_schema.some_entity_12 {
 // V2
 // This is a comment
 // Important: This is a multi-line comment
-//
+// 
 // Outlined description
 Table some_schema.some_entity_13 {
   stub text [not null]

@@ -27,6 +27,8 @@ export const SFG_EXTRA_TAGS = [
     //
     'faker',
     //
+    'discriminateBy',
+    //
     'version',
     'hash',
     'repository',

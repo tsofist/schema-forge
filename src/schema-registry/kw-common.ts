@@ -1,7 +1,9 @@
-import type { Rec } from '@tsofist/stem';
-import type { KeywordDefinition } from 'ajv';
+import type { Rec, URec } from '@tsofist/stem';
+import { txt } from '@tsofist/stem/lib/string/text-builder';
+import Ajv, { KeywordDefinition, FuncKeywordDefinition } from 'ajv';
 import type { JSONSchema7 } from 'json-schema';
 import type { SF_EXTRA_JSS_TAG_NAME } from '../schema-generator/types';
+import type { ForgedPropertySchema, ForgedSchema, SchemaForgeValidationFunction } from '../types';
 
 const FakerModulePattern = '^[a-zA-Z.]+$';
 const NP_ENUM_KEY = '^[a-zA-Z0-9-\\._]+$';
@@ -115,6 +117,124 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
             ],
         },
     },
+    {
+        keyword: 'discriminateBy',
+        metaSchema: { type: 'string' },
+        type: 'object',
+        schemaType: 'string',
+        compile(propertyName: string, targetSchema, ctx) {
+            const check = () => {
+                const fail = (message: string) => {
+                    const t = txt([message]);
+                    t.at([
+                        ['Property:', propertyName],
+                        ['Schema path:', ctx.errSchemaPath],
+                    ]);
+                    throw new Error(String(t));
+                };
+                const variants = (targetSchema.anyOf || targetSchema.oneOf) as
+                    | ForgedPropertySchema[]
+                    | undefined;
+
+                if (!variants?.length) {
+                    return fail(`Schema must have "oneOf" or "anyOf" keyword`);
+                }
+
+                const rootSchema = ctx.schemaEnv.root.schema as ForgedSchema;
+                const rootDefs = rootSchema.definitions || rootSchema.$defs || {};
+                const validators = new Map<PropertyKey, SchemaForgeValidationFunction>();
+
+                const deref = (schema: ForgedSchema | ForgedPropertySchema | undefined) => {
+                    if (!schema) return undefined;
+                    if (schema.$ref) {
+                        if (typeof schema.$ref !== 'string' || !schema.$ref.startsWith('#/'))
+                            return undefined;
+                        const localRef = schema.$ref.slice(2).split('/').at(1);
+                        if (!localRef) return undefined;
+
+                        const result = rootDefs[localRef];
+                        if (result?.$ref) return deref(result as ForgedSchema);
+                        return result;
+                    }
+                    return schema;
+                };
+
+                for (const variant of variants) {
+                    const val = deref(variant);
+                    if (val) {
+                        if (
+                            !val.properties ||
+                            !val.required ||
+                            !val.required.includes(propertyName)
+                        ) {
+                            return fail(`Variant schema must require discriminator property`);
+                        }
+
+                        const propSchema = deref(
+                            val.properties[propertyName] as ForgedPropertySchema,
+                        );
+
+                        if (propSchema && 'const' in propSchema) {
+                            validators.set(
+                                propSchema.const as PropertyKey,
+                                ctx.self.compile({ ...val, definitions: rootDefs }),
+                            );
+                        }
+                    }
+                }
+
+                return validators;
+            };
+
+            const preparedValidators = check();
+
+            const validator: DataValidateFunction = function ValidatorForDiscriminateBy(
+                //
+                this: Ajv,
+                data: URec,
+                ctx,
+            ): boolean {
+                validator.errors = [];
+
+                if (!(propertyName in data)) {
+                    validator.errors.push({
+                        keyword: 'discriminateBy',
+                        propertyName,
+                        message: 'Discriminator property is missing',
+                    });
+                } else {
+                    const discriminationValue = data[propertyName] as PropertyKey;
+                    const preparedValidator = preparedValidators.get(discriminationValue);
+
+                    if (!preparedValidator) {
+                        validator.errors.push({
+                            keyword: 'discriminateBy',
+                            propertyName,
+                            message: `No matching schema for discriminator value: ${String(
+                                discriminationValue,
+                            )}`,
+                        });
+                    } else {
+                        preparedValidator(data, ctx);
+                        if (preparedValidator.errors && preparedValidator.errors.length) {
+                            validator.errors.push(
+                                ...preparedValidator.errors.map((item) => {
+                                    delete item.parentSchema?.definitions;
+                                    return item;
+                                }),
+                            );
+                        }
+                    }
+                }
+
+                return validator.errors.length === 0;
+            };
+
+            return validator;
+        },
+    },
 ] as const satisfies (KeywordDefinition & {
     keyword: keyof Rec<unknown, SF_EXTRA_JSS_TAG_NAME>;
 })[];
+
+type DataValidateFunction = ReturnType<Exclude<FuncKeywordDefinition['compile'], undefined>>;

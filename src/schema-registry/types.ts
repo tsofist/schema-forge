@@ -1,7 +1,6 @@
 import type { ArrayMay, Nullable } from '@tsofist/stem';
 import type { NonNegativeInt } from '@tsofist/stem/lib/number/integer/types';
 import type { ErrorsTextOptions, Options } from 'ajv';
-import type { Options as AjvOptions } from 'ajv/dist/core';
 import type { JSONSchema7 } from 'json-schema';
 import type { SchemaDefinitionInfo, SchemaDefinitionInfoKind } from '../definition-info/types';
 import type { SchemaForgeValidationContextBase } from '../efc';
@@ -130,7 +129,7 @@ export interface SchemaForgeRegistryOptions {
      * @see https://ajv.js.org/options.html Options reference
      * @see https://ajv.js.org/json-schema.html Schema reference
      */
-    engine?: AjvOptions;
+    engine?: Options;
     /**
      * Use additional formats via ajv-formats
      *

@@ -35,23 +35,24 @@ import {
 } from './types';
 
 const SFR_DEFAULT_OPTIONS = {
-    meta: true,
-    defaultMeta: 'http://json-schema.org/draft-07/schema',
+    addUsedSchema: false,
     allErrors: true,
+    allowUnionTypes: true,
+    code: { es5: false, esm: false, optimize: 2 },
+    coerceTypes: false,
+    defaultMeta: 'http://json-schema.org/draft-07/schema',
+    discriminator: false,
+    inlineRefs: true,
+    meta: true,
+    ownProperties: true,
+    removeAdditional: false,
     strict: true,
     strictSchema: true,
-    strictTypes: false,
+    validateSchema: true,
     strictTuples: false,
-    allowUnionTypes: true,
-    coerceTypes: false,
-    removeAdditional: false,
+    strictTypes: false,
     unicodeRegExp: true,
     useDefaults: false,
-    addUsedSchema: false,
-    inlineRefs: true,
-    ownProperties: true,
-    discriminator: false,
-    code: { es5: false, esm: false, optimize: 2 },
 } as const satisfies AjvOptions;
 
 /**
@@ -309,6 +310,29 @@ function addJSDocKeywords(engine: Ajv) {
         ...SFRAPIDefinitionKeywords,
         ...SFRDBMLKeywords,
     ]);
+
+    const oKeywords = engine.RULES.rules.find((value) => value.type === 'object');
+    if (oKeywords) {
+        const top = ['discriminateBy'] as const satisfies SF_EXTRA_JSS_TAG_NAME[];
+
+        oKeywords.rules.sort((a, b) => {
+            const ia = top.indexOf(a.keyword);
+            const ib = top.indexOf(b.keyword);
+            if (ia === -1 && ib === -1) return 0;
+            if (ia === -1) return 1;
+            if (ib === -1) return -1;
+            return ia - ib;
+        });
+
+        const first = oKeywords.rules.at(0);
+
+        if (first && first.keyword === 'discriminateBy') {
+            engine.RULES.rules.unshift({
+                type: 'object',
+                rules: [first],
+            });
+        }
+    }
 }
 
 function checkIsSyncValidator(
