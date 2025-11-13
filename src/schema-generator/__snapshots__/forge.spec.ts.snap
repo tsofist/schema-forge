@@ -772,3 +772,54 @@ exports[`validator for a10 basic 1`] = `
   },
 }
 `;
+
+exports[`validator for a11 extra tags: basic 1`] = `
+{
+  "$id": "test",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "A1": {
+      "abstract": true,
+      "additionalProperties": false,
+      "description": "This is a type definition for A1",
+      "flimsy": true,
+      "properties": {
+        "a": {
+          "const": 1,
+          "type": "number",
+        },
+      },
+      "required": [
+        "a",
+      ],
+      "struct": true,
+      "type": "object",
+    },
+    "A2": {
+      "additionalProperties": false,
+      "properties": {
+        "a": {
+          "abstract": true,
+          "additionalProperties": false,
+          "flimsy": true,
+          "properties": {
+            "t": {
+              "type": "number",
+            },
+          },
+          "required": [
+            "t",
+          ],
+          "struct": true,
+          "type": "object",
+        },
+      },
+      "required": [
+        "a",
+      ],
+      "type": "object",
+    },
+  },
+  "hash": "9c9a4dd1ffb7226f5bf047d3ecdc133e",
+}
+`;

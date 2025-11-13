@@ -47,6 +47,7 @@ import {
     TypeQueryNode,
 } from 'typescript';
 import { ForgedPropertySchema, ForgedSchema, ForgeSchemaOptions } from '../types';
+import { mergeConfigExtraTags } from './generate-drafts';
 import { readJSDocDescription } from './helpers-tsc';
 import { SGEnumAnnotationOptions, SGEnumMemberOptions } from './kw.types';
 import { patchEnumNodeParser, SFEnumMetadataMap } from './patch-enum-node-parser';
@@ -69,6 +70,8 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
         discriminatorType: options.discriminatorType ?? DEFAULT_CONFIG.discriminatorType,
         ...SFG_CONFIG_MANDATORY,
     };
+
+    mergeConfigExtraTags(generatorConfig, options);
 
     const generatorProgram = createProgram(generatorConfig);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

@@ -150,6 +150,10 @@ export interface ForgeSchemaOptions {
      * @default false
      */
     readonly suppressMultipleDefinitionsErrors?: boolean;
+    /**
+     * Extra JSDoc tags to be recognized by the generator and included in the schema definitions.
+     */
+    readonly extraTags?: string[];
 }
 
 export type ForgedSchemaDefinitionShortName = `DSN${string}_H${string}`;

@@ -67,7 +67,9 @@ export async function generateDraftTypeFiles(options: SFDTGOptions) {
         discriminatorType: DEFAULT_CONFIG.discriminatorType,
         ...SFG_CONFIG_MANDATORY,
     };
-    // const files: string[] = [];
+
+    mergeConfigExtraTags(sourcesTypesGeneratorConfig, options);
+
     const ctx = createContext(options, sourcesTypesGeneratorConfig);
     let definitions = ctx.definitions;
 
@@ -90,6 +92,14 @@ export async function generateDraftTypeFiles(options: SFDTGOptions) {
         sourcesTypesGeneratorConfig,
         namesBySourceFile: ctx.namesBySourceFile,
     };
+}
+
+export function mergeConfigExtraTags(target: CompletedConfig, source: ForgeSchemaOptions) {
+    if (source.extraTags?.length) {
+        const tags = new Set([...target.extraTags, ...source.extraTags]);
+        target.extraTags = Array.from(tags);
+    }
+    return target;
 }
 
 async function processSourceFile(sourceFileName: string, context: SFDTGContext) {

@@ -22,6 +22,61 @@ import { forgeSchema } from './forge';
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
+describe('validator for a11', () => {
+    const outputSchemaFile = './a11.generated.schema.tmp.json';
+    const outputSchemaMetadataFile = './a11.generated.definitions.tmp.json';
+
+    let registry: SchemaForgeRegistry;
+    let loadedSchema: SchemaObject[];
+
+    beforeAll(async () => {
+        await forgeSchema({
+            schemaId: 'test',
+            allowUseFallbackDescription: true,
+            tsconfigFrom: './tsconfig.build-test.json',
+            sourcesDirectoryPattern: 'test-sources/a11',
+            sourcesFilesPattern: ['service-api.ts', 'types.ts'],
+            outputSchemaFile,
+            outputSchemaMetadataFile,
+            expose: 'export',
+            explicitPublic: true,
+            extraTags: ['abstract', 'struct', 'flimsy'],
+        });
+        loadedSchema = await loadJSONSchema([outputSchemaFile]);
+        registry = createSchemaForgeRegistry({
+            engine: {
+                meta: true,
+                verbose: true,
+                strictSchema: true,
+                validateSchema: true,
+                strict: true,
+                strictTypes: true,
+                strictTuples: false,
+                allErrors: true,
+                allowUnionTypes: true,
+                schemas: [loadedSchema],
+                keywords: [
+                    'abstract',
+                    'struct',
+                    { keyword: 'flimsy', type: 'object', schemaType: 'boolean' },
+                ],
+            },
+        });
+        registry.warmupCacheSync();
+    });
+    afterAll(async () => {
+        if (!KEEP_SPEC_ARTEFACTS) {
+            await unlink(outputSchemaFile).catch(noop);
+            await unlink(outputSchemaMetadataFile).catch(noop);
+        }
+    });
+
+    it('extra tags: basic', () => {
+        const schema = registry.getRootSchema('test');
+        expect(schema).toMatchSnapshot();
+    });
+});
+
 describe('validator for a10', () => {
     const outputSchemaFile = './a10.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a10.generated.definitions.tmp.json';
