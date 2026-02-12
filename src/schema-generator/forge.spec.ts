@@ -111,7 +111,7 @@ describe('validator for a10', () => {
 
     it('basic', () => {
         const schema = registry.getSchema('test#/definitions/ComplexTypeA');
-        const result = registry.validateBySchema('test#/definitions/ComplexTypeA', {
+        const data = {
             id: '123',
             name: 'Test',
             values: [1, 2, 3],
@@ -128,7 +128,8 @@ describe('validator for a10', () => {
                     checksum: 'abc123',
                 },
             },
-        });
+        };
+        const result = registry.validateBySchema('test#/definitions/ComplexTypeA', data);
 
         expect({
             schema,
@@ -393,6 +394,9 @@ describe('generator for a6', () => {
         expect(registry.getSchema('test#/definitions/CollectionItemID3')).toStrictEqual({
             format: 'uuid',
             type: 'string',
+            description: ['UUID with string representation.', '', 'Version: unspecified.'].join(
+                '\n',
+            ),
             // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
         });
 
@@ -418,6 +422,9 @@ describe('generator for a6', () => {
         expect(registry.getSchema('test#/definitions/CollectionItemID5')).toStrictEqual({
             format: 'uuid',
             type: 'string',
+            description: ['UUID with string representation.', '', 'Version: unspecified.'].join(
+                '\n',
+            ),
             // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
         });
 
@@ -428,6 +435,9 @@ describe('generator for a6', () => {
             expect(rec).toBeTruthy();
             expect((rec as any).propertyNames).toStrictEqual({
                 format: 'uuid',
+                description: ['UUID with string representation.', '', 'Version: unspecified.'].join(
+                    '\n',
+                ),
                 // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
             });
         }

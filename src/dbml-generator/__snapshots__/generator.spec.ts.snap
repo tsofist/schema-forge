@@ -40,7 +40,14 @@ Table some_schema.some_entity_1 {
 Table some_schema.some_entity_2 {
   ref uuid [pk, not null, note: "Some reference."]
   extra_ref uuid [pk, not null, note: "Some reference."]
-  uuid uuid [not null]
+  uuid uuid [not null, note:
+    '''
+    UUID with string representation.
+    
+    Version: unspecified.
+    '''
+
+  ]
   int integer [not null, note:
     '''
     Integer value.
@@ -112,7 +119,14 @@ Table some_schema.some_entity_3 {
 }
 
 Table some_schema.some_entity_5 {
-  uid uuid [not null]
+  uid uuid [not null, note:
+    '''
+    UUID with string representation.
+    
+    Version: unspecified.
+    '''
+
+  ]
   zdt text [not null, note:
     '''
     ISO zulu date-time string (GMT time zone).

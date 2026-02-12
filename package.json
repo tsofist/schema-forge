@@ -22,7 +22,7 @@
   "dependencies": {
     "@dbml/core": "~3.14.1",
     "@faker-js/faker": "^9.9.0",
-    "@tsofist/stem": "^5.11.0",
+    "@tsofist/stem": "^5.23.1",
     "@ungap/structured-clone": "^1.3.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
@@ -39,9 +39,9 @@
     "@types/supertest": "^6.0.3",
     "@types/ungap__structured-clone": "^1.2.0",
     "jest": "~30.2.0",
-    "rimraf": "^6.0.1",
-    "supertest": "^7.1.4",
-    "ts-jest": "~29.4.5",
+    "rimraf": "^6.1.2",
+    "supertest": "^7.2.2",
+    "ts-jest": "~29.4.6",
     "typescript": "~5.9.3"
   },
   "publishConfig": {
