@@ -75,6 +75,16 @@ export interface SchemaForgeRegistry {
     getRootSchema: (schemaId: string) => JSONSchema7 | undefined;
 
     /**
+     * Check if root schema is already registered
+     */
+    hasRootSchema: (schemaId: string) => boolean;
+
+    /**
+     * Remove root schema from registry
+     */
+    removeRootSchema: (schemaId: string) => boolean;
+
+    /**
      * Validate data by schema definition reference
      */
     validateBySchema: (

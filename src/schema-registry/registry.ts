@@ -248,6 +248,17 @@ export function createSchemaForgeRegistry(
         return engine.schemas[schemaId]?.schema as JSONSchema7 | undefined;
     }
 
+    function hasRootSchema(schemaId: string): boolean {
+        return engine.schemas[schemaId]?.schema != null;
+    }
+
+    function removeRootSchema(schemaId: string): boolean {
+        const exists = hasRootSchema(schemaId);
+        engine.removeSchema(schemaId);
+        if (exists) rev++;
+        return exists;
+    }
+
     function warmupCacheSync() {
         mapDefinitions((name, schemaId) => {
             const ref = buildSchemaDefinitionRef(name, schemaId);
@@ -284,6 +295,9 @@ export function createSchemaForgeRegistry(
         clone,
 
         getRootSchema,
+        hasRootSchema,
+        removeRootSchema,
+
         addSchema,
         getSchema,
         hasSchema,
