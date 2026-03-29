@@ -11,6 +11,6 @@
 .vscode/
 .history/
 
-*.tmp.json
-*.tmp.ts
+*.tmp.*
+*.private.*
 *generated.tmp.ts

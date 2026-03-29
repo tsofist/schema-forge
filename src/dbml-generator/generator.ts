@@ -9,11 +9,9 @@ import { substr } from '@tsofist/stem/lib/string/substr';
 import { TextBuilder } from '@tsofist/stem/lib/string/text-builder';
 import type { JSONSchema7 } from 'json-schema';
 import type { SchemaDefinitionInfoForType } from '../definition-info/types';
-import {
-    createSchemaDereferenceSharedCache,
-    SchemaDereferenceSharedCache,
-} from '../schema-dereference/cache';
+import { createSchemaDereferenceSharedCache } from '../schema-dereference/cache';
 import { dereferenceSchema } from '../schema-dereference/dereference';
+import type { SchemaForgeDereferenceOptions } from '../schema-dereference/types';
 import type { SchemaForgeRegistry } from '../schema-registry/types';
 import type { ForgedEntitySchema, ForgedPropertySchema, ForgedSchemaDefinition } from '../types';
 import type {
@@ -66,24 +64,31 @@ export function generateDBMLSpec(
         }
     }
 
+    const dereferencingOptions: SchemaForgeDereferenceOptions = {
+        throwOnDereferenceFailure: true,
+        sharedCacheStorage: createSchemaDereferenceSharedCache(),
+    };
+
     for (const { definitions, scopeName = DefaultScopeName, schemaId } of sources.values()) {
         let dereferencedRootSchema = dereferencedRootSchemas.get(schemaId)!;
+
         if (!dereferencedRootSchemas.has(schemaId)) {
             const root =
                 schemaRegistry.getRootSchema(schemaId) ||
                 raise(`Root schema ${schemaId} not found`);
             dereferencedRootSchema =
-                dereferenceSchema(root, {
-                    throwOnDereferenceFailure: true,
-                    sharedCacheStorage:
-                        DereferenceSchemaCache ||
-                        (DereferenceSchemaCache = createSchemaDereferenceSharedCache()),
-                }) || raise(`Failed to dereference root schema for ${schemaId}`);
+                dereferenceSchema(root, dereferencingOptions) ||
+                raise(`Failed to dereference root schema for ${schemaId}`);
             dereferencedRootSchemas.set(schemaId, dereferencedRootSchema);
         }
 
         for (const definition of definitions) {
-            const tableSpec = generateTable(definition, options, dereferencedRootSchema);
+            const tableSpec = generateTable(
+                definition,
+                options,
+                dereferencedRootSchema,
+                dereferencingOptions,
+            );
             if (tableSpec) {
                 if (tables.has(tableSpec.name)) {
                     raise(`Definitions contain duplicate table name: ${tableSpec.name}`);
@@ -135,13 +140,21 @@ function generateTable(
     info: SchemaDefinitionInfoForType,
     options: DBMLGeneratorOptions,
     dereferencedRootSchema: JSONSchema7,
+    dereferenceOptions: SchemaForgeDereferenceOptions,
 ): TableSpec | undefined {
     const includeNotes = options.includeNotes ?? false;
     const entityTypeName = info.type;
     const columnsOrder = options.columnsOrder || DefaultColumnsOrder;
-    const entitySchema = (dereferencedRootSchema.definitions || dereferencedRootSchema.$defs)?.[
+    let entitySchema = (dereferencedRootSchema.definitions || dereferencedRootSchema.$defs)?.[
         entityTypeName
     ];
+    if (entitySchema) {
+        entitySchema = dereferenceSchema(entitySchema as JSONSchema7, {
+            ...dereferenceOptions,
+            definitionsSource: dereferencedRootSchema,
+        });
+    }
+
     if (!entitySchema) return;
     if (typeof entitySchema !== 'object')
         raise(`Invalid definition type for table: ${typeof entitySchema} (expected object)`);
@@ -219,7 +232,7 @@ function generateColumns(
 
         const isRequired = requiredFields.includes(key);
         const isColumnNullable = isNullable(property);
-        const columnType = getDBType(property, schemaId);
+        const columnType = getDBType(property, schemaId, key, tableName);
         const attributes = generateColumnAttributes(
             key,
             property,
@@ -340,7 +353,7 @@ function generateIndexes(
                     const field = substr(rawKey, '.');
                     const index = (idx[indexName] ||= {
                         ...(typeof item === 'object' ? item : {}),
-                        columnType: getDBType(schemaProperties[column], schemaId),
+                        columnType: getDBType(schemaProperties[column], schemaId, key, tableName),
                         columns: [],
                         fields: [],
                     });
@@ -440,9 +453,12 @@ function isNullable(property: JSONSchema7): boolean {
     );
 }
 
-let DereferenceSchemaCache: SchemaDereferenceSharedCache | undefined;
-
-function getDBType(property: ForgedPropertySchema, schemaId: string): string {
+function getDBType(
+    property: ForgedPropertySchema,
+    schemaId: string,
+    key: string,
+    tableName: string,
+): string {
     if (property.dbColumn?.type) return property.dbColumn.type;
 
     let type = property.type as string | undefined;
@@ -464,12 +480,12 @@ function getDBType(property: ForgedPropertySchema, schemaId: string): string {
         );
         if (nonNullType) {
             return typeof nonNullType === 'object'
-                ? getDBType(nonNullType, schemaId)
+                ? getDBType(nonNullType, schemaId, key, tableName)
                 : nonNullType.toString();
         }
     }
 
-    if (type === 'string') {
+    if (type === 'string' || (type == null && property.format)) {
         if (property.format === 'date-time') {
             return 'timestamptz';
         }
@@ -481,7 +497,32 @@ function getDBType(property: ForgedPropertySchema, schemaId: string): string {
         return 'jsonb';
     }
 
-    return type ?? 'jsonb';
+    if (!type) {
+        // const source = omitProps(property, ['faker']);
+        // const t = txt(`Unable to determine exact Database type`);
+        //
+        // t.at([
+        //     ['SchemaID', schemaId],
+        //     ['Target', `${tableName}: ${key}`],
+        //     [
+        //         'Tip',
+        //         txt([
+        //             `You can use JSDoc annotation "@dbColumn { type: <TYPE> }"`,
+        //             `  on the property "${key}"`,
+        //             '  to explicitly specify the database type and avoid this warning.',
+        //             'NOTICE: ',
+        //             '  For now it will be generated as JSONB, but it may lead to suboptimal performance.',
+        //         ]),
+        //     ],
+        //     ['Source', txt(JSON.stringify(source, null, 2).split('\n'))],
+        // ]);
+        // console.warn(t.toString());
+        //
+        // // todo: +option?
+        type = 'jsonb';
+    }
+
+    return type;
 }
 
 function listProperties(schema: JSONSchema7): {

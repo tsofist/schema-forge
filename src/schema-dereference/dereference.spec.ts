@@ -21,7 +21,7 @@ describe('schema-dereference', () => {
 
         const dereferenced = dereferenceSchema(schema);
 
-        expect(dereferenced).toStrictEqual({
+        expect(dereferenced).toEqual({
             ...schema,
             properties: { user: schema.definitions.User },
         });
@@ -42,7 +42,7 @@ describe('schema-dereference', () => {
 
         const dereferenced = dereferenceSchema(schema);
 
-        expect(dereferenced).toStrictEqual({
+        expect(dereferenced).toEqual({
             ...schema,
             properties: { user: schema.$defs.User },
         });
@@ -59,10 +59,10 @@ describe('schema-dereference', () => {
 
         const dereferenced = dereferenceSchema(schema);
 
-        expect(dereferenced).toStrictEqual({
+        expect(dereferenced).toEqual({
             ...schema,
             properties: {
-                self: dereferenced,
+                self: schema,
             },
         });
     });

@@ -141,6 +141,11 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
             generatedTemporaryFiles: files,
             generatedNamesBySourceFile: namesBySourceFile,
         };
+    } catch (e) {
+        if (e instanceof BuildError) {
+            console.error('[forgeSchema: build error]\n', formatForgeSchemaError(e as Error));
+        }
+        throw e;
     } finally {
         if (tsconfig && tsconfigGenerated) {
             await unlink(tsconfig).catch(noop);

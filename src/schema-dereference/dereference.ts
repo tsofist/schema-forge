@@ -49,53 +49,48 @@ export function dereferenceSchema(
 
         // $ref
         if ('$ref' in current && typeof current.$ref === 'string') {
-            const resolvedSchema = resolveRef(cache, definitionsSource, current.$ref);
+            const ref = current.$ref;
+            const resolvedSchema = resolveRef(cache, definitionsSource, ref);
 
             if (resolvedSchema == null) {
                 const replacement =
                     onDereferenceFailure && !throwOnDereferenceFailure
-                        ? onDereferenceFailure(current.$ref, current, schema)
+                        ? onDereferenceFailure(ref, current, schema)
                         : undefined;
 
                 if (throwOnDereferenceFailure) {
-                    raise(
-                        `Failed to dereference schema: unresolved reference ${current.$ref} at ${path}`,
-                    );
+                    raise(`Failed to dereference schema: unresolved reference ${ref} at ${path}`);
                 } else if (!onDereferenceFailure && options.throwOnDereferenceFailure == null) {
-                    console.warn(
-                        `WARNING: Reference ${current.$ref} at ${path} cannot be resolved`,
-                    );
+                    console.warn(`WARNING: Reference ${ref} at ${path} cannot be resolved`);
                 }
 
                 return replacement;
             }
 
-            // if (seen.has(resolvedSchema)) return seen.get(resolvedSchema); // todo?
-
             if (Array.isArray(resolvedSchema)) {
                 if (seen.has(resolvedSchema)) return seen.get(resolvedSchema);
-                const resolvedArray = resolve(resolvedSchema, current.$ref);
-                seen.set(resolvedSchema, resolvedArray);
-                return resolvedArray;
+                const originalResolved = resolve(resolvedSchema, ref);
+                seen.set(resolvedSchema, originalResolved);
+                return originalResolved;
             }
 
-            const { $ref, ...additionalProps } = current;
             const placeholder = {};
             seen.set(current, placeholder);
+            const originalResolved = resolve(resolvedSchema, ref);
 
-            const result: JSONSchema7 = {
-                ...resolvedSchema,
-                ...resolve(resolvedSchema, current.$ref),
-                ...additionalProps,
-            };
+            const result: JSONSchema7 = Object.assign(
+                {},
+                originalResolved,
+                resolvedSchema,
+                current,
+            );
             delete result.$ref; // !
 
-            Object.assign(placeholder, result);
-            seen.set(resolvedSchema, result);
+            seen.set(current, result);
 
-            if (onDereferenceSuccess != null && !seenRefs.has($ref)) {
-                seenRefs.add($ref as SchemaForgeDefinitionRef);
-                onDereferenceSuccess($ref as SchemaForgeDefinitionRef, result);
+            if (onDereferenceSuccess != null && !seenRefs.has(ref)) {
+                seenRefs.add(ref as SchemaForgeDefinitionRef);
+                onDereferenceSuccess(ref as SchemaForgeDefinitionRef, result);
             }
 
             return result;
