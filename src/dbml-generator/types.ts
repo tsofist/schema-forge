@@ -64,6 +64,8 @@ export const DBMLIndexTypeList = [
  * Database column type list.
  */
 export const DBMLColumnTypeList = [
+    'json',
+    'jsonb',
     'uuid',
     'integer',
     'bigint',
@@ -97,6 +99,8 @@ export const DBMLColumnTypeList = [
     'time[]',
     'timestamp[]',
     'timestamptz[]',
+    'json[]',
+    'jsonb[]',
 ] as const;
 
 /**
