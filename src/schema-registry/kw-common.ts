@@ -153,7 +153,7 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
                         if (!localRef) return undefined;
 
                         const result = rootDefs[localRef];
-                        if (result?.$ref) return deref(result as ForgedSchema);
+                        if (result?.$ref) return deref(result);
                         return result;
                     }
                     return schema;
@@ -162,11 +162,7 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
                 for (const variant of variants) {
                     const val = deref(variant);
                     if (val) {
-                        if (
-                            !val.properties ||
-                            !val.required ||
-                            !val.required.includes(propertyName)
-                        ) {
+                        if (!val.properties || !val.required?.includes(propertyName)) {
                             return fail(`Variant schema must require discriminator property`);
                         }
 
@@ -216,7 +212,7 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
                         });
                     } else {
                         preparedValidator(data, ctx);
-                        if (preparedValidator.errors && preparedValidator.errors.length) {
+                        if (preparedValidator.errors?.length) {
                             validator.errors.push(
                                 ...preparedValidator.errors.map((item) => {
                                     delete item.parentSchema?.definitions;

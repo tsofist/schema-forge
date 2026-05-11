@@ -1,7 +1,8 @@
 import './extended-annotations-reader';
-import type { ARec } from '@tsofist/stem';
+import type { ARec, PickFieldsWithPrefix, Rec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
 import { isEmptyObject } from '@tsofist/stem/lib/object/is-empty';
+import { keysOf } from '@tsofist/stem/lib/object/keys';
 import { valueIn } from '@tsofist/stem/lib/value-in';
 import Ajv from 'ajv';
 import { JSONSchema7Type } from 'json-schema';
@@ -42,6 +43,7 @@ import {
     SymbolFlags,
     SyntaxKind,
     TupleTypeNode,
+    Type,
     TypeChecker,
     TypeFlags,
     TypeQueryNode,
@@ -74,8 +76,8 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
     mergeConfigExtraTags(generatorConfig, options);
 
     const generatorProgram = createProgram(generatorConfig);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const typeChecker: TypeChecker = generatorProgram.getTypeChecker();
+
+    const typeChecker = generatorProgram.getTypeChecker() as unknown as TypeChecker;
     const parser = createParser(generatorProgram, options.sourcesTypesGeneratorConfig, (parser) => {
         parser.addNodeParser(
             new TupleTypeParser(parser as ChainNodeParser, allowUseFallbackDescription),
@@ -232,7 +234,7 @@ class EnumTypeFormatterEx extends EnumTypeFormatter {
 
 class TypeofNodeParserEx extends TypeofNodeParser {
     override createType(node: TypeQueryNode, context: Context, reference?: ReferenceType) {
-        const tc: TypeChecker = this.typeChecker;
+        const tc = this.typeChecker as unknown as TypeChecker;
 
         let symbol = tc.getSymbolAtLocation(node.exprName);
         if (symbol && symbol.flags & SymbolFlags.Alias) {
@@ -297,6 +299,7 @@ class ArrayLiteralExpressionIdentifierParser implements SubNodeParser {
 
     createType(node: Identifier) {
         const type = this.checker.getTypeAtLocation(node);
+        const inferredType = this.checker.typeToString(type, node);
 
         if (
             type.flags & TypeFlags.StringOrNumberLiteral ||
@@ -307,10 +310,12 @@ class ArrayLiteralExpressionIdentifierParser implements SubNodeParser {
             return new LiteralType(val);
         } else if (type.flags & TypeFlags.StringLike) {
             return new StringType();
-        } else if (type.flags & TypeFlags.NumberLike) {
+        } else if (type.flags & TypeFlags.NumberLike || inferredType === 'number') {
             return new NumberType();
         } else {
-            raise(`Identifier ${node.getText()} is of unsupported type`);
+            raise(
+                `Identifier ${node.getText()} has unsupported type for array literal element (inferred as ${inferredType})`,
+            );
         }
     }
 }
@@ -327,6 +332,7 @@ class SchemaGeneratorEx extends SchemaGenerator {
         childDefinitions: StringMap<Definition>,
     ) {
         if (this.#multipleDefinitionsErrorSuppression) {
+            // original implementation below ->
             const seen = new Set<string>();
             const children = this.typeFormatter
                 .getChildren(rootType)
@@ -338,7 +344,30 @@ class SchemaGeneratorEx extends SchemaGenerator {
                     }
                     return false;
                 });
-
+            const ids = new Map();
+            const baseIds = new Map();
+            for (const child of children) {
+                const name = child.getName();
+                const previousId = ids.get(name);
+                const childId = child.getId().replace(/def-/g, '');
+                const innerType = child.getType();
+                const baseChildId = (
+                    innerType instanceof AnnotatedType ? innerType.getType() : innerType
+                ).getId();
+                const previousBaseId = baseIds.get(name);
+                if (previousId && childId !== previousId) {
+                    if (previousBaseId === baseChildId) {
+                        continue;
+                    }
+                    // throw new MultipleDefinitionsError(
+                    //     name,
+                    //     child,
+                    //     children.find((c) => c.getId().replace(/def-/g, '') === previousId),
+                    // );
+                }
+                ids.set(name, childId);
+                baseIds.set(name, baseChildId);
+            }
             children.reduce((definitions, child) => {
                 const name = child.getName();
                 if (!(name in definitions)) {
@@ -367,8 +396,21 @@ function escapeDefinitionNameForJSONPath(value: string): string {
     return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
-interface InternalOptions extends ForgeSchemaOptions {
+type InternalOptions = {
     tsconfig: string;
     definitions: readonly string[];
     sourcesTypesGeneratorConfig: CompletedConfig;
-}
+} & ForgeSchemaOptions;
+
+export const TypeGuardsNames = keysOf({
+    isLiteral: true,
+    isNumberLiteral: true,
+    isIndexType: true,
+    isClass: true,
+    isStringLiteral: true,
+    isTypeParameter: true,
+    isUnion: true,
+    isIntersection: true,
+    isClassOrInterface: true,
+    isUnionOrIntersection: true,
+} satisfies Rec<true, keyof PickFieldsWithPrefix<Type, 'is'>>);

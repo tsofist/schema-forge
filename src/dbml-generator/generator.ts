@@ -2,7 +2,7 @@ import type { PRec } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
 import { isEqualKeys } from '@tsofist/stem/lib/equal-keys';
 import { raise } from '@tsofist/stem/lib/error';
-import { entries } from '@tsofist/stem/lib/object/entries';
+import { entriesOf } from '@tsofist/stem/lib/object/entries-of';
 import { snakeCase } from '@tsofist/stem/lib/string/case/snake';
 import { compareStringsAsc } from '@tsofist/stem/lib/string/compare';
 import { substr } from '@tsofist/stem/lib/string/substr';
@@ -40,19 +40,19 @@ export function generateDBMLSpec(
         string, // scope name
         DBMLProjectScope
     >();
-    const dereferencedRootSchemas: Map<string, JSONSchema7> = new Map();
+    const dereferencedRootSchemas = new Map<string, JSONSchema7>();
 
     if (options.meta?.comment) {
-        text.push(`// ${options.meta?.comment}`);
+        text.a(`// ${options.meta?.comment}`);
     }
-    text.push(`Project ${options.meta?.name ?? 'Scratch'} {`);
-    text.push(`database_type: 'PostgreSQL'`, 1);
+    text.a(`Project ${options.meta?.name ?? 'Scratch'} {`);
+    text.a(`database_type: 'PostgreSQL'`, 1);
     if (options.meta?.note) {
-        text.push('');
-        text.push(buildNote(options.meta.note), 1);
+        text.a('');
+        text.a(buildNote(options.meta.note), 1);
     }
-    text.push('}');
-    text.push(``);
+    text.a('}');
+    text.a(``);
 
     for (const scope of scopes.sort((a, b) => {
         return compareStringsAsc(a.scopeName ?? DefaultScopeName, b.scopeName ?? DefaultScopeName);
@@ -112,8 +112,8 @@ export function generateDBMLSpec(
     for (const [groupName, groupTableNames] of groups.entries()) {
         for (const tableName of groupTableNames.sort(compareStringsAsc)) {
             const table = tables.get(tableName)!;
-            text.push(table.value);
-            text.push(``);
+            text.a(table.value);
+            text.a(``);
         }
 
         if (!defaultGroupOnly) {
@@ -121,14 +121,14 @@ export function generateDBMLSpec(
             if (scope) {
                 const comment = scope.comment;
                 if (comment) {
-                    text.push(`// ${comment}`);
+                    text.a(`// ${comment}`);
                 }
-                text.push(`TableGroup ${groupName} {`);
+                text.a(`TableGroup ${groupName} {`);
                 for (const tableName of groupTableNames.sort(compareStringsAsc)) {
-                    text.push(tableName, 1);
+                    text.a(tableName, 1);
                 }
-                text.push(`}`);
-                text.push(``);
+                text.a(`}`);
+                text.a(``);
             }
         }
     }
@@ -182,25 +182,25 @@ function generateTable(
     const text = new TextBuilder();
 
     if (entitySchema.$comment) {
-        text.push(stringifyComment(entitySchema.$comment));
+        text.a(stringifyComment(entitySchema.$comment));
     }
 
-    text.push(`Table ${tableName} {`);
-    text.push(columns, 1);
+    text.a(`Table ${tableName} {`);
+    text.a(columns, 1);
 
     if (indexes.size) {
-        text.push('');
-        text.push('indexes {', 1);
-        text.push(indexes, 2);
-        text.push('}', 1);
+        text.a('');
+        text.a('indexes {', 1);
+        text.a(indexes, 2);
+        text.a('}', 1);
     }
 
     if (entitySchema.description) {
-        text.push('');
-        text.push(buildNote(entitySchema.description), 1);
+        text.a('');
+        text.a(buildNote(entitySchema.description), 1);
     }
 
-    text.push('}');
+    text.a('}');
 
     return {
         name: tableName,
@@ -219,7 +219,7 @@ function generateColumns(
     const text = new TextBuilder();
     let count = 0;
 
-    for (const [key, property] of entries(properties).sort(([keyA], [keyB]) => {
+    for (const [key, property] of entriesOf(properties).sort(([keyA], [keyB]) => {
         const indexA = columnsOrder.indexOf(keyA);
         const indexB = columnsOrder.indexOf(keyB);
         if (indexA === -1 && indexB === -1) return 0;
@@ -241,12 +241,12 @@ function generateColumns(
             notes,
         );
 
-        if (property.$comment) text.push(stringifyComment(property.$comment));
+        if (property.$comment) text.a(stringifyComment(property.$comment));
         const attributesText = attributes.stringify(', ');
         const hasLineBreak = attributesText.includes('\n');
 
-        text.push(`${snakeCase(key)} ${columnType} [${attributesText}${hasLineBreak ? '\n' : ']'}`);
-        hasLineBreak && text.push(']');
+        text.a(`${snakeCase(key)} ${columnType} [${attributesText}${hasLineBreak ? '\n' : ']'}`);
+        if (hasLineBreak) text.a(']');
         count++;
     }
 
@@ -269,33 +269,38 @@ function generateColumnAttributes(
     const isPK = property.dbColumn?.pk ?? false;
 
     if (isPK) {
-        result.push('pk');
+        result.a('pk');
     }
 
     const defaultValue = property.default;
     const hasDefaultValue = defaultValue !== undefined;
 
     if (isColumnNullable && isRequired) {
-        if (!hasDefaultValue) result.push('default: null');
-        // result.push('null'); <- by default
+        if (!hasDefaultValue) result.a('default: null');
+        // result.a('null'); <- by default
     } else if (isColumnNullable || !isRequired) {
-        result.push('null');
+        result.a('null');
     } else {
-        result.push('not null');
+        result.a('not null');
     }
 
     if (hasDefaultValue) {
         const v =
             typeof defaultValue === 'string' &&
-            defaultValue[0] !== '`' &&
-            defaultValue[defaultValue.length - 1] !== '`'
+            !defaultValue.startsWith('`') &&
+            !defaultValue.endsWith('`')
                 ? `"${defaultValue}"`
                 : defaultValue;
-        result.push(`default: ${String(v)}`);
+        result.a(
+            `default: ${String(
+                // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                v,
+            )}`,
+        );
     }
 
     if (notes && property.description) {
-        result.push(buildNote(property.description, 2).stringify());
+        result.a(buildNote(property.description, 2).stringify());
     }
     return result;
 }
@@ -351,7 +356,7 @@ function generateIndexes(
                     if (!schemaProperties[column]) raise('`Column ${column} not found in schema`');
 
                     const field = substr(rawKey, '.');
-                    const index = (idx[indexName] ||= {
+                    const index = (idx[indexName] ??= {
                         ...(typeof item === 'object' ? item : {}),
                         columnType: getDBType(schemaProperties[column], schemaId, key, tableName),
                         columns: [],
@@ -367,7 +372,7 @@ function generateIndexes(
     if (entityIndexes) {
         for (const [key, def] of Object.entries(entityIndexes)) {
             const prefix = substr(key, 0, '.');
-            const column = prefix ? prefix : key;
+            const column = prefix ?? key;
             processIndex(
                 //
                 def,
@@ -384,7 +389,7 @@ function generateIndexes(
         }
     }
 
-    for (const [indexName, index] of entries(idx)) {
+    for (const [indexName, index] of entriesOf(idx)) {
         if (!index) continue;
         const { columns, unique, pk, comment, note } = index;
 
@@ -398,17 +403,17 @@ function generateIndexes(
             index.type || index.columnType === 'jsonb' || index.columnType.endsWith('[]')
                 ? 'gin'
                 : undefined;
-        if (type) options.push(`type: ${type}`);
-        if (pk) options.push(`pk`);
-        if (!pk && unique) options.push('unique');
+        if (type) options.a(`type: ${type}`);
+        if (pk) options.a(`pk`);
+        if (!pk && unique) options.a('unique');
         // todo?
         // if (includeNotes && fields.length) {
         //     options.push(`note: 'Fields: ${fields.join(', ')};'`);
         // }
-        if (includeNotes && note) options.push(buildNote(note, 3).stringify());
-        if (comment) text.push(`// ${comment}`);
+        if (includeNotes && note) options.a(buildNote(note, 3).stringify());
+        if (comment) text.a(`// ${comment}`);
 
-        text.push(`(${columns.map(snakeCase).join(', ')}) [${options.stringify(', ')}]`);
+        text.a(`(${columns.map(snakeCase).join(', ')}) [${options.stringify(', ')}]`);
     }
 
     return text;
@@ -438,10 +443,10 @@ function buildNote(value: string | undefined, mlLevel = 1): TextBuilder {
     const result = new TextBuilder();
     if (value) {
         if (value.includes('\n')) {
-            result.push(`note:`);
-            result.push([`'''`, ...value.split('\n'), `'''`], mlLevel);
+            result.a(`note:`);
+            result.a([`'''`, ...value.split('\n'), `'''`], mlLevel);
         } else {
-            result.push(`note: "${value}"`);
+            result.a(`note: "${value}"`);
         }
     }
     return result;
@@ -468,6 +473,7 @@ function getDBType(
     if (type && Array.isArray(type)) {
         type = type.filter((item) => item !== 'null')[0] as string | undefined;
     }
+    // noinspection SuspiciousTypeOfGuard
     if (type && typeof type !== 'string') {
         raise(`Invalid SchemaTypeName value type (${typeof type}) (expected string)`);
     }
@@ -534,7 +540,7 @@ function listProperties(schema: JSONSchema7): {
         return {
             type: 'object',
             properties: schema.properties as PRec<ForgedSchemaDefinition>,
-            required: schema.required || [],
+            required: schema.required ?? [],
         };
     }
 
@@ -564,14 +570,14 @@ function listProperties(schema: JSONSchema7): {
             for (const name of Object.keys(item.properties)) {
                 propertiesMap[name] = item.properties[name] as ForgedPropertySchema;
             }
-            for (const name of item.required || []) {
+            for (const name of item.required ?? []) {
                 requiredSet.add(name);
             }
         } else {
             if (!isEqualKeys(propertiesMap, item.properties)) {
                 console.warn('Properties are not identical across all members of anyOf');
             }
-            for (const name of item.required || []) {
+            for (const name of item.required ?? []) {
                 if (!requiredSet.has(name)) {
                     console.warn('Required fields are not identical across all members of anyOf');
                 }

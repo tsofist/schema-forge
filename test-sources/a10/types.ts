@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 import { ReintroduceExact } from '@tsofist/stem';
 
 /**

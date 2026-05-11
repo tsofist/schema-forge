@@ -1,6 +1,6 @@
 import type { ARec, ReintroduceExact } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
-import { entries } from '@tsofist/stem/lib/object/entries';
+import { entriesOf } from '@tsofist/stem/lib/object/entries-of';
 import type { JSONSchema7 } from 'json-schema';
 
 /**
@@ -26,7 +26,7 @@ export function shallowDereferenceSchema(schema: JSONSchema7, soloRefs = true): 
     const usedRefs = new Map<string, number>();
 
     eachReferencedDefinition(defs, ({ $ref }) => {
-        const count = (usedRefs.get($ref) || 0) + 1;
+        const count = (usedRefs.get($ref) ?? 0) + 1;
         usedRefs.set($ref, count);
     });
 
@@ -48,9 +48,9 @@ function eachReferencedDefinition<T extends ReintroduceExact<JSONSchema7, { $ref
     defs: JSONSchema7['definitions'],
     cb: (def: T, name: string) => void,
 ) {
-    for (const [nameRaw, raw] of entries(defs)) {
+    for (const [nameRaw, raw] of entriesOf(defs)) {
         const def = typeof raw === 'object' && raw !== null ? raw : undefined;
-        if (def && def.$ref && def.$ref.startsWith('#/') && Object.keys(def).length === 1) {
+        if (def?.$ref && def.$ref.startsWith('#/') && Object.keys(def).length === 1) {
             cb(def as T, nameRaw as string);
         }
     }
@@ -68,5 +68,5 @@ function resolveRef(ref: string, root: JSONSchema7): JSONSchema7 | undefined {
         }
     }
 
-    return current as JSONSchema7;
+    return current;
 }

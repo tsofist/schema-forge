@@ -291,6 +291,17 @@ function processAPIInterfaceDeclaration(statement: InterfaceDeclaration, context
 
         const resultTypeName = readMemberTypeName(method);
 
+        // todo
+        // {
+        //     const pt = context.typeChecker.getTypeOfSymbolAtLocation(property, method);
+        //     const sig = context.typeChecker.getSignaturesOfType(pt, SignatureKind.Call)[0];
+        //     if (sig) {
+        //         const rt = context.typeChecker.getReturnTypeOfSignature(sig);
+        //         const rts = context.typeChecker.typeToString(rt, statement);
+        //         resultTypeName = rts;
+        //     }
+        // }
+
         const definitionNameArgs = buildAPIMethodArgsSDS(interfaceName, memberName, legacy);
         const definitionNameResult = buildAPIMethodResultSDS(interfaceName, memberName, legacy);
 
@@ -390,7 +401,7 @@ function processAPIInterfaceDeclaration(statement: InterfaceDeclaration, context
         const membersText = new TextBuilder();
         for (const member of definitionsMetaList) {
             const isMethod = Array.isArray(member.desc);
-            membersText.push(
+            membersText.a(
                 [
                     `/**`,
                     ` * @apiInterface ${interfaceName}`,
@@ -443,7 +454,7 @@ function countRequiredParams(params: NodeArray<ParameterDeclaration>) {
 }
 
 function createContext(options: SFDTGOptions, sourcesTypesGeneratorConfig: CompletedConfig) {
-    const program: Program = createProgram(sourcesTypesGeneratorConfig);
+    const program = createProgram(sourcesTypesGeneratorConfig) as unknown as Program;
     const checker = program.getTypeChecker();
     const compilerOptions = program.getCompilerOptions();
     const compilerHost = createCompilerHost(compilerOptions);
@@ -478,18 +489,18 @@ function createContext(options: SFDTGOptions, sourcesTypesGeneratorConfig: Compl
 
 const S = ' '.repeat(4);
 
-interface DefinitionMetadata {
+type DefinitionMetadata = {
     name: string;
     description?: string;
     deprecated?: string;
     desc:
         | [argsText: string, resultTypeName: string] // <- Method signature
         | string; // <- Property type
-}
+};
 
-interface SFDTGOptions extends ForgeSchemaOptions {
+type SFDTGOptions = {
     tsconfig: string;
     sourcesPattern: string[];
-}
+} & ForgeSchemaOptions;
 
 type SFDTGContext = ReturnType<typeof createContext>;

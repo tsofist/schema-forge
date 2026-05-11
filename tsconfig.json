@@ -1,11 +1,12 @@
 {
-  "extends": "@tsofist/web-buddy/tsconfig/base.json",
+  "extends": "@tsofist/web-buddy/lib/tsconfig/config.base.json",
   "compilerOptions": {
-    "outDir": "lib",
-    "target": "ES2021",
     "module": "CommonJS",
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "outDir": "lib",
+    "target": "ES2021",
+    "types": ["node", "jest"]
   },
   "include": ["src", "test-sources"],
   "exclude": ["node_modules"]

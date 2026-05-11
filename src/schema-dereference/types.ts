@@ -3,7 +3,7 @@ import type { JSONSchema7 } from 'json-schema';
 import type { ForgedSchema, SchemaForgeDefinitionRef } from '../types';
 import type { SchemaDereferenceSharedCache } from './cache';
 
-export interface SchemaForgeDereferenceOptions {
+export type SchemaForgeDereferenceOptions = {
     /**
      * Handler called when a reference is successfully dereferenced.
      */
@@ -46,7 +46,7 @@ export interface SchemaForgeDereferenceOptions {
      * @see ForgedSchema
      */
     definitionsSource?: ForgedSchema | JSONSchema7;
-}
+};
 
 export type SchemaForgeDereferenceFailureHandler = (
     unresolvedRef: string,

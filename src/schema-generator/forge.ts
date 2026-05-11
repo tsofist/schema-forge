@@ -126,7 +126,7 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
             }
         } catch (e) {
             if (e instanceof BuildError) {
-                console.error('[forgeSchema: build error]\n', formatForgeSchemaError(e as Error));
+                console.error('[forgeSchema: build error]\n', formatForgeSchemaError(e));
             }
             throw e;
         } finally {
@@ -143,7 +143,7 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
         };
     } catch (e) {
         if (e instanceof BuildError) {
-            console.error('[forgeSchema: build error]\n', formatForgeSchemaError(e as Error));
+            console.error('[forgeSchema: build error]\n', formatForgeSchemaError(e));
         }
         throw e;
     } finally {

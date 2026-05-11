@@ -3,6 +3,7 @@ import { UUID } from '@tsofist/stem/lib/crypto/uuid/types';
 import { User, UserID } from './types';
 
 /* eslint-disable @typescript-eslint/method-signature-style */
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
 
 /**
  * By default, if you declare this interface as public,

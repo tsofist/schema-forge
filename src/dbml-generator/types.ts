@@ -4,26 +4,26 @@ import type { SchemaDefinitionInfoForType } from '../definition-info/types';
 /**
  * DBML Project Source
  */
-export interface DBMLProjectScope {
+export type DBMLProjectScope = {
     schemaId: string;
     scopeName?: string;
     definitions: SchemaDefinitionInfoForType[];
     comment?: string;
-}
+};
 
 /**
  * DBML Project Metadata
  */
-export interface DBMLProjectMeta {
+export type DBMLProjectMeta = {
     name: string;
     note?: string;
     comment?: string;
-}
+};
 
 /**
  * DBML Generator Options
  */
-export interface DBMLGeneratorOptions {
+export type DBMLGeneratorOptions = {
     meta?: DBMLProjectMeta;
     // /**
     //  * @deprecated use notes
@@ -43,7 +43,7 @@ export interface DBMLGeneratorOptions {
     // columnTypeInference?: {
     //     arraysAsJSONB?: boolean; // todo implement
     // };
-}
+};
 
 /**
  * Database index type list.

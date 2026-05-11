@@ -2,8 +2,8 @@ import type { ArrayMay, Nullable, Rec } from '@tsofist/stem';
 import { asArray } from '@tsofist/stem/lib/as-array';
 import { chunk } from '@tsofist/stem/lib/chunk';
 import { raise } from '@tsofist/stem/lib/error';
-import { entries } from '@tsofist/stem/lib/object/entries';
-import { nonNullableValues } from '@tsofist/stem/lib/object/values';
+import { entriesOf } from '@tsofist/stem/lib/object/entries-of';
+import { nonNullableValuesOf } from '@tsofist/stem/lib/object/values-of';
 import { delay } from '@tsofist/stem/lib/timers/delay';
 import Ajv, {
     type AsyncValidateFunction,
@@ -85,7 +85,7 @@ export function createSchemaForgeRegistry(
         onSchema?: (value: JSONSchema7) => JSONSchema7,
     ) {
         const schemas: JSONSchema7[] = [];
-        for (const env of nonNullableValues(engine.schemas)) {
+        for (const env of nonNullableValuesOf(engine.schemas)) {
             if (env.meta) continue;
             const schema = onSchema
                 ? onSchema(env.schema as JSONSchema7)
@@ -190,7 +190,7 @@ export function createSchemaForgeRegistry(
         callback: (definitionName: string, schemaId: string, schema: ForgedSchemaDefinition) => R,
     ): R[] {
         const result = [];
-        for (const [schemaId, env] of entries(engine.schemas)) {
+        for (const [schemaId, env] of entriesOf(engine.schemas)) {
             if (
                 env &&
                 typeof env.schema === 'object' &&
@@ -340,7 +340,7 @@ function addJSDocKeywords(engine: Ajv) {
 
         const first = oKeywords.rules.at(0);
 
-        if (first && first.keyword === 'discriminateBy') {
+        if (first?.keyword === 'discriminateBy') {
             engine.RULES.rules.unshift({
                 type: 'object',
                 rules: [first],

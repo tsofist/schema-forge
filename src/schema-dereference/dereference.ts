@@ -146,6 +146,5 @@ type OperationalValue = undefined | JSONSchema7;
 type OperationalValueA = undefined | OperationalValue[];
 type OperationalValueAA = undefined | ArrayMay<OperationalValue>;
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 // @ts-expect-error CommonJS module fix
 const structuredClone: typeof structuredCloneModule = structuredCloneModule.default;

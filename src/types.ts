@@ -11,7 +11,7 @@ import {
 } from './dbml-generator/types';
 import { SGEnumAnnotationOptions, SGEnumMemberOptions } from './schema-generator/kw.types';
 
-export interface ForgeSchemaOptions {
+export type ForgeSchemaOptions = {
     /**
      * Generate schema definitions for public types only
      * This option can help to protect leaked internal types
@@ -154,11 +154,11 @@ export interface ForgeSchemaOptions {
      * Extra JSDoc tags to be recognized by the generator and included in the schema definitions.
      */
     readonly extraTags?: string[];
-}
+};
 
 export type ForgedSchemaDefinitionShortName = `DSN${string}_H${string}`;
 
-export interface SchemaForgeMetadata {
+export type SchemaForgeMetadata = {
     $id: string;
     title?: string;
     description?: string;
@@ -169,7 +169,7 @@ export interface SchemaForgeMetadata {
     names: PRec<SchemaForgeDefinitionRef>;
     serviceRefs: PRec<string, SchemaForgeDefinitionRef>;
     serviceNames: PRec<SchemaForgeDefinitionRef>;
-}
+};
 
 const ForgedSchemaDraft7Id = 'http://json-schema.org/draft-07/schema#';
 
@@ -213,12 +213,12 @@ export type ForgedSchemaDefinition = Schema & {
     properties?: PRec<ForgedEntitySchema>;
 };
 
-export interface ForgeSchemaResult {
+export type ForgeSchemaResult = {
     schema: ForgedSchema;
     refs: readonly SchemaForgeDefinitionRef[];
     generatedTemporaryFiles: readonly string[];
     generatedNamesBySourceFile: ReadonlyMap<string, ReadonlySet<string>>;
-}
+};
 
 /**
  * Reference to schema definition
@@ -229,11 +229,11 @@ export interface ForgeSchemaResult {
  */
 export type SchemaForgeDefinitionRef = '' | `${string}#/definitions/${string}`;
 
-export interface SchemaForgeValidationResult {
+export type SchemaForgeValidationResult = {
     valid: boolean;
     errors: Nullable<SchemaForgeValidationReport>;
     errorsText: (options?: ErrorsTextOptions) => string;
-}
+};
 
 export type SchemaForgeValidationFunction<T = unknown> = ValidateFunction<T>;
 export type SchemaForgeValidationReport = ErrorObject[];

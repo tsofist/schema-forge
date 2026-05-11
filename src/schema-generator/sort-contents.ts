@@ -1,6 +1,6 @@
 import type { CompareResult, NonPrimitive, URec } from '@tsofist/stem';
 import { isPrimitive } from '@tsofist/stem/lib/is-primitive';
-import { entries } from '@tsofist/stem/lib/object/entries';
+import { entriesOf } from '@tsofist/stem/lib/object/entries-of';
 import { isEmptyObject } from '@tsofist/stem/lib/object/is-empty';
 import { omitProps } from '@tsofist/stem/lib/object/omit';
 import { compareStringsAsc } from '@tsofist/stem/lib/string/compare';
@@ -63,7 +63,7 @@ export function sortSchemaContents<T extends JSONSchema7Object | JSONSchema7>(
             {
                 const saved: URec = { ...item };
                 for (const k in item) delete item[k];
-                for (const [k, v] of entries(saved).sort(entitiesComparatorAsk)) {
+                for (const [k, v] of entriesOf(saved).sort(entitiesComparatorAsk)) {
                     // @ts-expect-error It's OK
                     item[k] = v;
                 }

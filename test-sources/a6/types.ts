@@ -1,6 +1,8 @@
 import { PRec, Rec } from '@tsofist/stem';
 import { UUID } from '@tsofist/stem/lib/crypto/uuid/types';
 
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
+
 /** @public */
 export type CollectionItem = {
     f1: number;

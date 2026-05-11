@@ -17,7 +17,7 @@ export type SchemaForgeRegistryListDefinitionsPredicate = (
     keywords: ReadonlyMap<SF_EXTRA_JSS_TAG_NAME, unknown>,
 ) => boolean;
 
-export interface SchemaForgeRegistry {
+export type SchemaForgeRegistry = {
     /**
      * Number of compiled schemas in registry
      */
@@ -130,9 +130,9 @@ export interface SchemaForgeRegistry {
      * This action is useful to pre-compile all schemas and their definitions
      */
     warmupCacheSync: VoidFunction;
-}
+};
 
-export interface SchemaForgeRegistryOptions {
+export type SchemaForgeRegistryOptions = {
     /**
      * Extra ajv options
      *
@@ -152,4 +152,4 @@ export interface SchemaForgeRegistryOptions {
      * @default false
      */
     legacyDefinitions?: boolean;
-}
+};

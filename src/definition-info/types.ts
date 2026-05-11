@@ -19,34 +19,34 @@ export type SchemaDefinitionInfo =
     | SchemaDefinitionInfoForAPIMethodArguments
     | SchemaDefinitionInfoForAPIMethodResult;
 
-export interface SchemaDefinitionInfoForType extends SDIBase {
+export type SchemaDefinitionInfoForType = {
     kind: SchemaDefinitionInfoKind.Type;
     type: string;
-}
+} & SDIBase;
 
-export interface SchemaDefinitionInfoForAPIInterface extends SDIBase {
+export type SchemaDefinitionInfoForAPIInterface = {
     kind: SchemaDefinitionInfoKind.API;
     interface: string;
-}
+} & SDIBase;
 
-export interface SchemaDefinitionInfoForAPIMethodArguments extends SDIBase {
+export type SchemaDefinitionInfoForAPIMethodArguments = {
     kind: SchemaDefinitionInfoKind.APIMethodArguments;
     interface: string;
     method: string;
-}
+} & SDIBase;
 
-export interface SchemaDefinitionInfoForAPIMethodResult extends SDIBase {
+export type SchemaDefinitionInfoForAPIMethodResult = {
     kind: SchemaDefinitionInfoKind.APIMethodResult;
     interface: string;
     method: string;
-}
+} & SDIBase;
 
-interface SDIBase {
+type SDIBase = {
     name: string;
     schemaId: string;
     ref: SchemaForgeDefinitionRef;
     kind: SchemaDefinitionInfoKind;
-}
+};
 
 /** @deprecated */
 export const _SDS_SUFFIX_API = '_InterfaceDeclaration';

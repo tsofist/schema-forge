@@ -47,7 +47,7 @@ import { hasJSDocTag } from './helpers-tsc';
                     : undefined;
 
             const inheritedAnn: Annotations = {};
-            if (symbol && symbol.declarations?.length) {
+            if (symbol?.declarations?.length) {
                 for (const declaration of symbol.declarations) {
                     const ann = getAnnotations.call(this, declaration);
                     if (ann) Object.assign(inheritedAnn, ann);

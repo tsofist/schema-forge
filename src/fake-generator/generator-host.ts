@@ -1,4 +1,4 @@
-import * as fakerModule from '@faker-js/faker';
+import { allLocales, Faker } from '@faker-js/faker';
 import { asArray } from '@tsofist/stem/lib/as-array';
 import { JSONSchemaFaker } from 'json-schema-faker';
 import { SFG_EXTRA_TAGS } from '../schema-generator/types';
@@ -13,10 +13,10 @@ export function createFakeGeneratorHost(
     const rebuild = (): FakeGeneratorHost => {
         const schemaRegistry = source;
 
-        const faker = new fakerModule.Faker({
+        const faker = new Faker({
             locale: asArray<FakeGeneratorLocaleName>(
                 options.locale || ['en' satisfies FakeGeneratorLocaleName],
-            ).map((name) => fakerModule.allLocales[name]),
+            ).map((name) => allLocales[name]),
         });
 
         const generator = JSONSchemaFaker.extend('faker', () => {

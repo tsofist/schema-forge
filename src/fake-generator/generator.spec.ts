@@ -10,14 +10,12 @@ import {
 import { ISODateTimeType, TypedDateTimeString } from '@tsofist/stem/lib/cldr/date-time/types';
 import { EnumKeys, extractEnumKeys } from '@tsofist/stem/lib/enum';
 import { isInt } from '@tsofist/stem/lib/number/integer/guards';
-import { entries } from '@tsofist/stem/lib/object/entries';
+import { entriesOf } from '@tsofist/stem/lib/object/entries-of';
 import { camelCase } from '@tsofist/stem/lib/string/case/camel';
 import { SchemaObject } from 'ajv';
 import { createSchemaForgeRegistry } from '../schema-registry/registry';
 import { SchemaForgeRegistry } from '../schema-registry/types';
 import { generateFakeData } from './generator';
-
-/* eslint-disable @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-argument */
 
 describe('generateFakeData', () => {
     const testSchema1: SchemaObject = {
@@ -254,6 +252,7 @@ describe('generateFakeData', () => {
 
             expect(typeof data.datetime).toStrictEqual('string');
             expect(data.datetime).toMatch(/.*Z$/);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             expect(new Date(data.datetime)).not.toStrictEqual('Invalid Date');
 
             expect(typeof data.time).toStrictEqual('string');
@@ -299,7 +298,7 @@ describe('generateFakeData', () => {
 
         expect(data).toBeDefined();
 
-        for (const [name, value] of entries(data)) {
+        for (const [name, value] of entriesOf(data)) {
             const g = guards[ISODateTimeType[name]];
             expect(g).toBeDefined();
             expect(g(value)).toStrictEqual(true);

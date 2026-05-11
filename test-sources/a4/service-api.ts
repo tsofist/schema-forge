@@ -1,5 +1,7 @@
 import { NonEmptyString } from '@tsofist/stem';
 
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
+
 export { FormatMode } from 'ajv-formats/dist/formats';
 export { Some2 } from '../a3/service-api';
 

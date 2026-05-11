@@ -101,7 +101,7 @@ export function readNodeName(node: Node): string | undefined;
 export function readNodeName(node: NamedDeclaration | Node): string | undefined {
     if ('name' in node && !!node.name) {
         const v = node.name as Identifier;
-        if (v != null && v.escapedText) return v.escapedText;
+        if (v?.escapedText) return v.escapedText;
     }
     return undefined;
 }

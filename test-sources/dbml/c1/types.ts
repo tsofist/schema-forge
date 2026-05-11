@@ -18,6 +18,8 @@ import {
 import { Int, PositiveInt } from '@tsofist/stem/lib/number/integer/types';
 import { SafeMoney } from '@tsofist/stem/lib/number/money/safe.types';
 
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
+
 type ComplexType = Rec<string>;
 
 /**
@@ -315,7 +317,6 @@ export type ImportantType = {
     importantEnum: NonDBEnum.Primary;
 };
 
-///
 // /**
 //  * @description
 //  *   Description for Some Database Entity Type

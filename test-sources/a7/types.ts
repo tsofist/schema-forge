@@ -1,5 +1,7 @@
 import { PositiveInt } from '@tsofist/stem/lib/number/integer/types';
 
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
+
 /**
  * System User
  * @public

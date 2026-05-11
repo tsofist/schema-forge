@@ -1,5 +1,5 @@
 import type { ARec } from '@tsofist/stem';
-import { entries } from '@tsofist/stem/lib/object/entries';
+import { entriesOf } from '@tsofist/stem/lib/object/entries-of';
 import { substr } from '@tsofist/stem/lib/string/substr';
 import type { SchemaObject } from 'ajv';
 import type { JSONSchemaFakerRefs } from 'json-schema-faker';
@@ -47,7 +47,7 @@ export function generateFakeData<T = unknown>(
     const schema = schemaRegistry.getSchema(source);
     if (schema == null) throw new Error(`Schema not found: ${source}`);
 
-    const result = generator.generate(schema as SchemaObject, refs) as T;
+    const result = generator.generate(schema, refs) as T;
     cleanJSFQuirksArtefacts(result as unknown as ARec);
     return result;
 }
@@ -76,7 +76,7 @@ function cleanJSFQuirksArtefacts<T extends ARec>(target: T): T {
                 }
             }
         } else if (current != null && typeof current === 'object') {
-            for (const [propKey, propValue] of entries(current)) {
+            for (const [propKey, propValue] of entriesOf(current)) {
                 if (hasProblem(propValue)) {
                     delete current[propKey];
                 } else if (typeof propValue === 'object' && propValue !== null) {

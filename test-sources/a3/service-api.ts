@@ -3,6 +3,7 @@ import { Int, PositiveInt } from '@tsofist/stem/lib/number/integer/types';
 import { StringPhoneNumber } from '@tsofist/stem/lib/phone-number/types';
 
 /* eslint-disable @typescript-eslint/method-signature-style */
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
 
 type List = readonly StringPhoneNumber[];
 
@@ -76,14 +77,15 @@ type AdditionalType = PositiveInt | NonEmptyString;
  */
 type AdditionalType2 = AdditionalType;
 
-/**
- * @public
- * @api
- */
-export interface InterfaceWithGeneric<T extends NonEmptyString = NonEmptyString> {
-    propWithGeneric: T;
-    // fn: <X>() => X; // todo supports for member generics
-}
+// todo ts-json-schema-generator@v2.9
+// /**
+//  * @public
+//  * @api
+//  */
+// export interface InterfaceWithGeneric<T extends NonEmptyString = NonEmptyString> {
+//     propWithGeneric: T;
+//     // fn: <X>() => X; // todo supports for member generics
+// }
 
 // todo ts-json-schema-generator@v2.4
 //   this.config?.expose === "all" || (this.isExportType(node) && !this.isGenericType(node))  // old

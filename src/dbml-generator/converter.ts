@@ -1,10 +1,9 @@
-import { Parser, exporter } from '@dbml/core';
-import type { ExportFormatOption } from '@dbml/core/types/export/ModelExporter';
+import { Parser, exporter, ExportFormat } from '@dbml/core';
 
 export function convertDBMLToDatabaseModel(dbmlStringSpec: string) {
     return Parser.parse(dbmlStringSpec, 'dbmlv2');
 }
 
-export function convertDBMLToSQL(source: string, format: ExportFormatOption = 'postgres') {
+export function convertDBMLToSQL(source: string, format: ExportFormat = 'postgres') {
     return exporter.export(source, format);
 }

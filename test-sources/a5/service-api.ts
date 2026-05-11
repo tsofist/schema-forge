@@ -1,6 +1,8 @@
 import { UUID } from '@tsofist/stem/lib/crypto/uuid/types';
 import { NumN } from './types';
 
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
+
 /**
  * @public
  */
