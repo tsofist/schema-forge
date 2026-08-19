@@ -58,26 +58,28 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": ".coverage",
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
+    "coveragePathIgnorePatterns": [
+      "types.ts"
+    ],
+    "moduleDirectories": [
+      "node_modules"
     ],
     "moduleNameMapper": {},
     "prettierPath": null,
     "roots": [
       "src",
-      "<rootDir>/test-sources"
+      "test-sources"
     ],
+    "setupFiles": [],
     "testEnvironment": "node",
     "testRegex": ".*\\.spec\\.ts$",
-    "testTimeout": 7000,
+    "testTimeout": 10000,
     "transform": {
-      "^.+\\.(t|j)s$": [
+      "^.+\\.ts$": [
         "ts-jest",
         {
-          "useESM": true,
-          "tsconfig": "tsconfig.build-test.json"
+          "tsconfig": "tsconfig.build-test.json",
+          "useESM": true
         }
       ]
     },
@@ -87,16 +89,15 @@
   },
   "files": [
     "lib",
-    "LICENSE"
+    "README.md",
+    "LICENSE",
+    "!*.private.*",
+    "!*.tmp.*"
   ],
   "prettier": "./node_modules/@tsofist/web-buddy/lib/prettier/config.js",
-  "eslintIgnore": [
-    "lib",
-    "*.tmp.*",
-    ".coverage",
-    ".*-cache",
-    ".idea",
-    "node_modules"
-  ],
-  "keywords": []
+  "keywords": [
+    "tsofist",
+    "json-schema",
+    "json-schema generator"
+  ]
 }
