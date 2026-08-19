@@ -228,7 +228,12 @@ function generateColumns(
 
         return indexA - indexB;
     })) {
-        if (property === undefined) continue;
+        if (
+            // eslint-disable-next-line no-restricted-syntax
+            property === undefined
+        ) {
+            continue;
+        }
 
         const isRequired = requiredFields.includes(key);
         const isColumnNullable = isNullable(property);

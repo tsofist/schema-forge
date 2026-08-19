@@ -68,6 +68,7 @@ export function readJSDocDescription(
             if (
                 allowUseFallbackDescription &&
                 allowUseFallbackDescriptionFromParent &&
+                // eslint-disable-next-line no-restricted-syntax
                 fallback === undefined &&
                 tag.parent.kind === SyntaxKind.JSDoc &&
                 tag.parent.comment
@@ -82,14 +83,25 @@ export function readJSDocDescription(
         getAllJSDocTags(node, isTag);
     }
 
-    if (value === undefined && allowUseFallbackDescription && fallback === undefined) {
+    if (
+        // eslint-disable-next-line no-restricted-syntax
+        value === undefined &&
+        allowUseFallbackDescription &&
+        // eslint-disable-next-line no-restricted-syntax
+        fallback === undefined
+    ) {
         const comment = getJSDocCommentsAndTags(node).find(
             (item) => item.kind === SyntaxKind.JSDoc && item.comment != null,
         )?.comment;
         if (comment) fallback = getTextOfJSDocComment(comment);
     }
 
-    if (value === undefined && allowUseFallbackDescription && fallback !== undefined) {
+    if (
+        // eslint-disable-next-line no-restricted-syntax
+        value === undefined &&
+        allowUseFallbackDescription &&
+        fallback !== undefined
+    ) {
         value = fallback;
     }
 

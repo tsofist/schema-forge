@@ -133,8 +133,7 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
                     throw new Error(String(t));
                 };
                 const variants = (targetSchema.anyOf || targetSchema.oneOf) as
-                    | ForgedPropertySchema[]
-                    | undefined;
+                    ForgedPropertySchema[] | undefined;
 
                 if (!variants?.length) {
                     return fail(`Schema must have "oneOf" or "anyOf" keyword`);

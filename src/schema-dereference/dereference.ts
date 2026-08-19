@@ -130,7 +130,11 @@ function resolveRef(
     let current: ARec | undefined = schema;
 
     for (const segment of pathParts) {
-        if (current === undefined || typeof current !== 'object') {
+        if (
+            // eslint-disable-next-line no-restricted-syntax
+            current === undefined ||
+            typeof current !== 'object'
+        ) {
             current = undefined;
         } else {
             current = current[segment] ?? undefined;

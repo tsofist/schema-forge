@@ -233,7 +233,11 @@ export function createSchemaForgeRegistry(
 
         mapDefinitions((name, schemaId, schema) => {
             const info = parseSchemaDefinitionInfo<T>(name, schemaId, legacy);
-            if (filter === undefined || filter(info, readSchemaKeywords(schema))) {
+            if (
+                // eslint-disable-next-line no-restricted-syntax
+                filter === undefined ||
+                filter(info, readSchemaKeywords(schema))
+            ) {
                 result.push(info);
             }
         });

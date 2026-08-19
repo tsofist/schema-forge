@@ -128,8 +128,7 @@ export type ForgeSchemaOptions = {
      * @see shrinkDefinitionName
      */
     readonly shrinkDefinitionNames?:
-        | boolean
-        | ((definitionName: string) => undefined | ForgedSchemaDefinitionShortName);
+        boolean | ((definitionName: string) => undefined | ForgedSchemaDefinitionShortName);
     /**
      * @deprecated
      * @default false
