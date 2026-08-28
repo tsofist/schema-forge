@@ -1,6 +1,6 @@
 {
   "name": "@tsofist/schema-forge",
-  "version": "5.9.1",
+  "version": "5.9.2",
   "description": "Generate JSON schema from TypeScript types",
   "author": "Andrew Berdnikov <tsofistgudmen@gmail.com>",
   "license": "LGPL-3.0",
@@ -43,8 +43,7 @@
     "ts-jest": "~29.4.12",
     "typescript": "~5.9.3"
   },
-  "peerDependencies": {
-  },
+  "peerDependencies": {},
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public"
