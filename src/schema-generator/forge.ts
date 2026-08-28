@@ -65,7 +65,7 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
                         sourcesTypesGeneratorConfig,
                         ...options,
                     })),
-                    ...(options.schemaMetadata || {}),
+                    ...(options.schemaMetadata ?? {}),
                     hash: undefined,
                 };
 
@@ -106,7 +106,7 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
                     serviceNames: {},
                 };
 
-                const defs = new Set(Object.keys(schema.definitions || {}));
+                const defs = new Set(Object.keys(schema.definitions ?? {}));
                 for (const name of definitions) {
                     const ref = buildSchemaDefinitionRef(name, options.schemaId);
                     map.names[name] = ref;

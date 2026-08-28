@@ -74,10 +74,10 @@ export function generateDBMLSpec(
 
         if (!dereferencedRootSchemas.has(schemaId)) {
             const root =
-                schemaRegistry.getRootSchema(schemaId) ||
+                schemaRegistry.getRootSchema(schemaId) ??
                 raise(`Root schema ${schemaId} not found`);
             dereferencedRootSchema =
-                dereferenceSchema(root, dereferencingOptions) ||
+                dereferenceSchema(root, dereferencingOptions) ??
                 raise(`Failed to dereference root schema for ${schemaId}`);
             dereferencedRootSchemas.set(schemaId, dereferencedRootSchema);
         }
@@ -144,8 +144,8 @@ function generateTable(
 ): TableSpec | undefined {
     const includeNotes = options.includeNotes ?? false;
     const entityTypeName = info.type;
-    const columnsOrder = options.columnsOrder || DefaultColumnsOrder;
-    let entitySchema = (dereferencedRootSchema.definitions || dereferencedRootSchema.$defs)?.[
+    const columnsOrder = options.columnsOrder ?? DefaultColumnsOrder;
+    let entitySchema = (dereferencedRootSchema.definitions ?? dereferencedRootSchema.$defs)?.[
         entityTypeName
     ];
     if (entitySchema) {
@@ -483,7 +483,7 @@ function getDBType(
         raise(`Invalid SchemaTypeName value type (${typeof type}) (expected string)`);
     }
 
-    const variants = property.anyOf || property.oneOf;
+    const variants = property.anyOf ?? property.oneOf;
 
     if (variants) {
         const nonNullType = variants.find(

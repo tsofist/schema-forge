@@ -140,7 +140,7 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
                 }
 
                 const rootSchema = ctx.schemaEnv.root.schema as ForgedSchema;
-                const rootDefs = rootSchema.definitions || rootSchema.$defs || {};
+                const rootDefs = rootSchema.definitions ?? rootSchema.$defs ?? {};
                 const validators = new Map<PropertyKey, SchemaForgeValidationFunction>();
 
                 const deref = (schema: ForgedSchema | ForgedPropertySchema | undefined) => {

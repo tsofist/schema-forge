@@ -19,7 +19,7 @@ export function dereferenceSchema(
     raw: JSONSchema7,
     options: SchemaForgeDereferenceOptions = {},
 ): OperationalValue {
-    const cache = options.sharedCacheStorage || DefaultSchemaDereferenceSharedCache;
+    const cache = options.sharedCacheStorage ?? DefaultSchemaDereferenceSharedCache;
     if (cache.main.has(raw)) return cache.main.get(raw)!;
 
     const schema = structuredClone<JSONSchema7>(raw);

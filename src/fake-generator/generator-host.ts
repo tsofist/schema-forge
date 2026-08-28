@@ -27,7 +27,7 @@ export function createFakeGeneratorHost(
             for (const item of [
                 //
                 ...EmbeddedFakerModules,
-                ...(options.setupFakerModules || []),
+                ...(options.setupFakerModules ?? []),
             ]) {
                 const modules = item(faker);
                 Object.assign(faker, modules);
