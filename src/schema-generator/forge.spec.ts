@@ -164,6 +164,7 @@ describe('validator for a9', () => {
         loadedSchema = await loadJSONSchema([outputSchemaFile]);
         registry.addSchema(loadedSchema);
     });
+
     afterAll(async () => {
         if (!KEEP_SPEC_ARTEFACTS) {
             await unlink(outputSchemaFile).catch(noop);
@@ -379,7 +380,14 @@ describe('generator for a6', () => {
             $ref: '#/definitions/UUID',
             format: 'uuid',
             description: 'This is Collection item ID (inherits from UUID)',
-            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
+            see: [
+                'createUUID',
+                'UUIDv4',
+                'UUIDv7',
+                'https://ru.wikipedia.org/wiki/UUID Wikipedia: UUID',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.4 UUIDv4 Byte Order RFC draft',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.7 UUIDv7 Byte Order RFC draft',
+            ],
         });
 
         expect(registry.getSchema('test#/definitions/CollectionItemID2')).toStrictEqual({
@@ -394,7 +402,14 @@ describe('generator for a6', () => {
             description: ['UUID with string representation.', '', 'Version: unspecified.'].join(
                 '\n',
             ),
-            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
+            see: [
+                'createUUID',
+                'UUIDv4',
+                'UUIDv7',
+                'https://ru.wikipedia.org/wiki/UUID Wikipedia: UUID',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.4 UUIDv4 Byte Order RFC draft',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.7 UUIDv7 Byte Order RFC draft',
+            ],
         });
 
         expect(registry.getSchema('test#/definitions/CollectionItemID4')).toStrictEqual({
@@ -422,7 +437,14 @@ describe('generator for a6', () => {
             description: ['UUID with string representation.', '', 'Version: unspecified.'].join(
                 '\n',
             ),
-            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
+            see: [
+                'createUUID',
+                'UUIDv4',
+                'UUIDv7',
+                'https://ru.wikipedia.org/wiki/UUID Wikipedia: UUID',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.4 UUIDv4 Byte Order RFC draft',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.7 UUIDv7 Byte Order RFC draft',
+            ],
         });
 
         {
@@ -435,7 +457,14 @@ describe('generator for a6', () => {
                 description: ['UUID with string representation.', '', 'Version: unspecified.'].join(
                     '\n',
                 ),
-                // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
+                see: [
+                    'createUUID',
+                    'UUIDv4',
+                    'UUIDv7',
+                    'https://ru.wikipedia.org/wiki/UUID Wikipedia: UUID',
+                    'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.4 UUIDv4 Byte Order RFC draft',
+                    'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.7 UUIDv7 Byte Order RFC draft',
+                ],
             });
         }
         {
@@ -446,7 +475,14 @@ describe('generator for a6', () => {
             expect((rec as any).propertyNames).toStrictEqual({
                 format: 'uuid',
                 description: 'This is Collection item ID (inherits from UUID)',
-                // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
+                see: [
+                    'createUUID',
+                    'UUIDv4',
+                    'UUIDv7',
+                    'https://ru.wikipedia.org/wiki/UUID Wikipedia: UUID',
+                    'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.4 UUIDv4 Byte Order RFC draft',
+                    'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.7 UUIDv7 Byte Order RFC draft',
+                ],
             });
         }
         {
@@ -659,7 +695,14 @@ describe('generator for a5', () => {
         expect(v.properties.ref0).toStrictEqual({
             type: 'string',
             format: 'uuid',
-            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
+            see: [
+                'createUUID',
+                'UUIDv4',
+                'UUIDv7',
+                'https://ru.wikipedia.org/wiki/UUID Wikipedia: UUID',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.4 UUIDv4 Byte Order RFC draft',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.7 UUIDv7 Byte Order RFC draft',
+            ],
             description: 'Inline Foreign Key',
             dbFK: true,
         });
@@ -667,7 +710,14 @@ describe('generator for a5', () => {
             type: 'string',
             format: 'uuid',
             description: 'Foreign Key Column Type.',
-            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
+            see: [
+                'createUUID',
+                'UUIDv4',
+                'UUIDv7',
+                'https://ru.wikipedia.org/wiki/UUID Wikipedia: UUID',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.4 UUIDv4 Byte Order RFC draft',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.7 UUIDv7 Byte Order RFC draft',
+            ],
             dbFK: true,
         });
         expect(v.properties.ref2).toStrictEqual({
@@ -675,7 +725,14 @@ describe('generator for a5', () => {
             format: 'uuid',
             description: 'Inline Foreign Key (2)',
             dbFK: true,
-            // see: 'https://ru.wikipedia.org/wiki/UUID Wikipedia',
+            see: [
+                'createUUID',
+                'UUIDv4',
+                'UUIDv7',
+                'https://ru.wikipedia.org/wiki/UUID Wikipedia: UUID',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.4 UUIDv4 Byte Order RFC draft',
+                'https://www.ietf.org/archive/id/draft-ietf-uuidrev-rfc4122bis-00.html#section-5.7 UUIDv7 Byte Order RFC draft',
+            ],
         });
     });
 });
@@ -879,7 +936,7 @@ describe('generator for a1', () => {
     it('getSchema', () => {
         expect(validator.getValidator('test#/definitions/PositiveInt')!.schema).toStrictEqual({
             type: 'integer',
-            // see: 'Int',
+            see: 'Int',
             minimum: 1,
             maximum: 9007199254740991,
             description: 'Positive integer value.',

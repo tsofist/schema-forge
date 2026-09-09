@@ -95,6 +95,7 @@ exports[`validator for a9 schema should be generated correctly with enums 1`] = 
         77,
         99,
       ],
+      "see": "LiteralEnumC",
       "type": "number",
     },
     "LiteralEnumC": {
@@ -105,13 +106,43 @@ exports[`validator for a9 schema should be generated correctly with enums 1`] = 
         "D",
         "E",
       ],
+      "see": [
+        "https://example.com Some reference link",
+        "https://example2.com Some reference link 2",
+        "LiteralEnumB",
+        "LiteralEnumB Extra",
+        "https://example3.com",
+        "Documentation for EnumD",
+        "Multiline reference link
+To some documentation for EnumD",
+        "Other multiline reference link
+  To some other documentation for EnumD
+  Details: https://example4.com
+  Let's try 🚀 (with emoji)
+  Line #5",
+        "[Warning]
+1 A-1
+2 A-2",
+        "AA*   100 H-01
+200 H-02",
+        "Warning:
+1 Do-1
+2 Do-2
+2.1 Do-2.1
+2.2 Do-2.2
+* Mark-1
+* Mark-2
+2.3 Do-2.3
+- Mark-3
+- Mark-4",
+      ],
       "type": [
         "string",
         "number",
       ],
     },
   },
-  "hash": "9268cb4eba354abffcc260702d9ee960",
+  "hash": "7bc5633147cadb1e64e5c9a2b3bedc8b",
 }
 `;
 

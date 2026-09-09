@@ -54,6 +54,8 @@ export type LiteralEnumA =
 
 /**
  * Desc: LiteralEnumB
+ *
+ * @see LiteralEnumC
  * @public
  */
 export type LiteralEnumB = 99 | 66 | 77;
@@ -63,6 +65,40 @@ export type LiteralEnumB = 99 | 66 | 77;
  *
  * @see https://example.com Some reference link
  * @see https://example2.com Some reference link 2
+ * @see LiteralEnumB
+ * @see {@link LiteralEnumB}
+ * @see {@link LiteralEnumB} Extra
+ * @see {@link https://example3.com}
+ * @see Documentation for EnumD
+ *
+ * @see Multiline reference link
+ *   To some documentation for EnumD
+ *
+ * @see
+ *   Other multiline reference link
+ *   To some other documentation for EnumD
+ *   Details: https://example4.com
+ *   Let's try 🚀 (with emoji)
+ *   Line #5
+ *
+ * @see [Warning]
+ *   1 A-1
+ *   2 A-2
+ *
+ * @see AA
+ *   100 H-01
+ *   200 H-02
+ *
+ * @see Warning:
+ *   1 Do-1
+ *   2 Do-2
+ *     2.1 Do-2.1
+ *     2.2 Do-2.2
+ *       * Mark-1
+ *       * Mark-2
+ *     2.3 Do-2.3
+ *       - Mark-3
+ *       - Mark-4
  *
  * @public
  */

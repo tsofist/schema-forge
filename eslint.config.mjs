@@ -1,3 +1,5 @@
-import config from '@tsofist/web-buddy/lib/eslint/config.js';
+import { createWebBuddyESLintConfig } from '@tsofist/web-buddy/lib/eslint/config.js';
 
-export default config;
+process.env.WEB_BUDDY_STRICT = 'true';
+
+export default createWebBuddyESLintConfig();

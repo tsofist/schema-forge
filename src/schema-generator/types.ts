@@ -22,7 +22,8 @@ export const SFG_EXTRA_TAGS = [
     //
     'enumAnnotation',
     'enumMember',
-    // 'see',
+    //
+    'see',
     'spec',
     //
     'faker',

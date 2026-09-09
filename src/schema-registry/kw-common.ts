@@ -29,23 +29,13 @@ export const SFRCommonKeywords: readonly KeywordDefinition[] = [
         dependencies: ['$id', '$schema'],
         metaSchema: { type: 'string' },
     },
-    // {
-    //     keyword: 'see',
-    //     metaSchema: {
-    //         additionalProperties: false,
-    //         type: ['string', 'array'],
-    //         items: {
-    //             anyOf: [
-    //                 { type: 'string', format: 'uri' },
-    //                 {
-    //                     type: 'array',
-    //                     items: [{ type: 'string', format: 'uri' }, { type: 'string' }],
-    //                     minItems: 2,
-    //                 },
-    //             ],
-    //         },
-    //     },
-    // },
+    {
+        keyword: 'see',
+        metaSchema: {
+            type: ['string', 'array'],
+            additionalProperties: false,
+        },
+    },
     {
         keyword: 'spec',
         metaSchema: {

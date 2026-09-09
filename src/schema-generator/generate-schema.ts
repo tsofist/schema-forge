@@ -106,6 +106,7 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
     const formatter = createFormatter(options.sourcesTypesGeneratorConfig, (formatter) => {
         formatter.addTypeFormatter(new EnumTypeFormatterEx(enumMetadataMap));
     });
+
     const generator = new SchemaGeneratorEx(generatorProgram, parser, formatter, generatorConfig);
 
     if (options.suppressMultipleDefinitionsErrors) {
@@ -228,6 +229,7 @@ class EnumTypeFormatterEx extends EnumTypeFormatter {
                 }
             }
         }
+
         return inherited;
     }
 }
