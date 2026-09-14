@@ -68,23 +68,28 @@ export type ForgeSchemaOptions = {
      */
     readonly sourcesFilesPattern: string | string[];
     /**
-     * Path to tsconfig.json
+     * Path to tsconfig.json to inherit compiler options from.
+     * Exactly one of `tsconfig` / `tsconfigFrom` is required; they are equivalent.
      */
     readonly tsconfig?: string;
     /**
      * Path to tsconfig.json from which to inherit compiler options
+     *
+     * @see tsconfig An alias of this option
      */
     readonly tsconfigFrom?: string;
     /**
-     * Schema file locations
+     * Schema file location.
+     * If omitted, nothing is written and the schema is only returned from `forgeSchema`.
      *
      * @example
      *   result.schema.json
      *   /absolute/path/to/result.schema.json
      */
-    readonly outputSchemaFile: string;
+    readonly outputSchemaFile?: string;
     /**
-     * Definitions file location
+     * Definitions file location.
+     * If omitted, nothing is written; the metadata is still returned from `forgeSchema`.
      *
      * @example
      *   result.schema-metadata.json
@@ -214,8 +219,19 @@ export type ForgedSchemaDefinition = Schema & {
 
 export type ForgeSchemaResult = {
     schema: ForgedSchema;
+    /**
+     * Schema metadata, the same content as written to `outputSchemaMetadataFile`
+     */
+    metadata: SchemaForgeMetadata;
     refs: readonly SchemaForgeDefinitionRef[];
-    generatedTemporaryFiles: readonly string[];
+    /**
+     * Intermediate TypeScript sources synthesized by the generator:
+     *   file name -> source text.
+     *
+     * These files are virtual: they are compiled from memory and never written to disk,
+     * unless `SF_ARTEFACTS_POLICY` is set to `generator` or `all` (debugging only).
+     */
+    generatedDrafts: ReadonlyMap<string, string>;
     generatedNamesBySourceFile: ReadonlyMap<string, ReadonlySet<string>>;
 };
 

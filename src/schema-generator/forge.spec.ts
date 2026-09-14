@@ -1,4 +1,4 @@
-import { unlink } from 'node:fs/promises';
+import { readFile, unlink } from 'node:fs/promises';
 import { readErrorCode, readErrorContext } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
 import { keysOf } from '@tsofist/stem/lib/object/keys';
@@ -895,6 +895,93 @@ describe('generator for a2', () => {
     });
 });
 
+describe('in-memory generation for a2', () => {
+    const options: ForgeSchemaOptions = {
+        schemaId: 'test',
+        tsconfigFrom: './tsconfig.build-test.json',
+        sourcesDirectoryPattern: 'test-sources/a2',
+        sourcesFilesPattern: 'service-api.ts',
+    };
+
+    let result: ForgeSchemaResult | undefined;
+
+    beforeAll(async () => {
+        result = await forgeSchema(options);
+    });
+
+    it('should produce the schema without writing anything to disk', async () => {
+        expect(result).toBeTruthy();
+        expect(result!.schema.$id).toStrictEqual('test');
+        expect(keysOf(result!.schema.definitions!).length).toBeGreaterThan(0);
+
+        const outputSchemaFile = './a2.in-memory.generated.schema.tmp.json';
+        const outputSchemaMetadataFile = './a2.in-memory.generated.definitions.tmp.json';
+
+        try {
+            const written = await forgeSchema({
+                ...options,
+                outputSchemaFile,
+                outputSchemaMetadataFile,
+            });
+
+            expect(written.schema).toStrictEqual(result!.schema);
+            expect(written.metadata).toStrictEqual(result!.metadata);
+            // toEqual: JSON.stringify drops the explicitly-undefined metadata keywords
+            expect(JSON.parse(await readFile(outputSchemaFile, 'utf8'))).toEqual(written.schema);
+            expect(JSON.parse(await readFile(outputSchemaMetadataFile, 'utf8'))).toEqual(
+                written.metadata,
+            );
+        } finally {
+            if (!KEEP_SPEC_ARTEFACTS) {
+                await unlink(outputSchemaFile).catch(noop);
+                await unlink(outputSchemaMetadataFile).catch(noop);
+            }
+        }
+    });
+
+    it('drafts should stay virtual', async () => {
+        expect(result!.generatedDrafts.size).toStrictEqual(1);
+
+        for (const [fileName, content] of result!.generatedDrafts) {
+            expect(fileName).toMatch(/\.schema-forge\.temporary-generated\.tmp\.ts$/);
+            expect(content).toContain('__APIInterface');
+            await expect(readFile(fileName, 'utf8')).rejects.toThrow(/ENOENT/);
+        }
+    });
+});
+
+describe('source patterns for a1', () => {
+    const options: ForgeSchemaOptions = {
+        schemaId: 'test',
+        explicitPublic: true,
+        tsconfigFrom: './tsconfig.build-test.json',
+        sourcesDirectoryPattern: 'test-sources/a1',
+        sourcesFilesPattern: ['service.api.ts', '*.api.ts', 'types.ts'],
+    };
+
+    async function draftsOf(patterns: string | string[], directoryPattern?: string) {
+        const { generatedDrafts } = await forgeSchema({
+            ...options,
+            sourcesDirectoryPattern: directoryPattern ?? options.sourcesDirectoryPattern,
+            sourcesFilesPattern: patterns,
+        });
+        return Array.from(generatedDrafts.keys()).sort();
+    }
+
+    it('brace alternatives should be expanded', async () => {
+        const expected = await draftsOf(options.sourcesFilesPattern);
+        expect(expected.length).toStrictEqual(2);
+
+        expect(await draftsOf('{service.api,types}.ts')).toStrictEqual(expected);
+        expect(await draftsOf(['*.{api,api-types}.ts', 'types.ts'])).toStrictEqual(expected);
+        expect(await draftsOf('types.ts', 'test-sources/{a1,a1}')).toStrictEqual([expected[1]]);
+    });
+
+    it('a pattern matching nothing should be reported', async () => {
+        await expect(draftsOf('no-such-file.ts')).rejects.toThrow(/No input files/);
+    });
+});
+
 describe('generator for a1', () => {
     const outputSchemaFile = './a1.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a1.generated.definitions.tmp.json';
@@ -930,7 +1017,7 @@ describe('generator for a1', () => {
     it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
         expect(forgeSchemaResult!.schema.$id).toStrictEqual(schemaId);
-        expect(forgeSchemaResult!.generatedTemporaryFiles.length).toStrictEqual(2);
+        expect(forgeSchemaResult!.generatedDrafts.size).toStrictEqual(2);
         expect(forgeSchemaResult!.refs.length).toStrictEqual(10);
     });
     it('getSchema', () => {

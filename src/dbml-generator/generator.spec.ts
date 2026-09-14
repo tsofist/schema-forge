@@ -42,7 +42,7 @@ describe('DBML Generator', () => {
     it('generated schema should be valid', () => {
         expect(forgeSchemaResult).toBeTruthy();
         expect(forgeSchemaResult!.schema.$id).toStrictEqual(schemaId);
-        expect(forgeSchemaResult!.generatedTemporaryFiles.length).toStrictEqual(1);
+        expect(forgeSchemaResult!.generatedDrafts.size).toStrictEqual(1);
         expect(forgeSchemaResult!.refs.length).toStrictEqual(18);
     });
 

@@ -15,7 +15,6 @@ import {
     Context,
     createFormatter,
     createParser,
-    createProgram,
     DEFAULT_CONFIG,
     Definition,
     DefinitionType,
@@ -34,6 +33,7 @@ import {
     TypeofNodeParser,
 } from 'ts-json-schema-generator';
 import {
+    CompilerOptions,
     Identifier,
     isExpressionStatement,
     isNamedTupleMember,
@@ -55,7 +55,8 @@ import { SGEnumAnnotationOptions, SGEnumMemberOptions } from './kw.types';
 import { patchEnumNodeParser, SFEnumMetadataMap } from './patch-enum-node-parser';
 import { shrinkDefinitionName } from './shrink-definition-name';
 import { sortSchemaContents } from './sort-contents';
-import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY, TMP_FILES_SUFFIX } from './types';
+import { createForgeProgram, SourceFileCache, VirtualSources } from './ts-program';
+import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY } from './types';
 
 /**
  * @internal
@@ -66,8 +67,6 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
         ...DEFAULT_CONFIG,
         ...SFG_CONFIG_DEFAULTS,
         expose: options.expose ?? SFG_CONFIG_DEFAULTS.expose,
-        path: `${options.sourcesDirectoryPattern}/*${TMP_FILES_SUFFIX}.ts`,
-        tsconfig: options.tsconfig,
         skipTypeCheck: options.skipTypeCheck ?? SFG_CONFIG_DEFAULTS.skipTypeCheck,
         discriminatorType: options.discriminatorType ?? DEFAULT_CONFIG.discriminatorType,
         ...SFG_CONFIG_MANDATORY,
@@ -75,9 +74,15 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
 
     mergeConfigExtraTags(generatorConfig, options);
 
-    const generatorProgram = createProgram(generatorConfig);
+    const { program: generatorProgram } = createForgeProgram({
+        rootNames: Array.from(options.drafts.keys()),
+        compilerOptions: options.compilerOptions,
+        virtualSources: options.drafts,
+        skipTypeCheck: generatorConfig.skipTypeCheck,
+        sourceFileCache: options.sourceFileCache,
+    });
 
-    const typeChecker = generatorProgram.getTypeChecker() as unknown as TypeChecker;
+    const typeChecker = generatorProgram.getTypeChecker();
     const parser = createParser(generatorProgram, options.sourcesTypesGeneratorConfig, (parser) => {
         parser.addNodeParser(
             new TupleTypeParser(parser as ChainNodeParser, allowUseFallbackDescription),
@@ -399,7 +404,10 @@ function escapeDefinitionNameForJSONPath(value: string): string {
 }
 
 type InternalOptions = {
-    tsconfig: string;
+    compilerOptions: CompilerOptions;
+    /** Virtual draft sources produced by the first pass */
+    drafts: VirtualSources;
+    sourceFileCache: SourceFileCache;
     definitions: readonly string[];
     sourcesTypesGeneratorConfig: CompletedConfig;
 } & ForgeSchemaOptions;

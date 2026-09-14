@@ -1,11 +1,10 @@
-import { writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, isAbsolute, resolve } from 'node:path';
 import type { PRec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
 import { TextBuilder } from '@tsofist/stem/lib/string/text-builder';
-import { createProgram } from 'ts-json-schema-generator';
 import { type CompletedConfig, DEFAULT_CONFIG } from 'ts-json-schema-generator/dist/src/Config';
 import {
+    type CompilerOptions,
     type EnumDeclaration,
     type ExportDeclaration,
     type FunctionTypeNode,
@@ -13,7 +12,6 @@ import {
     type MethodSignature,
     type NodeArray,
     type ParameterDeclaration,
-    type Program,
     type SourceFile,
     type Statement,
     type Symbol as TSSymbol,
@@ -21,7 +19,6 @@ import {
     type TypeElement,
     type VariableDeclaration,
     SyntaxKind,
-    createCompilerHost,
     getJSDocDeprecatedTag,
     getJSDocPrivateTag,
     getJSDocPublicTag,
@@ -51,18 +48,17 @@ import {
     readNodeName,
     resolveModuleFileName,
 } from './helpers-tsc';
+import { createForgeProgram, SourceFileCache } from './ts-program';
 import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY, TMP_FILES_SUFFIX } from './types';
 
 /**
  * @internal
  */
-export async function generateDraftTypeFiles(options: SFDTGOptions) {
+export function generateDraftTypeFiles(options: SFDTGOptions) {
     const sourcesTypesGeneratorConfig: CompletedConfig = {
         ...DEFAULT_CONFIG,
         ...SFG_CONFIG_DEFAULTS,
         expose: options.expose ?? SFG_CONFIG_DEFAULTS.expose,
-        path: options.sourcesPattern.length > 1 ? undefined : options.sourcesPattern[0],
-        tsconfig: options.tsconfig,
         skipTypeCheck: options.skipTypeCheck ?? SFG_CONFIG_DEFAULTS.skipTypeCheck,
         discriminatorType: DEFAULT_CONFIG.discriminatorType,
         ...SFG_CONFIG_MANDATORY,
@@ -70,14 +66,14 @@ export async function generateDraftTypeFiles(options: SFDTGOptions) {
 
     mergeConfigExtraTags(sourcesTypesGeneratorConfig, options);
 
-    const ctx = createContext(options, sourcesTypesGeneratorConfig);
+    const ctx = createContext(options);
     let definitions = ctx.definitions;
 
     for (const sourceFileName of ctx.fileNames) {
         ctx.currentSourceFileName = sourceFileName;
         ctx.currentFileContent = [];
 
-        await processSourceFile(sourceFileName, ctx);
+        processSourceFile(sourceFileName, ctx);
     }
 
     if (options.definitionsFilter) {
@@ -87,7 +83,7 @@ export async function generateDraftTypeFiles(options: SFDTGOptions) {
     definitions.sort();
 
     return {
-        files: ctx.files,
+        drafts: ctx.drafts,
         definitions,
         sourcesTypesGeneratorConfig,
         namesBySourceFile: ctx.namesBySourceFile,
@@ -102,7 +98,7 @@ export function mergeConfigExtraTags(target: CompletedConfig, source: ForgeSchem
     return target;
 }
 
-async function processSourceFile(sourceFileName: string, context: SFDTGContext) {
+function processSourceFile(sourceFileName: string, context: SFDTGContext) {
     const source = context.program.getSourceFile(sourceFileName);
     if (!source) return;
 
@@ -158,13 +154,10 @@ async function processSourceFile(sourceFileName: string, context: SFDTGContext) 
         }
     }
 
-    await writeFile(
+    context.drafts.set(
         outputFileName,
         [source.getFullText(), context.currentFileContent.join('\n')].join('\n'),
-        { encoding: 'utf8' },
     );
-
-    context.files.push(outputFileName);
 }
 
 function passDeclaration(
@@ -453,15 +446,19 @@ function countRequiredParams(params: NodeArray<ParameterDeclaration>) {
     return result;
 }
 
-function createContext(options: SFDTGOptions, sourcesTypesGeneratorConfig: CompletedConfig) {
-    const program = createProgram(sourcesTypesGeneratorConfig) as unknown as Program;
+function createContext(options: SFDTGOptions) {
+    const { program, host: compilerHost } = createForgeProgram({
+        rootNames: options.rootNames,
+        compilerOptions: options.compilerOptions,
+        skipTypeCheck: options.skipTypeCheck ?? SFG_CONFIG_DEFAULTS.skipTypeCheck,
+        sourceFileCache: options.sourceFileCache,
+    });
     const checker = program.getTypeChecker();
     const compilerOptions = program.getCompilerOptions();
-    const compilerHost = createCompilerHost(compilerOptions);
     const fileNames = program.getRootFileNames();
     const namesBySourceFile = new Map<string, Set<string>>();
     const definitions: string[] = [];
-    const files: string[] = [];
+    const drafts = new Map<string, string>();
     const currentFileContent: string[] = [];
 
     return {
@@ -475,7 +472,7 @@ function createContext(options: SFDTGOptions, sourcesTypesGeneratorConfig: Compl
         compilerHost,
         typeChecker: checker,
         options,
-        files,
+        drafts,
         registerDefinition(sourceFilename: string, ...names: string[]) {
             let set = namesBySourceFile.get(sourceFilename);
             if (!set) namesBySourceFile.set(sourceFilename, (set = new Set()));
@@ -499,8 +496,9 @@ type DefinitionMetadata = {
 };
 
 type SFDTGOptions = {
-    tsconfig: string;
-    sourcesPattern: string[];
+    compilerOptions: CompilerOptions;
+    rootNames: string[];
+    sourceFileCache: SourceFileCache;
 } & ForgeSchemaOptions;
 
 type SFDTGContext = ReturnType<typeof createContext>;
