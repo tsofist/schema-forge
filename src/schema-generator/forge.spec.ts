@@ -1,7 +1,7 @@
 import { readFile, unlink } from 'node:fs/promises';
 import { readErrorCode, readErrorContext } from '@tsofist/stem/lib/error';
 import { noop } from '@tsofist/stem/lib/noop';
-import { keysOf } from '@tsofist/stem/lib/object/keys';
+import { keysOf } from '@tsofist/stem/lib/object/keys-of';
 import { pickProps } from '@tsofist/stem/lib/object/pick';
 import { SchemaObject } from 'ajv';
 import { KEEP_SPEC_ARTEFACTS } from '../artefacts-policy';

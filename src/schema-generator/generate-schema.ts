@@ -2,7 +2,7 @@ import './extended-annotations-reader';
 import type { ARec, PickFieldsWithPrefix, Rec } from '@tsofist/stem';
 import { raise } from '@tsofist/stem/lib/error';
 import { isEmptyObject } from '@tsofist/stem/lib/object/is-empty';
-import { keysOf } from '@tsofist/stem/lib/object/keys';
+import { keysOf } from '@tsofist/stem/lib/object/keys-of';
 import { valueIn } from '@tsofist/stem/lib/value-in';
 import Ajv from 'ajv';
 import { JSONSchema7Type } from 'json-schema';
