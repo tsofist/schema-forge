@@ -116,16 +116,18 @@ export type ForgeSchemaOptions = {
      */
     readonly sortContents?: boolean | SchemaForgeSortableContentSet;
     /**
-     * If true, the top-level `$ref` pointers for each definition will be resolved.
-     * This improves schema readability by reducing the number of references
-     *   while still keeping the schema relatively compact.
-     * Note: only references used once will be dereferenced.
+     * If true, definitions referenced exactly once anywhere in the schema
+     *   will be inlined at that single reference site and removed from the root.
+     * This noticeably shrinks the schema without losing any information.
+     * Definitions generated from explicitly requested types (i.e. tagged `@public`
+     *   under the default `explicitPublic`) are never inlined nor removed.
+     * Affects the schema returned by `forgeSchema()`, its hash and its metadata,
+     *   as well as `outputSchemaFile`.
      *
-     * @see shallowDereferenceSchema
-     * @see dereferenceSchema
+     * @see inlineSingleUseDefinitions
      * @default false
      */
-    readonly shallowDeref?: boolean;
+    readonly inlineSingleUseDefs?: boolean;
     /**
      * If you want to shrink the schema definition names,
      *   you have to provide a replacement function.

@@ -61,7 +61,9 @@ import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY } from './types';
 /**
  * @internal
  */
-export async function generateSchemaByDraftTypes(options: InternalOptions): Promise<ForgedSchema> {
+export async function generateSchemaByDraftTypes(
+    options: InternalOptions,
+): Promise<GeneratedSchemaResult> {
     const allowUseFallbackDescription = options.allowUseFallbackDescription;
     const generatorConfig: CompletedConfig = {
         ...DEFAULT_CONFIG,
@@ -129,6 +131,8 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
           ? shrinkDefinitionName
           : options.shrinkDefinitionNames;
 
+    const shrunkNames = new Map<string, string>();
+
     if (shrinkDefinitionNames) {
         const replacement = new Set<string>();
         for (const name of Object.keys(defs)) {
@@ -137,6 +141,9 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
                 if (replacement.has(shortName) || shortName in defs) {
                     raise(`Duplicate replacement definition name: ${shortName}`);
                 }
+
+                replacement.add(shortName);
+                shrunkNames.set(name, shortName);
 
                 // rename property
                 defs[shortName] = defs[name];
@@ -171,8 +178,20 @@ export async function generateSchemaByDraftTypes(options: InternalOptions): Prom
         allowUnionTypes: true,
     }).validateSchema(result, true);
 
-    return result;
+    return { schema: result, shrunkNames };
 }
+
+export type GeneratedSchemaResult = {
+    schema: ForgedSchema;
+    /**
+     * Original definition name -> the name it was renamed to.
+     * Holds only the definitions that were actually renamed,
+     *   so it is empty unless `shrinkDefinitionNames` is enabled.
+     *
+     * @see shrinkDefinitionName
+     */
+    shrunkNames: ReadonlyMap<string, string>;
+};
 
 class EnumTypeFormatterEx extends EnumTypeFormatter {
     constructor(protected readonly metaMap: SFEnumMetadataMap) {

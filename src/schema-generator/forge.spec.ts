@@ -1236,3 +1236,59 @@ describe('generator for a1', () => {
         expect(schema.properties.methodB.description).toStrictEqual('Description for methodB');
     });
 });
+
+describe('shrinkDefinitionNames + metadata', () => {
+    const forgeA9 = (shrinkDefinitionNames?: ForgeSchemaOptions['shrinkDefinitionNames']) =>
+        forgeSchema({
+            schemaId: 'test',
+            allowUseFallbackDescription: true,
+            tsconfigFrom: './tsconfig.build-test.json',
+            sourcesDirectoryPattern: 'test-sources/a9',
+            sourcesFilesPattern: ['service-api.ts', 'types.ts'],
+            expose: 'export',
+            explicitPublic: true,
+            shrinkDefinitionNames,
+        });
+
+    // An absent ref collapses to '', which no definition is named — so it fails loudly.
+    const definitionNameOf = (ref: string | undefined) =>
+        (ref ?? '').slice('test#/definitions/'.length);
+
+    it('should address a renamed root definition by the name it ended up under', async () => {
+        const { metadata: plain } = await forgeA9();
+        const rootName = keysOf(plain.names)[0];
+        const shortName = 'DSNRenamed_Habc123';
+
+        const { schema, metadata, refs } = await forgeA9((name) =>
+            name === rootName ? shortName : undefined,
+        );
+
+        const present = new Set(keysOf(schema.definitions ?? {}));
+        expect(present.has(shortName)).toStrictEqual(true);
+
+        // The metadata stays keyed by the source type name, but the ref has to point at
+        //   the definition as it is actually named in the schema.
+        expect(metadata.names[rootName]).toStrictEqual(`test#/definitions/${shortName}`);
+        expect(metadata.refs[`test#/definitions/${shortName}`]).toStrictEqual(rootName);
+
+        // A renamed root is still a root, not a generator-introduced service definition.
+        expect(shortName in metadata.serviceNames).toStrictEqual(false);
+        expect(rootName in metadata.serviceNames).toStrictEqual(false);
+
+        for (const ref of [...refs, ...Object.values(metadata.names)]) {
+            expect(present.has(definitionNameOf(ref))).toStrictEqual(true);
+        }
+    });
+
+    it('should leave the metadata untouched when nothing is renamed', async () => {
+        const { schema, metadata, refs } = await forgeA9(true);
+        const present = new Set(keysOf(schema.definitions ?? {}));
+
+        for (const ref of [...refs, ...Object.values(metadata.names)]) {
+            expect(present.has(definitionNameOf(ref))).toStrictEqual(true);
+        }
+        for (const name of keysOf(metadata.serviceNames)) {
+            expect(name in metadata.names).toStrictEqual(false);
+        }
+    });
+});

@@ -6,7 +6,7 @@ import { noop } from '@tsofist/stem/lib/noop';
 import { BuildError } from 'ts-json-schema-generator';
 import { KEEP_GEN_ARTEFACTS } from '../artefacts-policy';
 import { buildSchemaDefinitionRef } from '../definition-info/ref';
-import { shallowDereferenceSchema } from '../schema-dereference/dereference-shallow';
+import { inlineSingleUseDefinitions } from '../schema-dereference/inline-single-use';
 import type {
     ForgedSchema,
     ForgeSchemaOptions,
@@ -44,20 +44,37 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
 
         drafts = draftsResult.drafts;
 
-        const refs = definitions.map((item) => buildSchemaDefinitionRef(item, options.schemaId));
+        const { schema: generatedSchema, shrunkNames } = await generateSchemaByDraftTypes({
+            ...options,
+            compilerOptions,
+            sourceFileCache,
+            drafts,
+            definitions,
+            sourcesTypesGeneratorConfig,
+        });
 
-        const schema: ForgedSchema = {
-            ...(await generateSchemaByDraftTypes({
-                ...options,
-                compilerOptions,
-                sourceFileCache,
-                drafts,
-                definitions,
-                sourcesTypesGeneratorConfig,
-            })),
+        // `definitions` holds the names the draft pass registered, which `shrinkDefinitionNames`
+        //   may have renamed on the way into the schema. Everything addressing the schema has
+        //   to go through the name it actually ended up under.
+        const definitionNameOf = (name: string) => shrunkNames.get(name) ?? name;
+
+        const refs = definitions.map((item) =>
+            buildSchemaDefinitionRef(definitionNameOf(item), options.schemaId),
+        );
+
+        let schema: ForgedSchema = {
+            ...generatedSchema,
             ...(options.schemaMetadata ?? {}),
             hash: undefined,
         };
+
+        if (options.inlineSingleUseDefs) {
+            // `definitions` is the draft-pass root list: every type that passed the
+            //   visibility gate, i.e. exactly the `@public` ones under the default
+            //   `explicitPublic`. Those must survive untouched.
+            const keep = new Set(definitions.map(definitionNameOf));
+            schema = inlineSingleUseDefinitions(schema, { keep }) as ForgedSchema;
+        }
 
         {
             const algorithm =
@@ -74,11 +91,7 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
         }
 
         if (options.outputSchemaFile) {
-            const content = JSON.stringify(
-                options.shallowDeref ? shallowDereferenceSchema(schema) : schema,
-                null,
-                2,
-            );
+            const content = JSON.stringify(schema, null, 2);
             await writeFile(options.outputSchemaFile, content, { encoding: 'utf8' });
         }
 
@@ -98,10 +111,13 @@ export async function forgeSchema(options: ForgeSchemaOptions): Promise<ForgeSch
         {
             const defs = new Set(Object.keys(schema.definitions ?? {}));
             for (const name of definitions) {
-                const ref = buildSchemaDefinitionRef(name, options.schemaId);
+                // Keyed by the source type name, pointing at the definition as it is
+                //   actually named in the schema, so the ref always resolves.
+                const definitionName = definitionNameOf(name);
+                const ref = buildSchemaDefinitionRef(definitionName, options.schemaId);
                 metadata.names[name] = ref;
                 metadata.refs[ref] = name;
-                defs.delete(name);
+                defs.delete(definitionName);
             }
             for (const name of defs) {
                 const ref = buildSchemaDefinitionRef(name, options.schemaId);
