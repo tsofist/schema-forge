@@ -19,6 +19,8 @@ import type { SchemaForgeRegistry } from '../schema-registry/types';
 import type { ForgeSchemaOptions, ForgeSchemaResult } from '../types';
 import { forgeSchema } from './forge';
 
+/* eslint-disable @typescript-eslint/no-unsafe-enum-assignment */
+
 describe('validator for a11', () => {
     const outputSchemaFile = './a11.generated.schema.tmp.json';
     const outputSchemaMetadataFile = './a11.generated.definitions.tmp.json';
