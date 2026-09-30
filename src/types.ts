@@ -129,13 +129,25 @@ export type ForgeSchemaOptions = {
      */
     readonly inlineSingleUseDefs?: boolean;
     /**
-     * If you want to shrink the schema definition names,
-     *   you have to provide a replacement function.
+     * Shrink the schema definition names.
      *
+     * `'stable'` selects the built-in {@link shrinkDefinitionNameStable}, which digests what
+     *   the definition actually is. Names produced this way change only when the definition
+     *   changes, and definitions that are the same schema under two names are merged.
+     * `true` selects the legacy built-in {@link shrinkDefinitionName}, which digests the
+     *   definition name itself. Its output depends on `process.cwd()` and on node offsets
+     *   within the source files, because the generator bakes both into the raw names.
+     *   It is kept so that already published schemas keep their definition names.
+     *
+     * A custom function returning `undefined` leaves the definition name untouched.
+     * Handing the same short name to two definitions merges them, but only when they are
+     *   structurally the same schema; anything else fails the generation.
+     *
+     * @see shrinkDefinitionNameStable
      * @see shrinkDefinitionName
+     * @default false
      */
-    readonly shrinkDefinitionNames?:
-        boolean | ((definitionName: string) => undefined | ForgedSchemaDefinitionShortName);
+    readonly shrinkDefinitionNames?: boolean | 'stable' | ShrinkDefinitionNameFn;
     /**
      * @deprecated
      * @default false
@@ -163,6 +175,37 @@ export type ForgeSchemaOptions = {
 };
 
 export type ForgedSchemaDefinitionShortName = `DSN${string}_H${string}`;
+
+/**
+ * Everything a definition name shrinking function is given.
+ *
+ * All of it is derived from the generated schema rather than from the TypeScript AST,
+ *   so an implementation based on {@link ShrinkDefinitionNameContext.definition} is free of
+ *   the `process.cwd()`, `node.pos` and `node.end` artefacts that leak into raw definition
+ *   names through the generator's own node keys.
+ */
+export type ShrinkDefinitionNameContext = {
+    /** Definition name to shrink, as the generator produced it. */
+    readonly name: string;
+    /** Body of the definition being renamed, i.e. `definitions[name]`. */
+    readonly definition: ForgedSchemaDefinition;
+    /**
+     * Every generated definition, keyed by its original name.
+     * This is a snapshot taken before any renaming started, so it never reflects
+     *   the renames already applied during the current run.
+     */
+    readonly definitions: Readonly<Rec<ForgedSchemaDefinition>>;
+    /**
+     * Original name -> short name, for the definitions already renamed during this run.
+     * Reflects the iteration order, so an implementation must not depend on it
+     *   for anything but collision detection.
+     */
+    readonly assigned: ReadonlyMap<string, ForgedSchemaDefinitionShortName>;
+};
+
+export type ShrinkDefinitionNameFn = (
+    context: ShrinkDefinitionNameContext,
+) => undefined | ForgedSchemaDefinitionShortName;
 
 export type SchemaForgeMetadata = {
     $id: string;

@@ -4,6 +4,7 @@ import { raise } from '@tsofist/stem/lib/error';
 import { isEmptyObject } from '@tsofist/stem/lib/object/is-empty';
 import { keysOf } from '@tsofist/stem/lib/object/keys-of';
 import { valueIn } from '@tsofist/stem/lib/value-in';
+import * as structuredCloneModule from '@ungap/structured-clone';
 import Ajv from 'ajv';
 import { JSONSchema7Type } from 'json-schema';
 import { JSONPath } from 'jsonpath-plus';
@@ -48,12 +49,22 @@ import {
     TypeFlags,
     TypeQueryNode,
 } from 'typescript';
-import { ForgedPropertySchema, ForgedSchema, ForgeSchemaOptions } from '../types';
+import {
+    ForgedPropertySchema,
+    ForgedSchema,
+    ForgedSchemaDefinition,
+    ForgedSchemaDefinitionShortName,
+    ForgeSchemaOptions,
+} from '../types';
 import { mergeConfigExtraTags } from './generate-drafts';
 import { readJSDocDescription } from './helpers-tsc';
 import { SGEnumAnnotationOptions, SGEnumMemberOptions } from './kw.types';
 import { patchEnumNodeParser, SFEnumMetadataMap } from './patch-enum-node-parser';
-import { shrinkDefinitionName } from './shrink-definition-name';
+import {
+    definitionStructureDigest,
+    shrinkDefinitionName,
+    shrinkDefinitionNameStable,
+} from './shrink-definition-name';
 import { sortSchemaContents } from './sort-contents';
 import { createForgeProgram, SourceFileCache, VirtualSources } from './ts-program';
 import { SFG_CONFIG_DEFAULTS, SFG_CONFIG_MANDATORY } from './types';
@@ -129,27 +140,53 @@ export async function generateSchemaByDraftTypes(
         ? undefined
         : options.shrinkDefinitionNames === true
           ? shrinkDefinitionName
-          : options.shrinkDefinitionNames;
+          : options.shrinkDefinitionNames === 'stable'
+            ? shrinkDefinitionNameStable
+            : options.shrinkDefinitionNames;
 
-    const shrunkNames = new Map<string, string>();
+    const shrunkNames = new Map<string, ForgedSchemaDefinitionShortName>();
 
     if (shrinkDefinitionNames) {
-        const replacement = new Set<string>();
+        // The loop below renames definitions in place and rewrites `$ref` values by mutating
+        //   the very objects the bodies are made of, so a shallow copy would leak the renames
+        //   already applied and make the outcome depend on the iteration order.
+        const originalDefs = structuredClone<Rec<ForgedSchemaDefinition>>(
+            defs as Rec<ForgedSchemaDefinition>,
+        );
+        const replacement = new Map<string, string>();
         for (const name of Object.keys(defs)) {
-            const shortName = shrinkDefinitionNames(name);
+            const shortName = shrinkDefinitionNames({
+                name,
+                definition: originalDefs[name],
+                definitions: originalDefs,
+                assigned: shrunkNames,
+            });
             if (shortName) {
-                if (replacement.has(shortName) || shortName in defs) {
-                    raise(`Duplicate replacement definition name: ${shortName}`);
+                const claimedBy = replacement.get(shortName);
+                const duplicate = claimedBy != null || shortName in defs;
+
+                if (duplicate) {
+                    // Two names for one and the same schema — which is what a content-based
+                    //   shrinking function reports by handing out the short name twice.
+                    //   Keeping the first definition and pointing everything at it loses
+                    //   nothing; anything else is a genuine clash and still fails loudly.
+                    if (
+                        claimedBy == null ||
+                        definitionStructureDigest(originalDefs, claimedBy) !==
+                            definitionStructureDigest(originalDefs, name)
+                    ) {
+                        raise(`Duplicate replacement definition name: ${shortName}`);
+                    }
+                } else {
+                    replacement.set(shortName, name);
+                    // rename property
+                    defs[shortName] = defs[name];
                 }
 
-                replacement.add(shortName);
                 shrunkNames.set(name, shortName);
-
-                // rename property
-                defs[shortName] = defs[name];
                 delete defs[name];
 
-                // rename references
+                // rename references, the merged-away ones included
                 const targets: { $ref: string }[] = JSONPath({
                     path: `$..[?(@ && @.$ref == "#/definitions/${escapeDefinitionNameForJSONPath(name)}")]`,
                     json: result,
@@ -443,3 +480,6 @@ export const TypeGuardsNames = keysOf({
     isClassOrInterface: true,
     isUnionOrIntersection: true,
 } satisfies Rec<true, keyof PickFieldsWithPrefix<Type, 'is'>>);
+
+// @ts-expect-error CommonJS module fix
+const structuredClone: typeof structuredCloneModule = structuredCloneModule.default;

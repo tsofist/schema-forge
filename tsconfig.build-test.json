@@ -6,5 +6,5 @@
     "noUnusedParameters": false
   },
   "include": ["src", "test-sources"],
-  "exclude": ["**/*.tmp.*", "**/*.private.*"]
+  "exclude": ["**/*.tmp.*"]
 }

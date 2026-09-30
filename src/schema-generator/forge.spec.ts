@@ -18,6 +18,7 @@ import { createSchemaForgeRegistry } from '../schema-registry/registry';
 import type { SchemaForgeRegistry } from '../schema-registry/types';
 import type { ForgeSchemaOptions, ForgeSchemaResult } from '../types';
 import { forgeSchema } from './forge';
+import { shrinkDefinitionName, shrinkDefinitionNameStable } from './shrink-definition-name';
 
 /* eslint-disable @typescript-eslint/no-unsafe-enum-assignment */
 
@@ -538,8 +539,8 @@ describe('generator for a5', () => {
             outputSchemaMetadataFile,
             expose: 'all',
             explicitPublic: true,
-            shrinkDefinitionNames: (definitionName) => {
-                if (definitionName === 'NamesType') return 'DSN_H';
+            shrinkDefinitionNames: ({ name }) => {
+                if (name === 'NamesType') return 'DSN_H';
                 return undefined;
             },
         });
@@ -1261,7 +1262,7 @@ describe('shrinkDefinitionNames + metadata', () => {
         const rootName = keysOf(plain.names)[0];
         const shortName = 'DSNRenamed_Habc123';
 
-        const { schema, metadata, refs } = await forgeA9((name) =>
+        const { schema, metadata, refs } = await forgeA9(({ name }) =>
             name === rootName ? shortName : undefined,
         );
 
@@ -1292,5 +1293,119 @@ describe('shrinkDefinitionNames + metadata', () => {
         for (const name of keysOf(metadata.serviceNames)) {
             expect(name in metadata.names).toStrictEqual(false);
         }
+    });
+});
+
+describe('shrinkDefinitionNames for a12', () => {
+    // `types-shifted.ts` is a copy of `types.ts` under a different name, pushed down by a
+    //   leading comment. Both the file name and every node offset therefore differ, and both
+    //   feed into the generator node keys that raw definition names embed — the same way a
+    //   different `process.cwd()` would. The definitions themselves are identical.
+    const forgeA12 = (
+        sourceFile: 'types.ts' | 'types-shifted.ts',
+        shrinkDefinitionNames?: ForgeSchemaOptions['shrinkDefinitionNames'],
+    ) =>
+        forgeSchema({
+            schemaId: 'test',
+            tsconfigFrom: './tsconfig.build-test.json',
+            sourcesDirectoryPattern: 'test-sources/a12',
+            sourcesFilesPattern: [sourceFile],
+            expose: 'all',
+            explicitPublic: true,
+            shrinkDefinitionNames,
+        });
+
+    const definitionNames = (schema: ForgeSchemaResult['schema']) =>
+        keysOf(schema.definitions ?? {}).sort();
+    const shrunkNames = (schema: ForgeSchemaResult['schema']) =>
+        definitionNames(schema).filter((name) => name.startsWith('DSN'));
+
+    it('should carry generator node keys into raw definition names', async () => {
+        const { schema } = await forgeA12('types.ts');
+        const generic = definitionNames(schema).filter((name) => name.includes('<'));
+
+        // Three instantiations the generator can name, one it cannot — the last falls back to
+        //   a node key, which is exactly what makes the name unstable.
+        expect(generic).toStrictEqual([
+            'Box<("a"|"b")>',
+            'Box<LocalKeys>',
+            'Box<TwinKeys>',
+            expect.stringMatching(/^Box<structure(-\d+)+>$/) as unknown as string,
+        ]);
+    });
+
+    it('should shrink every generic definition name', async () => {
+        const { schema } = await forgeA12('types.ts', shrinkDefinitionNameStable);
+
+        expect(definitionNames(schema).filter((name) => name.includes('<'))).toStrictEqual([]);
+        for (const name of shrunkNames(schema)) {
+            expect(name).toMatch(/^DSNBox_H[0-9a-f]{6}$/);
+        }
+    });
+
+    it('should keep every reference resolvable after shrinking', async () => {
+        const { schema, metadata, refs } = await forgeA12('types.ts', shrinkDefinitionNameStable);
+        const present = new Set(definitionNames(schema));
+
+        expect(JSON.stringify(schema)).not.toContain('#/definitions/Box<');
+        for (const ref of [...refs, ...Object.values(metadata.names)]) {
+            expect(present.has((ref ?? '').slice('test#/definitions/'.length))).toStrictEqual(true);
+        }
+    });
+
+    it('should merge definitions that only differ by name', async () => {
+        // `Box<LocalKeys>` and `Box<TwinKeys>` are the same schema twice over: the generator
+        //   tells them apart by name, content-based shrinking does not have to.
+        const { schema } = await forgeA12('types.ts', shrinkDefinitionNameStable);
+        const defs = schema.definitions ?? {};
+
+        expect(shrunkNames(schema)).toHaveLength(3);
+        expect((defs.BoxedTwinKeys as { $ref: string }).$ref).toStrictEqual(
+            (defs.BoxedKeys as { $ref: string }).$ref,
+        );
+    });
+
+    it('should still refuse to merge definitions that are not the same schema', async () => {
+        // The dedup above must not turn a broken custom function into silent data loss.
+        const failure = forgeA12('types.ts', ({ name }) =>
+            name.includes('<') ? 'DSNClash_Hffffff' : undefined,
+        );
+
+        await expect(failure).rejects.toThrow('Duplicate replacement definition name');
+    });
+
+    it('should produce location-independent names when shrinking by content', async () => {
+        const plain = await forgeA12('types.ts', shrinkDefinitionNameStable);
+        const shifted = await forgeA12('types-shifted.ts', shrinkDefinitionNameStable);
+
+        expect(shrunkNames(shifted.schema)).toStrictEqual(shrunkNames(plain.schema));
+    });
+
+    it('should produce location-dependent names when shrinking by name', async () => {
+        // The negative control for the test above: without it, that one would also pass
+        //   if shrinking silently stopped happening at all.
+        const plain = await forgeA12('types.ts', shrinkDefinitionName);
+        const shifted = await forgeA12('types-shifted.ts', shrinkDefinitionName);
+
+        // Four, not three: hashing the name keeps apart what is one and the same schema.
+        expect(shrunkNames(plain.schema)).toHaveLength(4);
+        expect(shrunkNames(shifted.schema)).not.toStrictEqual(shrunkNames(plain.schema));
+    });
+
+    it('should treat `true` as the legacy, name-based behaviour', async () => {
+        const legacy = await forgeA12('types.ts', true);
+        const explicit = await forgeA12('types.ts', shrinkDefinitionName);
+
+        expect(shrunkNames(legacy.schema)).toStrictEqual(shrunkNames(explicit.schema));
+    });
+
+    it('should treat `stable` as the content-based behaviour', async () => {
+        const stable = await forgeA12('types.ts', 'stable');
+        const explicit = await forgeA12('types.ts', shrinkDefinitionNameStable);
+
+        expect(shrunkNames(stable.schema)).toStrictEqual(shrunkNames(explicit.schema));
+        expect(shrunkNames(stable.schema)).not.toStrictEqual(
+            shrunkNames((await forgeA12('types.ts', true)).schema),
+        );
     });
 });
